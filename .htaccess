@@ -1,108 +1,59 @@
-<IfModule mod_rewrite.c>
-    # Ativa o mod_rewrite
-    RewriteEngine On
+# ============================================================
+#  .htaccess — Terapia Sistema
+#  Locaweb / Apache — ajuste RewriteBase se necessário
+# ============================================================
 
-    # Define a base do projeto
-    RewriteBase /terapia/
-
-    # Remove .php da URL
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME}\.php -f
-    RewriteRule ^(.*)$ $1.php [L]
-
-    # Bloqueia acesso direto a arquivos sensíveis
-    RewriteRule ^(config|helpers|classes|app)/ - [F,L]
-    RewriteRule ^\.git / [F,L]
-    RewriteRule ^\.env$ - [F,L]
-
-    # Protege uploads
-    <FilesMatch "\.php$">
-        Deny from all
-    </FilesMatch>
-</IfModule>
-
-# ========== SEGURANÇA ==========
-
-# Bloqueia listagem de diretório
+# ── Índice de diretório desativado ──────────────────────────
 Options -Indexes
 
-# Headers de segurança
+# ── Rewrite Engine ──────────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Se o domínio aponta direto para esta pasta → RewriteBase /
+    # Se o projeto está em uma subpasta (ex: /terapia/) → RewriteBase /terapia/
+    RewriteBase /
+
+    # ── Proteção: bloqueia acesso direto a diretórios internos ──
+    RewriteRule ^(config|helpers|classes|app|vendor|database)(/.*)?$ - [F,L]
+    RewriteRule ^\.env$           - [F,L]
+    RewriteRule ^\.git(/.*)?$     - [F,L]
+    RewriteRule ^composer\.(json|lock)$ - [F,L]
+    RewriteRule ^package(-lock)?\.json$ - [F,L]
+</IfModule>
+
+# ── Headers de segurança ────────────────────────────────────
 <IfModule mod_headers.c>
-    # Previne MIME-sniffing
-    Header always set X-Content-Type-Options "nosniff"
-
-    # Protege contra clickjacking
-    Header always set X-Frame-Options "SAMEORIGIN"
-
-    # Habilita proteção contra XSS
-    Header always set X-XSS-Protection "1; mode=block"
-
-    # Content Security Policy
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' cdnjs.cloudflare.com; connect-src 'self';"
-
-    # Referrer Policy
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Content-Type-Options  "nosniff"
+    Header always set X-Frame-Options         "SAMEORIGIN"
+    Header always set X-XSS-Protection        "1; mode=block"
+    Header always set Referrer-Policy         "strict-origin-when-cross-origin"
 </IfModule>
 
-# ========== COMPRESSÃO ==========
+# ── Compressão GZIP ─────────────────────────────────────────
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html
-    AddOutputFilterByType DEFLATE text/plain
-    AddOutputFilterByType DEFLATE text/xml
-    AddOutputFilterByType DEFLATE text/css
-    AddOutputFilterByType DEFLATE text/javascript
-    AddOutputFilterByType DEFLATE application/xml
-    AddOutputFilterByType DEFLATE application/xhtml+xml
-    AddOutputFilterByType DEFLATE application/rss+xml
-    AddOutputFilterByType DEFLATE application/javascript
-    AddOutputFilterByType DEFLATE application/x-javascript
-    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE text/html text/plain text/css
+    AddOutputFilterByType DEFLATE application/javascript application/json
 </IfModule>
 
-# ========== CACHE ==========
+# ── Cache de assets estáticos ───────────────────────────────
 <IfModule mod_expires.c>
     ExpiresActive On
-    
-    # Imagens
-    ExpiresByType image/jpeg "access plus 1 year"
-    ExpiresByType image/gif "access plus 1 year"
-    ExpiresByType image/png "access plus 1 year"
-    ExpiresByType image/svg+xml "access plus 1 year"
-    
-    # CSS
-    ExpiresByType text/css "access plus 1 month"
-    
-    # JavaScript
+    ExpiresByType image/jpeg          "access plus 1 year"
+    ExpiresByType image/png           "access plus 1 year"
+    ExpiresByType image/gif           "access plus 1 year"
+    ExpiresByType image/svg+xml       "access plus 1 year"
+    ExpiresByType text/css            "access plus 1 month"
     ExpiresByType application/javascript "access plus 1 month"
-    ExpiresByType application/x-javascript "access plus 1 month"
-    
-    # Fonts
-    ExpiresByType font/truetype "access plus 1 year"
-    ExpiresByType font/opentype "access plus 1 year"
-    ExpiresByType application/x-font-woff "access plus 1 year"
-    ExpiresByType application/x-font-woff2 "access plus 1 year"
-    
-    # Padrão
-    ExpiresDefault "access plus 1 week"
+    ExpiresDefault                    "access plus 1 week"
 </IfModule>
 
-# ========== ACESSO ==========#
-
-# Bloqueia acesso a arquivos de configuração
-<FilesMatch "(^#.*#|\.(bak|conf|dist|fla|in[ci]|log|psd|sh|sql|sw[op])|~)$">
+# ── Bloqueia arquivos de backup/config ──────────────────────
+<FilesMatch "(\.bak|\.conf|\.dist|\.log|\.sh|\.sql|~)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
     <IfModule !mod_authz_core.c>
-        Order allow,deny
         Deny from all
-        Satisfy All
-    </IfModule>
-</FilesMatch>
-
-# Bloqueia uploads de scripts perigosos
-<FilesMatch "\.(php|phtml|php3|php4|php5|phps|shtml|pht|phar|pht|phpt|pgif|shtml|pjpeg|php7)$">
-    <IfModule mod_authz_core.c>
-        Require all denied
     </IfModule>
 </FilesMatch>
