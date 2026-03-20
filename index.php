@@ -25,6 +25,12 @@ try {
         default => (new \App\Controllers\AuthController())->login()
     };
 } catch (\Exception $e) {
+    $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        exit;
+    }
     die('Erro: ' . $e->getMessage());
 }
  

@@ -88,7 +88,7 @@ class Database
                 ]
             );
         } catch (PDOException $e) {
-            die('Erro de conexão: ' . $e->getMessage());
+            throw new \RuntimeException('Erro de conexão com banco de dados: ' . $e->getMessage());
         }
     }
 
