@@ -9,7 +9,7 @@ class Config
 {
     // URLs da aplicação
     public const APP_NAME = 'Terapia - Sistema de Consultório';
-    public const APP_URL = 'http://localhost/terapia';
+    public const APP_URL = 'http://localhost:8000';
     public const APP_ENV = 'development'; // development ou production
 
     // Configurações de sessão

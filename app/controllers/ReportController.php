@@ -18,7 +18,6 @@ class ReportController extends Controller
 
     public function __construct()
     {
-        parent::__construct();
         Auth::requireAdmin();
         $this->patientRecordModel = new PatientRecord();
         $this->appointmentModel = new Appointment();

@@ -15,7 +15,6 @@ class PaymentController extends Controller
 
     public function __construct()
     {
-        parent::__construct();
         Auth::requireAdmin();
         $this->paymentModel = new Payment();
         $this->patientModel = new Patient();

@@ -15,7 +15,6 @@ class AppointmentController extends Controller
 
     public function __construct()
     {
-        parent::__construct();
         $this->appointmentModel = new Appointment();
         $this->patientModel = new Patient();
     }

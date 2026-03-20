@@ -16,7 +16,6 @@ class PatientController extends Controller
 
     public function __construct()
     {
-        parent::__construct();
         Auth::requireAdmin();
         $this->patientModel = new Patient();
         $this->patientRecordModel = new PatientRecord();
