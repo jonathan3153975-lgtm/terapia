@@ -1,0 +1,69 @@
+# Arquivos e pastas ignore
+node_modules/
+vendor/
+.env
+.env.local
+.DS_Store
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-*
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Arquivos de sessão
+sessions/
+tmp/
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Banco de dados
+*.sql.bak
+
+# Cache
+cache/
+.cache/
+
+# Compilados
+*.pyc
+*.class
+*.o
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Configurações sensíveis
+config/local.php
+.env.*.php
+
+# Pastas de sistema
+.git/
+.github/
