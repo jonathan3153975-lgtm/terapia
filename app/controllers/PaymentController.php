@@ -99,7 +99,9 @@ class PaymentController extends Controller
         $paymentId = $this->paymentModel->insert($data);
 
         if ($paymentId) {
-            $this->success('Pagamento registrado com sucesso', ['paymentId' => $paymentId]);
+            $this->success('Pagamento registrado com sucesso', [
+                'redirect' => \Config\Config::APP_URL . '/dashboard.php?action=payments'
+            ]);
         } else {
             $this->error('Erro ao registrar pagamento');
         }

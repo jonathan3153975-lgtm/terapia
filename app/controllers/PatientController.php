@@ -108,7 +108,9 @@ class PatientController extends Controller
         $patientId = $this->patientModel->createPatient($data);
 
         if ($patientId) {
-            $this->success('Paciente cadastrado com sucesso', ['patientId' => $patientId]);
+            $this->success('Paciente cadastrado com sucesso', [
+                'redirect' => \Config\Config::APP_URL . '/dashboard.php?action=patients'
+            ]);
         } else {
             $this->error('Erro ao cadastrar paciente');
         }
@@ -215,7 +217,9 @@ class PatientController extends Controller
         $data['updated_at'] = date('Y-m-d H:i:s');
 
         if ($this->patientModel->updatePatient($patientId, $data)) {
-            $this->success('Paciente atualizado com sucesso');
+            $this->success('Paciente atualizado com sucesso', [
+                'redirect' => \Config\Config::APP_URL . '/dashboard.php?action=patients&subaction=show&id=' . $patientId
+            ]);
         } else {
             $this->error('Erro ao atualizar paciente');
         }
@@ -226,18 +230,16 @@ class PatientController extends Controller
      */
     public function delete(): void
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->error('Método não permitido', 405);
-        }
-
-        $patientId = (int)($_POST['id'] ?? 0);
+        $patientId = (int)($_GET['id'] ?? 0);
 
         if ($patientId <= 0) {
             $this->error('ID inválido');
         }
 
         if ($this->patientModel->delete($patientId)) {
-            $this->success('Paciente removido com sucesso');
+            $this->success('Paciente removido com sucesso', [
+                'redirect' => \Config\Config::APP_URL . '/dashboard.php?action=patients'
+            ]);
         } else {
             $this->error('Erro ao remover paciente');
         }

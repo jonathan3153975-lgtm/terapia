@@ -133,7 +133,44 @@ function confirmDelete(url, itemName = 'item') {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href = url;
+            $.ajax({
+                url: url,
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Sucesso!',
+                            text: response.message || 'Registro removido com sucesso',
+                            confirmButtonColor: '#2563eb'
+                        }).then(() => {
+                            if (response.redirect) {
+                                window.location.href = response.redirect;
+                            } else {
+                                location.reload();
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro!',
+                            text: response.message || 'Erro ao remover registro',
+                            confirmButtonColor: '#ef4444'
+                        });
+                    }
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro!',
+                        text: 'Erro ao processar a requisição',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            });
         }
     });
 }
@@ -169,10 +206,11 @@ function initializeMasks() {
 
     // Money Mask
     $('.mask-money').on('input', function() {
-        let value = $(this).val().match(/\d/g);
-        value = (value || []).join('') || '0';
-        value = (parseInt(value) / 100).toFixed(2);
-        $(this).val('R$ ' + value.replace('.', ','));
+        let digits = $(this).val().replace(/\D/g, '') || '0';
+        let value = (parseInt(digits) / 100).toFixed(2);
+        let parts = value.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        $(this).val('R$ ' + parts[0] + ',' + parts[1]);
     });
 }
 

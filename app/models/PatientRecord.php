@@ -54,6 +54,19 @@ class PatientRecord extends Model
     }
 
     /**
+     * Atendimentos recentes com nome do paciente
+     */
+    public function findRecentWithPatients(int $limit = 5): array
+    {
+        $sql = "SELECT pr.*, p.name as patient_name FROM {$this->table} pr
+                JOIN patients p ON pr.patient_id = p.id
+                ORDER BY pr.record_date DESC LIMIT {$limit}";
+        $stmt = $this->query($sql);
+        if (!$stmt) return [];
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Conta atendimentos de um paciente
      */
     public function countByPatient(int $patientId): int

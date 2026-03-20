@@ -55,6 +55,7 @@ try {
             'update' => (new \App\Controllers\AppointmentController())->update(),
             'delete' => (new \App\Controllers\AppointmentController())->delete(),
             'get-by-date' => (new \App\Controllers\AppointmentController())->getByDate(),
+            'get-by-range' => (new \App\Controllers\AppointmentController())->getByRange(),
             'approve' => (new \App\Controllers\AppointmentController())->approve(),
             default => (new \App\Controllers\AppointmentController())->list()
         },

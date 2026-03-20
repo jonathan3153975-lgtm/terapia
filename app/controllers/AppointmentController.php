@@ -140,7 +140,9 @@ class AppointmentController extends Controller
         $appointmentId = $this->appointmentModel->insert($data);
 
         if ($appointmentId) {
-            $this->success('Agendamento criado com sucesso', ['appointmentId' => $appointmentId]);
+            $this->success('Agendamento criado com sucesso', [
+                'redirect' => \Config\Config::APP_URL . '/dashboard.php?action=appointments&subaction=calendar'
+            ]);
         } else {
             $this->error('Erro ao criar agendamento');
         }
@@ -288,6 +290,47 @@ class AppointmentController extends Controller
         $appointments = $this->appointmentModel->findByDate($date);
 
         $this->json(['success' => true, 'appointments' => $appointments]);
+    }
+
+    /**
+     * Retorna agendamentos em formato FullCalendar (AJAX)
+     */
+    public function getByRange(): void
+    {
+        $start = $_GET['start'] ?? date('Y-m-01');
+        $end   = $_GET['end']   ?? date('Y-m-t');
+
+        // FullCalendar envia ISO8601 com T; extrai só a data
+        $startDate = substr($start, 0, 10);
+        $endDate   = substr($end,   0, 10);
+
+        $appointments = $this->appointmentModel->findBetweenDates($startDate, $endDate);
+
+        $statusColors = [
+            'confirmed'  => '#2563eb',
+            'pending'    => '#f59e0b',
+            'cancelled'  => '#ef4444',
+            'completed'  => '#10b981',
+        ];
+
+        $events = array_map(function ($a) use ($statusColors) {
+            $color = $statusColors[$a['status']] ?? '#6b7280';
+            return [
+                'id'    => $a['id'],
+                'title' => $a['patient_name'],
+                'start' => str_replace(' ', 'T', $a['appointment_date']),
+                'color' => $color,
+                'extendedProps' => [
+                    'status' => $a['status'],
+                    'notes'  => $a['notes'] ?? '',
+                ],
+                'url' => \Config\Config::APP_URL . '/dashboard.php?action=appointments&subaction=show&id=' . $a['id'],
+            ];
+        }, $appointments);
+
+        header('Content-Type: application/json');
+        echo json_encode($events);
+        exit;
     }
 
     /**

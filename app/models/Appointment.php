@@ -76,6 +76,48 @@ class Appointment extends Model
     }
 
     /**
+     * Próximos agendamentos (com nome do paciente)
+     */
+    public function findUpcoming(int $limit = 5): array
+    {
+        $sql = "SELECT a.*, p.name as patient_name FROM {$this->table} a
+                JOIN patients p ON a.patient_id = p.id
+                WHERE a.appointment_date >= NOW() AND a.status != 'cancelled'
+                ORDER BY a.appointment_date ASC LIMIT {$limit}";
+        $stmt = $this->query($sql);
+        if (!$stmt) return [];
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Agendamentos de hoje (com nome do paciente)
+     */
+    public function findToday(): array
+    {
+        $today = date('Y-m-d');
+        $sql = "SELECT a.*, p.name as patient_name FROM {$this->table} a
+                JOIN patients p ON a.patient_id = p.id
+                WHERE DATE(a.appointment_date) = ?
+                ORDER BY a.appointment_date ASC";
+        $stmt = $this->query($sql, [$today]);
+        if (!$stmt) return [];
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Contagem por status para gráfico
+     */
+    public function countByStatus(): array
+    {
+        $statuses = ['confirmed', 'pending', 'cancelled', 'completed'];
+        $result = [];
+        foreach ($statuses as $s) {
+            $result[$s] = $this->count("status = ?", [$s]);
+        }
+        return $result;
+    }
+
+    /**
      * Busca agendamentos pendentes
      */
     public function findPending(): array

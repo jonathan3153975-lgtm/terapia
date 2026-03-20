@@ -24,7 +24,7 @@ class AuthController extends Controller
     public function login(): void
     {
         if (Auth::isAuthenticated()) {
-            $this->redirect('/terapia/dashboard.php');
+            $this->redirect(\Config\Config::APP_URL . '/dashboard.php');
         }
 
         $flash = Session::getFlash();
@@ -64,7 +64,7 @@ class AuthController extends Controller
         Auth::login($user['id'], $user['name'], $user['role']);
 
         $this->success('Login realizado com sucesso', [
-            'redirect' => $user['role'] === 'admin' ? '/terapia/dashboard.php' : '/terapia/patient-dashboard.php'
+            'redirect' => $user['role'] === 'admin' ? \Config\Config::APP_URL . '/dashboard.php' : \Config\Config::APP_URL . '/index.php?action=login'
         ]);
     }
 
@@ -75,7 +75,7 @@ class AuthController extends Controller
     {
         Auth::logout();
         Session::setFlash('success', 'Logout realizado com sucesso');
-        $this->redirect('/terapia/index.php?action=login');
+        $this->redirect(\Config\Config::APP_URL . '/index.php?action=login');
     }
 
     /**

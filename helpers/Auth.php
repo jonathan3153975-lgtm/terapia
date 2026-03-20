@@ -105,7 +105,7 @@ class Auth
     public static function requireLogin(): void
     {
         if (!self::isAuthenticated() || self::isSessionExpired()) {
-            header('Location: /terapia/index.php?action=login');
+            header('Location: ' . \Config\Config::APP_URL . '/index.php?action=login');
             exit;
         }
     }
@@ -117,7 +117,7 @@ class Auth
     {
         self::requireLogin();
         if (!self::isAdmin()) {
-            header('Location: /terapia/dashboard.php');
+            header('Location: ' . \Config\Config::APP_URL . '/index.php?action=login');
             exit;
         }
     }

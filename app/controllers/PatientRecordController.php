@@ -100,7 +100,9 @@ class PatientRecordController extends Controller
         $recordId = $this->patientRecordModel->createRecord($data);
 
         if ($recordId) {
-            $this->success('Atendimento registrado com sucesso', ['recordId' => $recordId]);
+            $this->success('Atendimento registrado com sucesso', [
+                'redirect' => \Config\Config::APP_URL . '/dashboard.php?action=patients&subaction=show&id=' . $patientId
+            ]);
         } else {
             $this->error('Erro ao registrar atendimento');
         }
@@ -123,7 +125,9 @@ class PatientRecordController extends Controller
             $this->error('Atendimento não encontrado', 404);
         }
 
-        $this->view('admin/records/show', ['record' => $record]);
+        $patient = $this->patientModel->findById($record['patient_id']);
+
+        $this->view('admin/records/show', ['record' => $record, 'patient' => $patient]);
     }
 
     /**

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novo Paciente - <?php echo \Config\Config::APP_NAME; ?></title>
+    <title>Editar Paciente - <?php echo \Config\Config::APP_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="<?php echo \Config\Config::APP_URL; ?>/public/css/dashboard.css" rel="stylesheet">
@@ -105,16 +105,17 @@
             <div class="page-content">
                 <!-- Page Header -->
                 <div class="mb-30">
-                    <a href="<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=patients" class="btn btn-secondary mb-20">
+                    <a href="<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=patients&subaction=show&id=<?php echo $patient['id']; ?>" class="btn btn-secondary mb-20">
                         <i class="fas fa-arrow-left"></i> Voltar
                     </a>
-                    <h1 class="mb-0">Novo Paciente</h1>
+                    <h1>Editar Paciente</h1>
                     <p class="text-muted mt-2">Preencha os dados do novo paciente</p>
                 </div>
 
                 <!-- Form Card -->
                 <div class="card" style="max-width: 900px;">
-                    <form id="patientForm" method="POST" action="<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=patients&subaction=store">
+                    <form id="patientForm" method="POST" action="<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=patients&subaction=update">
+                        <input type="hidden" name="id" value="<?php echo $patient['id']; ?>">
                         <!-- Dados Pessoais -->
                         <div class="card-header">
                             <h4 class="card-title">
@@ -131,6 +132,7 @@
                                         class="form-control" 
                                         id="name" 
                                         name="name" 
+                                        value="<?php echo htmlspecialchars($patient['name']); ?>"
                                         required
                                         placeholder="Digite o nome completo"
                                     >
@@ -143,6 +145,7 @@
                                         class="form-control" 
                                         id="birth_date" 
                                         name="birth_date" 
+                                        value="<?php echo $patient['birth_date']; ?>"
                                         required
                                     >
                                 </div>
@@ -151,18 +154,17 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="cpf" class="form-label">CPF *</label>
-                                    <input
-                                        type="text"
-                                        class="form-control mask-cpf"
-                                        id="cpf"
-                                        name="cpf"
+                                    <input 
+                                        type="text" 
+                                        class="form-control mask-cpf" 
+                                        id="cpf" 
+                                        name="cpf" 
+                                        value="<?php echo htmlspecialchars($patient['cpf']); ?>"
                                         placeholder="000.000.000-00"
                                         required
                                         maxlength="14"
-                                        autocomplete="off"
                                     >
-                                    <div id="cpf-feedback" class="invalid-feedback">CPF inválido.</div>
-                                    <small class="text-muted" id="cpf-hint">Formato: 000.000.000-00</small>
+                                    <small class="text-muted">Formato: 000.000.000-00</small>
                                 </div>
 
                                 <div class="form-group">
@@ -172,6 +174,7 @@
                                         class="form-control mask-phone" 
                                         id="phone" 
                                         name="phone" 
+                                        value="<?php echo htmlspecialchars($patient['phone']); ?>"
                                         placeholder="(00) 0000-0000"
                                         required
                                         maxlength="15"
@@ -187,6 +190,7 @@
                                     class="form-control" 
                                     id="email" 
                                     name="email" 
+                                    value="<?php echo htmlspecialchars($patient['email']); ?>"
                                     placeholder="seu@email.com"
                                 >
                             </div>
@@ -209,6 +213,7 @@
                                             class="form-control mask-cep" 
                                             id="cep" 
                                             name="cep" 
+                                            value="<?php echo htmlspecialchars($patient['cep']); ?>"
                                             placeholder="00000-000"
                                             maxlength="9"
                                             required
@@ -227,6 +232,7 @@
                                         class="form-control" 
                                         id="address" 
                                         name="address" 
+                                        value="<?php echo htmlspecialchars($patient['address']); ?>"
                                         placeholder="Rua, Avenida, etc"
                                         required
                                     >
@@ -241,6 +247,7 @@
                                         class="form-control" 
                                         id="number" 
                                         name="number" 
+                                        value="<?php echo htmlspecialchars($patient['number']); ?>"
                                         placeholder="123"
                                         required
                                     >
@@ -253,6 +260,7 @@
                                         class="form-control" 
                                         id="complement" 
                                         name="complement" 
+                                        value="<?php echo htmlspecialchars($patient['complement']); ?>"
                                         placeholder="Apto 101, Bloco A, etc"
                                     >
                                 </div>
@@ -266,6 +274,7 @@
                                         class="form-control" 
                                         id="neighborhood" 
                                         name="neighborhood" 
+                                        value="<?php echo htmlspecialchars($patient['neighborhood']); ?>"
                                         required
                                     >
                                 </div>
@@ -277,6 +286,7 @@
                                         class="form-control" 
                                         id="city" 
                                         name="city" 
+                                        value="<?php echo htmlspecialchars($patient['city']); ?>"
                                         required
                                     >
                                 </div>
@@ -288,6 +298,7 @@
                                         class="form-control" 
                                         id="state" 
                                         name="state" 
+                                        value="<?php echo htmlspecialchars($patient['state']); ?>"
                                         maxlength="2"
                                         required
                                     >
@@ -305,7 +316,7 @@
                                     name="observations" 
                                     rows="4"
                                     placeholder="Observações adicionais sobre o paciente"
-                                ></textarea>
+                                ><?php echo htmlspecialchars($patient['observations']); ?></textarea>
                             </div>
                         </div>
 
@@ -362,64 +373,9 @@
             }
         });
 
-        // ── Validação de CPF ──────────────────────────────────────
-        function validarCPF(cpf) {
-            cpf = cpf.replace(/\D/g, '');
-            if (cpf.length !== 11) return false;
-            if (/^(\d)\1{10}$/.test(cpf)) return false; // todos iguais
-
-            var soma = 0;
-            for (var i = 0; i < 9; i++) soma += parseInt(cpf[i]) * (10 - i);
-            var resto = (soma * 10) % 11;
-            if (resto === 10 || resto === 11) resto = 0;
-            if (resto !== parseInt(cpf[9])) return false;
-
-            soma = 0;
-            for (var i = 0; i < 10; i++) soma += parseInt(cpf[i]) * (11 - i);
-            resto = (soma * 10) % 11;
-            if (resto === 10 || resto === 11) resto = 0;
-            return resto === parseInt(cpf[10]);
-        }
-
-        function setCpfState(valid) {
-            var $input = $('#cpf');
-            var $hint  = $('#cpf-hint');
-            if (valid) {
-                $input.removeClass('is-invalid').addClass('is-valid');
-                $hint.hide();
-            } else {
-                $input.removeClass('is-valid').addClass('is-invalid');
-                $hint.hide();
-            }
-        }
-
-        $('#cpf').on('blur', function() {
-            var raw = $(this).val();
-            if (raw.replace(/\D/g, '').length === 0) return; // vazio, não valida ainda
-            setCpfState(validarCPF(raw));
-        });
-
-        $('#cpf').on('input', function() {
-            // Remove feedback ao digitar de novo
-            $(this).removeClass('is-valid is-invalid');
-            $('#cpf-hint').show();
-        });
-
         // Form submit via AJAX
         $('#patientForm').on('submit', function(e) {
             e.preventDefault();
-            var cpf = $('#cpf').val();
-            if (!validarCPF(cpf)) {
-                setCpfState(false);
-                $('#cpf').focus();
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'CPF Inválido',
-                    text: 'Por favor, informe um CPF válido.',
-                    confirmButtonColor: '#f59e0b'
-                });
-                return;
-            }
             submitFormAjax(this);
         });
 
