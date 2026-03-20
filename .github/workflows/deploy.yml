@@ -16,7 +16,7 @@ jobs:
       - name: Enviar via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ftp.seudominio.com.br
+          server: ftp.jw-adminix.com.br
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASS }}
           server-dir: /public_html/terapia/
