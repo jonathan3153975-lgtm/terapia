@@ -126,24 +126,38 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="name" class="form-label">Nome Completo *</label>
-                                    <input 
-                                        type="text" 
-                                        class="form-control" 
-                                        id="name" 
-                                        name="name" 
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="name"
+                                        name="name"
                                         required
                                         placeholder="Digite o nome completo"
                                     >
                                 </div>
+                            </div>
 
+                            <div class="form-row">
                                 <div class="form-group">
                                     <label for="birth_date" class="form-label">Data de Nascimento *</label>
-                                    <input 
-                                        type="date" 
-                                        class="form-control" 
-                                        id="birth_date" 
-                                        name="birth_date" 
+                                    <input
+                                        type="date"
+                                        class="form-control"
+                                        id="birth_date"
+                                        name="birth_date"
                                         required
+                                    >
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="age_display" class="form-label">Idade</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="age_display"
+                                        readonly
+                                        placeholder="Calculada automaticamente"
+                                        style="background:#f9fafb;"
                                     >
                                 </div>
                             </div>
@@ -167,11 +181,11 @@
 
                                 <div class="form-group">
                                     <label for="phone" class="form-label">Telefone *</label>
-                                    <input 
-                                        type="text" 
-                                        class="form-control mask-phone" 
-                                        id="phone" 
-                                        name="phone" 
+                                    <input
+                                        type="text"
+                                        class="form-control mask-phone"
+                                        id="phone"
+                                        name="phone"
                                         placeholder="(00) 0000-0000"
                                         required
                                         maxlength="15"
@@ -180,14 +194,40 @@
                                 </div>
                             </div>
 
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="email" class="form-label">E-mail</label>
+                                    <input
+                                        type="email"
+                                        class="form-control"
+                                        id="email"
+                                        name="email"
+                                        placeholder="seu@email.com"
+                                    >
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="marital_status" class="form-label">Estado Civil</label>
+                                    <select class="form-control" id="marital_status" name="marital_status">
+                                        <option value="">Selecione...</option>
+                                        <option value="solteiro">Solteiro(a)</option>
+                                        <option value="casado">Casado(a)</option>
+                                        <option value="divorciado">Divorciado(a)</option>
+                                        <option value="viuvo">Viúvo(a)</option>
+                                        <option value="uniao_estavel">União Estável</option>
+                                        <option value="separado">Separado(a)</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div class="form-group">
-                                <label for="email" class="form-label">E-mail</label>
-                                <input 
-                                    type="email" 
-                                    class="form-control" 
-                                    id="email" 
-                                    name="email" 
-                                    placeholder="seu@email.com"
+                                <label for="children" class="form-label">Filhos</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="children"
+                                    name="children"
+                                    placeholder="Ex: 2 filhos, idades 5 e 8 anos"
                                 >
                             </div>
                         </div>
@@ -295,14 +335,109 @@
                             </div>
                         </div>
 
+                        <!-- Saúde -->
+                        <div class="card-body border-top">
+                            <div class="card-header">
+                                <h4 class="card-title">
+                                    <i class="fas fa-heartbeat"></i> Saúde
+                                </h4>
+                            </div>
+
+                            <div class="form-row mt-3">
+                                <div class="form-group d-flex align-items-center gap-3" style="flex-direction:row; align-items:center;">
+                                    <div class="form-check me-4">
+                                        <input class="form-check-input" type="checkbox" id="depression" name="depression" value="1">
+                                        <label class="form-check-label" for="depression">Depressão</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="anxiety" name="anxiety" value="1">
+                                        <label class="form-check-label" for="anxiety">Ansiedade</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="medications" class="form-label">Medicamentos</label>
+                                <textarea
+                                    class="form-control"
+                                    id="medications"
+                                    name="medications"
+                                    rows="2"
+                                    placeholder="Descreva os medicamentos em uso"
+                                ></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="bowel" class="form-label">Intestino</label>
+                                    <textarea
+                                        class="form-control"
+                                        id="bowel"
+                                        name="bowel"
+                                        rows="2"
+                                        placeholder="Descreva o funcionamento intestinal"
+                                    ></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="menstruation" class="form-label">Menstruação</label>
+                                    <textarea
+                                        class="form-control"
+                                        id="menstruation"
+                                        name="menstruation"
+                                        rows="2"
+                                        placeholder="Descreva"
+                                    ></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Histórico Terapêutico -->
+                        <div class="card-body border-top">
+                            <div class="card-header">
+                                <h4 class="card-title">
+                                    <i class="fas fa-brain"></i> Histórico Terapêutico
+                                </h4>
+                            </div>
+
+                            <div class="mt-3">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="had_therapy" name="had_therapy" value="1">
+                                    <label class="form-check-label fw-semibold" for="had_therapy">Já fez terapia?</label>
+                                </div>
+
+                                <div class="form-group" id="therapy_duration_group" style="display:none;">
+                                    <label for="therapy_duration" class="form-label">Quanto tempo?</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="therapy_duration"
+                                        name="therapy_duration"
+                                        placeholder="Ex: 6 meses, 1 ano, 2 anos"
+                                    >
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="therapy_reason" class="form-label">O que fez buscar terapia?</label>
+                                    <textarea
+                                        class="form-control"
+                                        id="therapy_reason"
+                                        name="therapy_reason"
+                                        rows="3"
+                                        placeholder="Descreva o motivo que levou a buscar a terapia"
+                                    ></textarea>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Observações -->
                         <div class="card-body border-top">
                             <div class="form-group">
                                 <label for="observations" class="form-label">Observações</label>
-                                <textarea 
-                                    class="form-control" 
-                                    id="observations" 
-                                    name="observations" 
+                                <textarea
+                                    class="form-control"
+                                    id="observations"
+                                    name="observations"
                                     rows="4"
                                     placeholder="Observações adicionais sobre o paciente"
                                 ></textarea>
@@ -403,6 +538,31 @@
             // Remove feedback ao digitar de novo
             $(this).removeClass('is-valid is-invalid');
             $('#cpf-hint').show();
+        });
+
+        // Calcular idade a partir da data de nascimento
+        function calcularIdade(dataNasc) {
+            if (!dataNasc) return '';
+            var hoje = new Date();
+            var nasc = new Date(dataNasc);
+            var idade = hoje.getFullYear() - nasc.getFullYear();
+            var m = hoje.getMonth() - nasc.getMonth();
+            if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+            return idade >= 0 ? idade + ' anos' : '';
+        }
+
+        $('#birth_date').on('change', function() {
+            $('#age_display').val(calcularIdade($(this).val()));
+        });
+
+        // Mostrar/ocultar campo "quanto tempo" conforme checkbox
+        $('#had_therapy').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('#therapy_duration_group').show();
+            } else {
+                $('#therapy_duration_group').hide();
+                $('#therapy_duration').val('');
+            }
         });
 
         // Form submit via AJAX

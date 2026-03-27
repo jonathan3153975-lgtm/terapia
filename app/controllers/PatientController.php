@@ -74,7 +74,17 @@ class PatientController extends Controller
             'city' => Utils::sanitize($_POST['city'] ?? ''),
             'state' => Utils::sanitize($_POST['state'] ?? ''),
             'cep' => Validator::removeCEPMask($_POST['cep'] ?? ''),
-            'observations' => Utils::sanitize($_POST['observations'] ?? '')
+            'observations' => Utils::sanitize($_POST['observations'] ?? ''),
+            'marital_status' => Utils::sanitize($_POST['marital_status'] ?? ''),
+            'children' => Utils::sanitize($_POST['children'] ?? ''),
+            'depression' => isset($_POST['depression']) ? 1 : 0,
+            'anxiety' => isset($_POST['anxiety']) ? 1 : 0,
+            'medications' => Utils::sanitize($_POST['medications'] ?? ''),
+            'bowel' => Utils::sanitize($_POST['bowel'] ?? ''),
+            'menstruation' => Utils::sanitize($_POST['menstruation'] ?? ''),
+            'had_therapy' => isset($_POST['had_therapy']) ? 1 : 0,
+            'therapy_duration' => Utils::sanitize($_POST['therapy_duration'] ?? ''),
+            'therapy_reason' => Utils::sanitize($_POST['therapy_reason'] ?? '')
         ];
 
         // Validações
@@ -194,7 +204,17 @@ class PatientController extends Controller
             'city' => Utils::sanitize($_POST['city'] ?? ''),
             'state' => Utils::sanitize($_POST['state'] ?? ''),
             'cep' => Validator::removeCEPMask($_POST['cep'] ?? ''),
-            'observations' => Utils::sanitize($_POST['observations'] ?? '')
+            'observations' => Utils::sanitize($_POST['observations'] ?? ''),
+            'marital_status' => Utils::sanitize($_POST['marital_status'] ?? ''),
+            'children' => Utils::sanitize($_POST['children'] ?? ''),
+            'depression' => isset($_POST['depression']) ? 1 : 0,
+            'anxiety' => isset($_POST['anxiety']) ? 1 : 0,
+            'medications' => Utils::sanitize($_POST['medications'] ?? ''),
+            'bowel' => Utils::sanitize($_POST['bowel'] ?? ''),
+            'menstruation' => Utils::sanitize($_POST['menstruation'] ?? ''),
+            'had_therapy' => isset($_POST['had_therapy']) ? 1 : 0,
+            'therapy_duration' => Utils::sanitize($_POST['therapy_duration'] ?? ''),
+            'therapy_reason' => Utils::sanitize($_POST['therapy_reason'] ?? '')
         ];
 
         // Validações

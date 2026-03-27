@@ -112,6 +112,23 @@
                     </nav>
                 </div>
 
+                <?php
+                    $birthDate = $patient['birth_date'] ?? '';
+                    $ageDisplay = '';
+                    if ($birthDate) {
+                        $today = new DateTime();
+                        $born  = new DateTime($birthDate);
+                        $ageDisplay = $today->diff($born)->y . ' anos';
+                    }
+                    $msLabels = [
+                        'solteiro' => 'Solteiro(a)',
+                        'casado' => 'Casado(a)',
+                        'divorciado' => 'Divorciado(a)',
+                        'viuvo' => 'Viúvo(a)',
+                        'uniao_estavel' => 'União Estável',
+                        'separado' => 'Separado(a)'
+                    ];
+                ?>
                 <!-- Patient Details Card -->
                 <div class="card">
                     <div class="card-header">
@@ -134,10 +151,16 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Data de Nascimento</label>
-                                    <p class="form-control-plaintext"><?php echo date('d/m/Y', strtotime($patient['birth_date'])); ?></p>
+                                    <p class="form-control-plaintext"><?php echo $birthDate ? date('d/m/Y', strtotime($birthDate)) : '—'; ?></p>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Idade</label>
+                                    <p class="form-control-plaintext"><?php echo $ageDisplay ?: '—'; ?></p>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -155,7 +178,24 @@
                                     <p class="form-control-plaintext"><?php echo htmlspecialchars($patient['email'] ?: 'Não informado'); ?></p>
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Estado Civil</label>
+                                    <p class="form-control-plaintext"><?php echo htmlspecialchars($msLabels[$patient['marital_status'] ?? ''] ?? ($patient['marital_status'] ?: 'Não informado')); ?></p>
+                                </div>
+                            </div>
                         </div>
+
+                        <?php if (!empty($patient['children'])): ?>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Filhos</label>
+                                    <p class="form-control-plaintext"><?php echo nl2br(htmlspecialchars($patient['children'])); ?></p>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Endereço</label>
@@ -171,6 +211,105 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Observações</label>
                             <p class="form-control-plaintext"><?php echo nl2br(htmlspecialchars($patient['observations'])); ?></p>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Saúde -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-heartbeat me-2"></i>Saúde</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Depressão</label>
+                                    <p class="form-control-plaintext">
+                                        <?php if (!empty($patient['depression'])): ?>
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-check"></i> Sim</span>
+                                        <?php else: ?>
+                                            <span class="text-muted">Não</span>
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Ansiedade</label>
+                                    <p class="form-control-plaintext">
+                                        <?php if (!empty($patient['anxiety'])): ?>
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-check"></i> Sim</span>
+                                        <?php else: ?>
+                                            <span class="text-muted">Não</span>
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <?php if (!empty($patient['medications'])): ?>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Medicamentos</label>
+                            <p class="form-control-plaintext"><?php echo nl2br(htmlspecialchars($patient['medications'])); ?></p>
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="row">
+                            <?php if (!empty($patient['bowel'])): ?>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Intestino</label>
+                                    <p class="form-control-plaintext"><?php echo nl2br(htmlspecialchars($patient['bowel'])); ?></p>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($patient['menstruation'])): ?>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Menstruação</label>
+                                    <p class="form-control-plaintext"><?php echo nl2br(htmlspecialchars($patient['menstruation'])); ?></p>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Histórico Terapêutico -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-brain me-2"></i>Histórico Terapêutico</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Já fez terapia?</label>
+                                    <p class="form-control-plaintext">
+                                        <?php if (!empty($patient['had_therapy'])): ?>
+                                            <span class="badge bg-success"><i class="fas fa-check"></i> Sim</span>
+                                        <?php else: ?>
+                                            <span class="text-muted">Não</span>
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                            </div>
+                            <?php if (!empty($patient['had_therapy']) && !empty($patient['therapy_duration'])): ?>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Quanto tempo?</label>
+                                    <p class="form-control-plaintext"><?php echo htmlspecialchars($patient['therapy_duration']); ?></p>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php if (!empty($patient['therapy_reason'])): ?>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">O que fez buscar terapia?</label>
+                            <p class="form-control-plaintext"><?php echo nl2br(htmlspecialchars($patient['therapy_reason'])); ?></p>
                         </div>
                         <?php endif; ?>
                     </div>
