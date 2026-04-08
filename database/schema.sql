@@ -162,9 +162,12 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 -- Senha padrao: 123456
 INSERT INTO users (name, email, password, role, status) VALUES
-('Admin Master','admin@teste.com','$2y$10$8v2xN6ScorxW8pZx0p91I.LPKy9h5Yd8jvZfYfA7h7H6T8qM1yF9C','super_admin','active'),
-('Terapeuta Teste','terapeuta@teste.com','$2y$10$8v2xN6ScorxW8pZx0p91I.LPKy9h5Yd8jvZfYfA7h7H6T8qM1yF9C','therapist','active')
-ON DUPLICATE KEY UPDATE status = VALUES(status);
+('Admin Master','admin@teste.com','$2y$12$vM76NPXqrc6Qt9Zg6rGQOeTpDOaYavnj8kRjMAh0FgFGkxNHUgtsq','super_admin','active'),
+('Terapeuta Teste','terapeuta@teste.com','$2y$12$vM76NPXqrc6Qt9Zg6rGQOeTpDOaYavnj8kRjMAh0FgFGkxNHUgtsq','therapist','active')
+ON DUPLICATE KEY UPDATE
+  password = VALUES(password),
+  role = VALUES(role),
+  status = VALUES(status);
 
 INSERT INTO patients (therapist_id, name, cpf, phone, email, status)
 SELECT u.id, 'Paciente Teste', '12345678901', '11999999999', 'paciente@teste.com', 'active'
@@ -172,6 +175,11 @@ FROM users u WHERE u.email = 'terapeuta@teste.com'
 ON DUPLICATE KEY UPDATE status = VALUES(status);
 
 INSERT INTO users (name, email, password, role, therapist_id, patient_id, status)
-SELECT 'Paciente Teste', 'paciente@teste.com', '$2y$10$8v2xN6ScorxW8pZx0p91I.LPKy9h5Yd8jvZfYfA7h7H6T8qM1yF9C', 'patient', p.therapist_id, p.id, 'active'
+SELECT 'Paciente Teste', 'paciente@teste.com', '$2y$12$vM76NPXqrc6Qt9Zg6rGQOeTpDOaYavnj8kRjMAh0FgFGkxNHUgtsq', 'patient', p.therapist_id, p.id, 'active'
 FROM patients p WHERE p.email = 'paciente@teste.com'
-ON DUPLICATE KEY UPDATE status = VALUES(status);
+ON DUPLICATE KEY UPDATE
+  password = VALUES(password),
+  role = VALUES(role),
+  therapist_id = VALUES(therapist_id),
+  patient_id = VALUES(patient_id),
+  status = VALUES(status);

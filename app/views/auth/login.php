@@ -5,6 +5,9 @@
       <div class="card shadow-sm">
         <div class="card-body p-4">
           <h4 class="mb-3">Entrar no sistema</h4>
+          <?php if (isset($_GET['error'])): ?>
+            <div class="alert alert-danger">Credenciais invalidas.</div>
+          <?php endif; ?>
           <form id="loginForm" method="POST" action="<?php echo $appUrl; ?>/index.php?action=process-login">
             <div class="mb-3">
               <label class="form-label">E-mail</label>

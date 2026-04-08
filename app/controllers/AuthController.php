@@ -24,16 +24,23 @@ class AuthController extends Controller
 
     public function processLogin(): void
     {
+        $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
         $email = Utils::sanitize($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
 
         if ($email === '' || $password === '') {
-            $this->error('Email e senha sao obrigatorios');
+            if ($isAjax) {
+                $this->error('Email e senha sao obrigatorios');
+            }
+            $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&error=1');
         }
 
         $user = $this->userModel->findByEmail($email);
         if (!$user || !Utils::verifyPassword($password, $user['password'])) {
-            $this->error('Credenciais invalidas');
+            if ($isAjax) {
+                $this->error('Credenciais invalidas');
+            }
+            $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&error=1');
         }
 
         Auth::login($user);
@@ -50,7 +57,11 @@ class AuthController extends Controller
             $redirect = $appUrl . '/patient.php?action=dashboard';
         }
 
-        $this->success('Login realizado', ['redirect' => $redirect]);
+        if ($isAjax) {
+            $this->success('Login realizado', ['redirect' => $redirect]);
+        }
+
+        $this->redirect($redirect);
     }
 
     public function logout(): void
