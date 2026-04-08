@@ -665,6 +665,10 @@ class TherapistController extends Controller
         $title = Utils::sanitize($_POST['title'] ?? '');
         $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
         $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
+        $status = Utils::sanitize($_POST['status'] ?? 'pending');
+        if (!in_array($status, ['pending', 'done'], true)) {
+            $status = 'pending';
+        }
 
         if ($dueDate === '' || $title === '' || $description === '') {
             if ($isAjax) {
@@ -680,7 +684,7 @@ class TherapistController extends Controller
             'title' => $title,
             'description' => $description,
             'send_to_patient' => $sendToPatient,
-            'status' => 'pending',
+            'status' => $status,
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
@@ -698,5 +702,150 @@ class TherapistController extends Controller
         }
 
         $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Tarefa cadastrada com sucesso.'));
+    }
+
+    public function showPatientTask(): void
+    {
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_GET['patient_id'] ?? 0);
+        $taskId = (int) ($_GET['id'] ?? 0);
+
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients');
+        }
+
+        $task = $this->taskModel->findByTherapistPatientAndId($therapistId, $patientId, $taskId);
+        if (!$task) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId . '&status=error&msg=' . urlencode('Tarefa não encontrada.'));
+        }
+
+        $this->view('therapist/patients/tasks/show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'patient' => $patient,
+            'task' => $task,
+        ]);
+    }
+
+    public function editPatientTask(): void
+    {
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_GET['patient_id'] ?? 0);
+        $taskId = (int) ($_GET['id'] ?? 0);
+
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients');
+        }
+
+        $task = $this->taskModel->findByTherapistPatientAndId($therapistId, $patientId, $taskId);
+        if (!$task) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId . '&status=error&msg=' . urlencode('Tarefa não encontrada.'));
+        }
+
+        $this->view('therapist/patients/tasks/edit', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'patient' => $patient,
+            'task' => $task,
+        ]);
+    }
+
+    public function updatePatientTask(): void
+    {
+        $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_POST['patient_id'] ?? 0);
+        $taskId = (int) ($_POST['id'] ?? 0);
+
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        $task = $this->taskModel->findByTherapistPatientAndId($therapistId, $patientId, $taskId);
+
+        $redirectHistoryBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId;
+        $redirectEditBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-tasks-edit&patient_id=' . $patientId . '&id=' . $taskId;
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$patient || !$task) {
+            if ($isAjax) {
+                $this->error('Tarefa não encontrada', 404);
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Tarefa não encontrada.'));
+        }
+
+        $dueDate = trim((string) ($_POST['due_date'] ?? ''));
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
+        $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
+        $status = Utils::sanitize($_POST['status'] ?? 'pending');
+        if (!in_array($status, ['pending', 'done'], true)) {
+            $status = 'pending';
+        }
+
+        if ($dueDate === '' || $title === '' || $description === '') {
+            if ($isAjax) {
+                $this->error('Data, título e descrição são obrigatórios');
+            }
+            $this->redirect($redirectWithStatus($redirectEditBase, 'error', 'Data, título e descrição são obrigatórios.'));
+        }
+
+        $updated = $this->taskModel->updateById($taskId, [
+            'due_date' => $dueDate,
+            'title' => $title,
+            'description' => $description,
+            'send_to_patient' => $sendToPatient,
+            'status' => $status,
+        ]);
+
+        if (!$updated) {
+            if ($isAjax) {
+                $this->error('Falha ao atualizar tarefa');
+            }
+            $this->redirect($redirectWithStatus($redirectEditBase, 'error', 'Falha ao atualizar tarefa.'));
+        }
+
+        $this->storeTaskAttachments($therapistId, $patientId, $taskId);
+
+        if ($isAjax) {
+            $this->success('Tarefa atualizada', ['redirect' => $redirectHistoryBase]);
+        }
+
+        $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Tarefa atualizada com sucesso.'));
+    }
+
+    public function deletePatientTask(): void
+    {
+        $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_POST['patient_id'] ?? $_GET['patient_id'] ?? 0);
+        $taskId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        $task = $this->taskModel->findByTherapistPatientAndId($therapistId, $patientId, $taskId);
+        $redirectHistoryBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId;
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$patient || !$task) {
+            if ($isAjax) {
+                $this->error('Tarefa não encontrada', 404);
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Tarefa não encontrada.'));
+        }
+
+        $deleted = $this->taskModel->deleteByTherapistPatientAndId($therapistId, $patientId, $taskId);
+        if (!$deleted) {
+            if ($isAjax) {
+                $this->error('Falha ao excluir tarefa');
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Falha ao excluir tarefa.'));
+        }
+
+        if ($isAjax) {
+            $this->success('Tarefa excluída', ['redirect' => $redirectHistoryBase]);
+        }
+
+        $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Tarefa excluída com sucesso.'));
     }
 }

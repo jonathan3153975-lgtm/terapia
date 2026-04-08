@@ -36,7 +36,7 @@ const FormSubmitGuard = {
       }
       btn.disabled = true;
       if (btn.tagName.toLowerCase() === 'button') {
-        btn.innerHTML = submittingText;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + submittingText;
       } else {
         btn.value = submittingText;
       }

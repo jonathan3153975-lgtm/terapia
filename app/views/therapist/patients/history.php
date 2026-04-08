@@ -12,6 +12,25 @@
     }
     return $date->format('d/m/Y H:i');
   };
+  $formatDateBr = static function (?string $value): string {
+    if (empty($value)) {
+      return '-';
+    }
+    $date = date_create((string) $value);
+    if (!$date) {
+      return htmlspecialchars((string) $value);
+    }
+    return $date->format('d/m/Y');
+  };
+  $taskStatusInfo = static function (array $task): array {
+    if (($task['status'] ?? '') === 'done') {
+      return ['Finalizado', 'text-bg-success'];
+    }
+    if (!empty($task['send_to_patient'])) {
+      return ['Enviado', 'text-bg-info'];
+    }
+    return ['Pendente', 'text-bg-warning'];
+  };
   ?>
 
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -98,17 +117,32 @@
           <?php if (empty($tasks)): ?>
             <p class="text-muted mb-0">Nenhuma tarefa registrada.</p>
           <?php else: ?>
-            <ul class="list-group list-group-flush">
-              <?php foreach ($tasks as $task): ?>
-                <li class="list-group-item px-0">
-                  <div class="d-flex justify-content-between">
-                    <strong><?php echo htmlspecialchars((string) ($task['title'] ?? '-')); ?></strong>
-                    <span class="badge text-bg-light border"><?php echo htmlspecialchars((string) ($task['status'] ?? '-')); ?></span>
-                  </div>
-                  <small class="text-muted">Entrega: <?php echo htmlspecialchars((string) ($task['due_date'] ?? '-')); ?></small>
-                </li>
-              <?php endforeach; ?>
-            </ul>
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead><tr><th>Data</th><th>Título</th><th>Status</th><th>Ações</th></tr></thead>
+                <tbody>
+                <?php foreach ($tasks as $task): ?>
+                  <?php [$taskStatusLabel, $taskStatusClass] = $taskStatusInfo($task); ?>
+                  <tr>
+                    <td><?php echo $formatDateBr($task['due_date'] ?? null); ?></td>
+                    <td><?php echo htmlspecialchars((string) ($task['title'] ?? '-')); ?></td>
+                    <td><span class="badge <?php echo $taskStatusClass; ?>"><?php echo $taskStatusLabel; ?></span></td>
+                    <td class="align-middle">
+                      <div class="d-flex align-items-center gap-1 flex-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-tasks-show&patient_id=<?php echo (int) $patient['id']; ?>&id=<?php echo (int) $task['id']; ?>" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
+                        <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-tasks-edit&patient_id=<?php echo (int) $patient['id']; ?>&id=<?php echo (int) $task['id']; ?>" title="Editar"><i class="fa-solid fa-pen"></i></a>
+                        <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-tasks-delete" class="d-flex m-0 js-delete-task-form" data-task-title="<?php echo htmlspecialchars((string) ($task['title'] ?? '')); ?>">
+                          <input type="hidden" name="patient_id" value="<?php echo (int) $patient['id']; ?>">
+                          <input type="hidden" name="id" value="<?php echo (int) $task['id']; ?>">
+                          <button class="btn btn-sm btn-outline-danger" style="width:32px;padding:0;line-height:1.8;" type="submit" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
           <?php endif; ?>
         </div>
       </div>
@@ -133,9 +167,16 @@
               <label class="form-label">Data</label>
               <input class="form-control" type="date" name="due_date" required>
             </div>
-            <div class="col-md-9">
+            <div class="col-md-6">
               <label class="form-label">Título</label>
               <input class="form-control" name="title" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Status</label>
+              <select class="form-select" name="status">
+                <option value="pending" selected>Pendente</option>
+                <option value="done">Finalizado</option>
+              </select>
             </div>
             <div class="col-12">
               <label class="form-label">Descrição</label>
@@ -263,6 +304,41 @@ window.addEventListener('load', function() {
     Swal.fire({
       title: 'Confirmar exclusão',
       text: 'Deseja realmente excluir o atendimento de ' + sessionDate + '?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, excluir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#c0392b'
+    }).then(function(result) {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      form.dataset.confirmed = '1';
+      form.submit();
+    });
+  });
+
+  $('.js-delete-task-form').on('submit', function(e) {
+    const form = this;
+    if (form.dataset.confirmed === '1') {
+      return;
+    }
+
+    e.preventDefault();
+    const taskTitle = form.getAttribute('data-task-title') || 'esta tarefa';
+
+    if (typeof Swal === 'undefined') {
+      if (confirm('Excluir tarefa "' + taskTitle + '"?')) {
+        form.dataset.confirmed = '1';
+        form.submit();
+      }
+      return;
+    }
+
+    Swal.fire({
+      title: 'Confirmar exclusão',
+      text: 'Deseja realmente excluir a tarefa "' + taskTitle + '"?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sim, excluir',

@@ -39,6 +39,10 @@ match ($action) {
     'patients-appointments-update' => (new TherapistController())->updatePatientAppointment(),
     'patients-appointments-delete' => (new TherapistController())->deletePatientAppointment(),
     'patients-tasks-store' => (new TherapistController())->storePatientTask(),
+    'patients-tasks-show' => (new TherapistController())->showPatientTask(),
+    'patients-tasks-edit' => (new TherapistController())->editPatientTask(),
+    'patients-tasks-update' => (new TherapistController())->updatePatientTask(),
+    'patients-tasks-delete' => (new TherapistController())->deletePatientTask(),
 
     default => (new TherapistController())->dashboard(),
 };
