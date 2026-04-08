@@ -117,6 +117,11 @@ class TherapistController extends Controller
             $addictions = [];
         }
         $addictions = array_values(array_map(static fn ($item) => Utils::sanitize((string) $item), $addictions));
+        $comorbidities = $_POST['comorbidities'] ?? [];
+        if (!is_array($comorbidities)) {
+            $comorbidities = [];
+        }
+        $comorbidities = array_values(array_map(static fn ($item) => Utils::sanitize((string) $item), $comorbidities));
         $redirectListBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients';
         $redirectCreateBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-create';
         $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
@@ -154,13 +159,7 @@ class TherapistController extends Controller
             'depression' => $this->boolPost('depression'),
             'anxiety' => $this->boolPost('anxiety'),
             'medical_treatment' => $medicalTreatment,
-            'alcoholism' => $this->boolPost('alcoholism'),
-            'drugs' => $this->boolPost('drugs'),
-            'convulsions' => $this->boolPost('convulsions'),
-            'smoker' => $this->boolPost('smoker'),
-            'hepatitis' => $this->boolPost('hepatitis'),
-            'hypertension' => $this->boolPost('hypertension'),
-            'diabetes' => $this->boolPost('diabetes'),
+            'comorbidities_json' => empty($comorbidities) ? null : json_encode($comorbidities, JSON_UNESCAPED_UNICODE),
             'addictions_json' => empty($addictions) ? null : json_encode($addictions, JSON_UNESCAPED_UNICODE),
             'had_therapy' => $this->boolPost('had_therapy'),
             'therapy_description' => Utils::sanitize($_POST['therapy_description'] ?? ''),
@@ -218,6 +217,14 @@ class TherapistController extends Controller
             }
         }
 
+        $comorbidities = [];
+        if (!empty($patient['comorbidities_json'])) {
+            $decoded = json_decode((string) $patient['comorbidities_json'], true);
+            if (is_array($decoded)) {
+                $comorbidities = $decoded;
+            }
+        }
+
         $medicalTreatment = (string) ($patient['medical_treatment'] ?? '');
         $patient['depression_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicação depressão:');
         $patient['anxiety_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicação ansiedade:');
@@ -229,6 +236,7 @@ class TherapistController extends Controller
             'appUrl' => Config::get('APP_URL', ''),
             'patient' => $patient,
             'addictions' => $addictions,
+            'comorbidities' => $comorbidities,
         ]);
     }
 
@@ -244,6 +252,11 @@ class TherapistController extends Controller
             $addictions = [];
         }
         $addictions = array_values(array_map(static fn ($item) => Utils::sanitize((string) $item), $addictions));
+        $comorbidities = $_POST['comorbidities'] ?? [];
+        if (!is_array($comorbidities)) {
+            $comorbidities = [];
+        }
+        $comorbidities = array_values(array_map(static fn ($item) => Utils::sanitize((string) $item), $comorbidities));
         $redirectListBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients';
         $redirectEditBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-edit&id=' . $patientId;
         $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
@@ -272,13 +285,7 @@ class TherapistController extends Controller
             'depression' => $this->boolPost('depression'),
             'anxiety' => $this->boolPost('anxiety'),
             'medical_treatment' => $medicalTreatment,
-            'alcoholism' => $this->boolPost('alcoholism'),
-            'drugs' => $this->boolPost('drugs'),
-            'convulsions' => $this->boolPost('convulsions'),
-            'smoker' => $this->boolPost('smoker'),
-            'hepatitis' => $this->boolPost('hepatitis'),
-            'hypertension' => $this->boolPost('hypertension'),
-            'diabetes' => $this->boolPost('diabetes'),
+            'comorbidities_json' => empty($comorbidities) ? null : json_encode($comorbidities, JSON_UNESCAPED_UNICODE),
             'addictions_json' => empty($addictions) ? null : json_encode($addictions, JSON_UNESCAPED_UNICODE),
             'had_therapy' => $this->boolPost('had_therapy'),
             'therapy_description' => Utils::sanitize($_POST['therapy_description'] ?? ''),

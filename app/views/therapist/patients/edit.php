@@ -10,6 +10,7 @@
           <form id="patientEditForm" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-update">
             <input type="hidden" name="id" value="<?php echo (int) $patient['id']; ?>">
             <?php $addictions = $addictions ?? []; ?>
+            <?php $comorbidities = $comorbidities ?? []; ?>
             <div class="row g-3">
               <div class="col-md-6"><label class="form-label">Nome</label><input class="form-control" name="name" required value="<?php echo htmlspecialchars((string) $patient['name']); ?>"></div>
               <div class="col-md-3"><label class="form-label">Data de nascimento</label><input class="form-control" type="date" id="birth_date" name="birth_date" value="<?php echo htmlspecialchars((string) ($patient['birth_date'] ?? '')); ?>"></div>
@@ -50,13 +51,24 @@
               <div class="col-md-7"><label class="form-label">Tratamento médico (descrição)</label><textarea class="form-control" id="medical_treatment_description" name="medical_treatment_description" rows="2"><?php echo htmlspecialchars((string) ($patient['medical_treatment_description'] ?? '')); ?></textarea></div>
               <div class="col-md-5"><label class="form-label">Tratamento médico (medicação)</label><input class="form-control" id="medical_treatment_medication" name="medical_treatment_medication" value="<?php echo htmlspecialchars((string) ($patient['medical_treatment_medication'] ?? '')); ?>"></div>
 
-              <div class="col-md-3 form-check ms-2"><input class="form-check-input" type="checkbox" id="alcoholism" name="alcoholism" <?php echo !empty($patient['alcoholism']) ? 'checked' : ''; ?>><label class="form-check-label" for="alcoholism">Alcoolismo</label></div>
-              <div class="col-md-3 form-check"><input class="form-check-input" type="checkbox" id="drugs" name="drugs" <?php echo !empty($patient['drugs']) ? 'checked' : ''; ?>><label class="form-check-label" for="drugs">Drogas</label></div>
-              <div class="col-md-3 form-check"><input class="form-check-input" type="checkbox" id="convulsions" name="convulsions" <?php echo !empty($patient['convulsions']) ? 'checked' : ''; ?>><label class="form-check-label" for="convulsions">Convulsões</label></div>
-              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="smoker" name="smoker" <?php echo !empty($patient['smoker']) ? 'checked' : ''; ?>><label class="form-check-label" for="smoker">Fumante</label></div>
-              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="hepatitis" name="hepatitis" <?php echo !empty($patient['hepatitis']) ? 'checked' : ''; ?>><label class="form-check-label" for="hepatitis">Hepatite</label></div>
-              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="hypertension" name="hypertension" <?php echo !empty($patient['hypertension']) ? 'checked' : ''; ?>><label class="form-check-label" for="hypertension">Hipertensão</label></div>
-              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="diabetes" name="diabetes" <?php echo !empty($patient['diabetes']) ? 'checked' : ''; ?>><label class="form-check-label" for="diabetes">Diabetes</label></div>
+              <div class="col-12"><h6 class="text-muted mt-1 mb-1">Comorbidades</h6></div>
+              <div class="col-md-6">
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span id="comorbiditiesLabel">Nenhuma selecionada</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </button>
+                  <div class="dropdown-menu p-3 w-100" style="max-height: 240px; overflow-y: auto;">
+                    <div class="form-check"><input class="form-check-input comorbidity-option" type="checkbox" id="com_alcoolismo" name="comorbidities[]" value="Alcoolismo" <?php echo in_array('Alcoolismo', $comorbidities, true) ? 'checked' : ''; ?>><label class="form-check-label" for="com_alcoolismo">Alcoolismo</label></div>
+                    <div class="form-check"><input class="form-check-input comorbidity-option" type="checkbox" id="com_drogas" name="comorbidities[]" value="Drogas" <?php echo in_array('Drogas', $comorbidities, true) ? 'checked' : ''; ?>><label class="form-check-label" for="com_drogas">Drogas</label></div>
+                    <div class="form-check"><input class="form-check-input comorbidity-option" type="checkbox" id="com_convulsoes" name="comorbidities[]" value="Convulsões" <?php echo in_array('Convulsões', $comorbidities, true) ? 'checked' : ''; ?>><label class="form-check-label" for="com_convulsoes">Convulsões</label></div>
+                    <div class="form-check"><input class="form-check-input comorbidity-option" type="checkbox" id="com_fumante" name="comorbidities[]" value="Fumante" <?php echo in_array('Fumante', $comorbidities, true) ? 'checked' : ''; ?>><label class="form-check-label" for="com_fumante">Fumante</label></div>
+                    <div class="form-check"><input class="form-check-input comorbidity-option" type="checkbox" id="com_hepatite" name="comorbidities[]" value="Hepatite" <?php echo in_array('Hepatite', $comorbidities, true) ? 'checked' : ''; ?>><label class="form-check-label" for="com_hepatite">Hepatite</label></div>
+                    <div class="form-check"><input class="form-check-input comorbidity-option" type="checkbox" id="com_hipertensao" name="comorbidities[]" value="Hipertensão" <?php echo in_array('Hipertensão', $comorbidities, true) ? 'checked' : ''; ?>><label class="form-check-label" for="com_hipertensao">Hipertensão</label></div>
+                    <div class="form-check"><input class="form-check-input comorbidity-option" type="checkbox" id="com_diabetes" name="comorbidities[]" value="Diabetes" <?php echo in_array('Diabetes', $comorbidities, true) ? 'checked' : ''; ?>><label class="form-check-label" for="com_diabetes">Diabetes</label></div>
+                  </div>
+                </div>
+              </div>
 
               <div class="col-12"><hr class="my-2"><h5 class="mb-1">Vícios</h5></div>
               <div class="col-md-6">
@@ -143,6 +155,15 @@ window.addEventListener('load', function() {
     option.addEventListener('change', updateAddictionsLabel);
   });
   updateAddictionsLabel();
+
+  const updateComorbiditiesLabel = function() {
+    const selected = Array.from(document.querySelectorAll('.comorbidity-option:checked')).map(function(i) { return i.value; });
+    document.getElementById('comorbiditiesLabel').textContent = selected.length ? selected.join(', ') : 'Nenhuma selecionada';
+  };
+  document.querySelectorAll('.comorbidity-option').forEach(function(option) {
+    option.addEventListener('change', updateComorbiditiesLabel);
+  });
+  updateComorbiditiesLabel();
 
   $('#birth_date').on('change', function(){
     if (!this.value) {

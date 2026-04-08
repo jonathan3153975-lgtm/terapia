@@ -7,6 +7,13 @@ if (!empty($patient['addictions_json'])) {
     $addictions = $decoded;
   }
 }
+$comorbidities = [];
+if (!empty($patient['comorbidities_json'])) {
+  $decoded = json_decode((string) $patient['comorbidities_json'], true);
+  if (is_array($decoded)) {
+    $comorbidities = $decoded;
+  }
+}
 ?>
 <div class="page-wrap">
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -32,15 +39,11 @@ if (!empty($patient['addictions_json'])) {
 
         <div class="col-12"><hr class="my-2"><h5 class="mb-1">Saúde</h5></div>
         <div class="col-md-2"><strong>Depressão:</strong> <?php echo !empty($patient['depression']) ? 'Sim' : 'Não'; ?></div>
-        <div class="col-md-2"><strong>Ansiedade:</strong> <?php echo !empty($patient['anxiety']) ? 'Sim' : 'Nao'; ?></div>
-        <div class="col-md-2"><strong>Alcoolismo:</strong> <?php echo !empty($patient['alcoholism']) ? 'Sim' : 'Nao'; ?></div>
-        <div class="col-md-2"><strong>Drogas:</strong> <?php echo !empty($patient['drugs']) ? 'Sim' : 'Nao'; ?></div>
-        <div class="col-md-2"><strong>Convulsoes:</strong> <?php echo !empty($patient['convulsions']) ? 'Sim' : 'Nao'; ?></div>
-        <div class="col-md-2"><strong>Fumante:</strong> <?php echo !empty($patient['smoker']) ? 'Sim' : 'Nao'; ?></div>
-        <div class="col-md-2"><strong>Hepatite:</strong> <?php echo !empty($patient['hepatitis']) ? 'Sim' : 'Não'; ?></div>
-        <div class="col-md-2"><strong>Hipertensao:</strong> <?php echo !empty($patient['hypertension']) ? 'Sim' : 'Nao'; ?></div>
-        <div class="col-md-2"><strong>Diabetes:</strong> <?php echo !empty($patient['diabetes']) ? 'Sim' : 'Nao'; ?></div>
-        <div class="col-12"><strong>Tratamento/medicacoes:</strong><br><?php echo nl2br(htmlspecialchars((string) ($patient['medical_treatment'] ?? '-'))); ?></div>
+        <div class="col-md-2"><strong>Ansiedade:</strong> <?php echo !empty($patient['anxiety']) ? 'Sim' : 'Não'; ?></div>
+        <div class="col-12"><strong>Tratamento/medicações:</strong><br><?php echo nl2br(htmlspecialchars((string) ($patient['medical_treatment'] ?? '-'))); ?></div>
+
+        <div class="col-12"><hr class="my-2"><h5 class="mb-1">Comorbidades</h5></div>
+        <div class="col-12"><?php echo empty($comorbidities) ? '-' : htmlspecialchars(implode(', ', $comorbidities)); ?></div>
 
         <div class="col-12"><hr class="my-2"><h5 class="mb-1">Vícios</h5></div>
         <div class="col-12"><?php echo empty($addictions) ? '-' : htmlspecialchars(implode(', ', $addictions)); ?></div>

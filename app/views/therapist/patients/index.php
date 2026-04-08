@@ -22,14 +22,14 @@
               <td><?php echo htmlspecialchars($patient['cpf']); ?></td>
               <td><?php echo htmlspecialchars($patient['phone']); ?></td>
               <td><?php echo htmlspecialchars($patient['email'] ?? '-'); ?></td>
-              <td>
-                <div class="btn-group table-actions" role="group">
-                  <a class="btn btn-sm btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-show&id=<?php echo (int) $patient['id']; ?>" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
-                  <a class="btn btn-sm btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-history&id=<?php echo (int) $patient['id']; ?>" title="Histórico"><i class="fa-solid fa-book-medical"></i></a>
-                  <a class="btn btn-sm btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-edit&id=<?php echo (int) $patient['id']; ?>" title="Editar"><i class="fa-solid fa-pen"></i></a>
-                  <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-delete" class="d-inline js-delete-patient-form" data-patient-name="<?php echo htmlspecialchars((string) $patient['name']); ?>">
+              <td class="align-middle">
+                <div class="d-flex align-items-center gap-1 flex-nowrap">
+                  <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-show&id=<?php echo (int) $patient['id']; ?>" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
+                  <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-history&id=<?php echo (int) $patient['id']; ?>" title="Histórico"><i class="fa-solid fa-book-medical"></i></a>
+                  <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-edit&id=<?php echo (int) $patient['id']; ?>" title="Editar"><i class="fa-solid fa-pen"></i></a>
+                  <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-delete" class="d-flex m-0 js-delete-patient-form" data-patient-name="<?php echo htmlspecialchars((string) $patient['name']); ?>">
                     <input type="hidden" name="id" value="<?php echo (int) $patient['id']; ?>">
-                    <button class="btn btn-sm btn-outline-dark" type="submit" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" style="width:32px;padding:0;line-height:1.8;" type="submit" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                   </form>
                 </div>
               </td>
