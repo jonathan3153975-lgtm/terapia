@@ -9,7 +9,7 @@
 </head>
 <body>
 <div class="dashboard-container">
-    <?php $activeMenu = 'therapists'; include __DIR__ . '/../../../partials/sidebar.php'; ?>
+    <?php $activeMenu = 'therapists'; include __DIR__ . '/../../partials/sidebar.php'; ?>
     <div class="main-content">
         <div class="page-content">
             <div class="d-flex justify-content-between align-items-center mb-3">

@@ -9,7 +9,7 @@
 </head>
 <body>
 <div class="dashboard-container">
-    <?php $activeMenu = 'therapists'; include __DIR__ . '/../../../partials/sidebar.php'; ?>
+    <?php $activeMenu = 'therapists'; include __DIR__ . '/../../partials/sidebar.php'; ?>
     <div class="main-content">
         <div class="page-content">
             <a href="<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=therapists" class="btn btn-secondary mb-3">Voltar</a>
@@ -27,7 +27,11 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Senha inicial</label>
-                            <input type="password" class="form-control" name="password" required>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="password" id="therapistPassword" required>
+                                <button type="button" class="btn btn-outline-secondary" id="btnGeneratePassword">Gerar senha</button>
+                            </div>
+                            <small class="text-muted">Use o botao para gerar uma senha forte automaticamente.</small>
                         </div>
                         <button class="btn btn-primary" type="submit">Salvar terapeuta</button>
                     </form>
@@ -39,5 +43,31 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="<?php echo \Config\Config::APP_URL; ?>/public/js/main.js"></script>
+<script>
+function generateStrongPassword(length = 12) {
+    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lower = 'abcdefghijkmnopqrstuvwxyz';
+    const numbers = '23456789';
+    const symbols = '!@#$%*?';
+    const all = upper + lower + numbers + symbols;
+
+    let password = '';
+    password += upper[Math.floor(Math.random() * upper.length)];
+    password += lower[Math.floor(Math.random() * lower.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+
+    for (let i = password.length; i < length; i++) {
+        password += all[Math.floor(Math.random() * all.length)];
+    }
+
+    return password.split('').sort(() => Math.random() - 0.5).join('');
+}
+
+$('#btnGeneratePassword').on('click', function() {
+    const password = generateStrongPassword(12);
+    $('#therapistPassword').val(password).trigger('change');
+});
+</script>
 </body>
 </html>

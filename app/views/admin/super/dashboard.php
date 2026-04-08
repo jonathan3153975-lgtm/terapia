@@ -10,7 +10,7 @@
 </head>
 <body>
 <div class="dashboard-container">
-    <?php $activeMenu = 'dashboard'; include __DIR__ . '/../../partials/sidebar.php'; ?>
+    <?php $activeMenu = 'dashboard'; include __DIR__ . '/../partials/sidebar.php'; ?>
     <div class="main-content">
         <header class="topbar">
             <button class="btn-menu" id="menuBtn"><i class="fas fa-bars"></i></button>
