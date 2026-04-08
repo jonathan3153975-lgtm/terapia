@@ -353,12 +353,14 @@ class TherapistController extends Controller
 
         $appointments = $this->appointmentModel->listByPatient($patientId);
         $tasks = $this->taskModel->listByPatient($patientId);
+        $taskFiles = $this->fileModel->listByPatientGroupedByTask($patientId);
 
         $this->view('therapist/patients/history', [
             'appUrl' => Config::get('APP_URL', ''),
             'patient' => $patient,
             'appointments' => $appointments,
             'tasks' => $tasks,
+            'taskFiles' => $taskFiles,
         ]);
     }
 
@@ -720,10 +722,13 @@ class TherapistController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId . '&status=error&msg=' . urlencode('Tarefa não encontrada.'));
         }
 
+        $files = $this->fileModel->listByTask($taskId);
+
         $this->view('therapist/patients/tasks/show', [
             'appUrl' => Config::get('APP_URL', ''),
             'patient' => $patient,
             'task' => $task,
+            'files' => $files,
         ]);
     }
 

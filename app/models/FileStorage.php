@@ -32,4 +32,26 @@ class FileStorage extends Model
         $row = $stmt->fetch();
         return (int) ($row['total'] ?? 0);
     }
+
+    public function listByTask(int $taskId): array
+    {
+        $stmt = $this->query('SELECT * FROM files WHERE task_id = ? ORDER BY created_at ASC', [$taskId]);
+        if (!$stmt) {
+            return [];
+        }
+        return $stmt->fetchAll();
+    }
+
+    public function listByPatientGroupedByTask(int $patientId): array
+    {
+        $stmt = $this->query('SELECT * FROM files WHERE patient_id = ? ORDER BY task_id, created_at ASC', [$patientId]);
+        if (!$stmt) {
+            return [];
+        }
+        $grouped = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $grouped[(int) $row['task_id']][] = $row;
+        }
+        return $grouped;
+    }
 }

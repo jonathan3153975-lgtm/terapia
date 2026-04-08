@@ -29,6 +29,28 @@
             <?php echo (string) ($task['description'] ?? ''); ?>
           </div>
         </div>
+        <?php if (!empty($files)): ?>
+        <div class="col-12">
+          <strong>Anexos:</strong>
+          <div class="mt-2 d-flex flex-wrap gap-2">
+            <?php foreach ($files as $fi): ?>
+              <?php if (($fi['file_type'] ?? '') === 'link'): ?>
+                <a href="<?php echo htmlspecialchars((string) $fi['file_path']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-info btn-sm">
+                  <i class="fa-solid fa-link me-1"></i><?php echo htmlspecialchars((string) $fi['file_name']); ?>
+                </a>
+              <?php elseif (($fi['file_type'] ?? '') === 'pdf'): ?>
+                <a href="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $fi['file_path']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-danger btn-sm">
+                  <i class="fa-solid fa-file-pdf me-1"></i><?php echo htmlspecialchars((string) $fi['file_name']); ?>
+                </a>
+              <?php else: ?>
+                <a href="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $fi['file_path']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm">
+                  <i class="fa-solid fa-image me-1"></i><?php echo htmlspecialchars((string) $fi['file_name']); ?>
+                </a>
+              <?php endif; ?>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>

@@ -119,14 +119,32 @@
           <?php else: ?>
             <div class="table-responsive">
               <table class="table align-middle mb-0">
-                <thead><tr><th>Data</th><th>Título</th><th>Status</th><th>Ações</th></tr></thead>
+                <thead><tr><th>Data</th><th>Título</th><th>Status</th><th>Anexos</th><th>Ações</th></tr></thead>
                 <tbody>
                 <?php foreach ($tasks as $task): ?>
                   <?php [$taskStatusLabel, $taskStatusClass] = $taskStatusInfo($task); ?>
+                  <?php $taskAttachments = $taskFiles[(int) $task['id']] ?? []; ?>
                   <tr>
                     <td><?php echo $formatDateBr($task['due_date'] ?? null); ?></td>
                     <td><?php echo htmlspecialchars((string) ($task['title'] ?? '-')); ?></td>
                     <td><span class="badge <?php echo $taskStatusClass; ?>"><?php echo $taskStatusLabel; ?></span></td>
+                    <td>
+                      <?php if (!empty($taskAttachments)): ?>
+                        <div class="d-flex gap-1 flex-wrap">
+                          <?php foreach ($taskAttachments as $fi): ?>
+                            <?php if (($fi['file_type'] ?? '') === 'link'): ?>
+                              <a href="<?php echo htmlspecialchars((string) $fi['file_path']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-info" style="padding:2px 6px;" title="<?php echo htmlspecialchars((string) $fi['file_name']); ?>"><i class="fa-solid fa-link"></i></a>
+                            <?php elseif (($fi['file_type'] ?? '') === 'pdf'): ?>
+                              <a href="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $fi['file_path']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-danger" style="padding:2px 6px;" title="<?php echo htmlspecialchars((string) $fi['file_name']); ?>"><i class="fa-solid fa-file-pdf"></i></a>
+                            <?php else: ?>
+                              <a href="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $fi['file_path']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary" style="padding:2px 6px;" title="<?php echo htmlspecialchars((string) $fi['file_name']); ?>"><i class="fa-solid fa-image"></i></a>
+                            <?php endif; ?>
+                          <?php endforeach; ?>
+                        </div>
+                      <?php else: ?>
+                        <span class="text-muted small">-</span>
+                      <?php endif; ?>
+                    </td>
                     <td class="align-middle">
                       <div class="d-flex align-items-center gap-1 flex-nowrap">
                         <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-tasks-show&patient_id=<?php echo (int) $patient['id']; ?>&id=<?php echo (int) $task['id']; ?>" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
@@ -151,7 +169,7 @@
 </div>
 
 <div class="modal fade" id="newTaskModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-lg-down">
     <div class="modal-content">
       <div class="modal-header border-0 pb-0">
         <h5 class="modal-title">Cadastrar nova tarefa</h5>
@@ -180,7 +198,7 @@
             </div>
             <div class="col-12">
               <label class="form-label">Descrição</label>
-              <div id="taskDescriptionEditor" style="height: 260px;"></div>
+              <div id="taskDescriptionEditor" style="min-height: 180px; max-height: 40vh;"></div>
             </div>
             <div class="col-md-6">
               <label class="form-label">Anexos (PDF e imagens)</label>
