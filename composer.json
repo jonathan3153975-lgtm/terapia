@@ -1,0 +1,17 @@
+{
+  "name": "terapia/sistema-saas",
+  "description": "Sistema SaaS de Gestao para Consultorios de Terapia Sistemica",
+  "type": "project",
+  "require": {
+    "php": ">=8.1",
+    "ext-pdo": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/",
+      "Classes\\": "classes/",
+      "Config\\": "config/",
+      "Helpers\\": "helpers/"
+    }
+  }
+}

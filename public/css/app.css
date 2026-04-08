@@ -1,0 +1,5 @@
+body { background: #f6f8fb; }
+.navbar-brand { font-weight: 700; letter-spacing: .4px; }
+.card-kpi h2 { margin: 0; font-size: 1.8rem; }
+.table-actions .btn { margin-right: .3rem; }
+.page-wrap { padding: 24px 0 48px; }
