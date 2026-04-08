@@ -22,7 +22,39 @@
               <div class="col-md-4"><label class="form-label">Bairro</label><input class="form-control" id="neighborhood" name="neighborhood"></div>
               <div class="col-md-3"><label class="form-label">Cidade</label><input class="form-control" id="city" name="city"></div>
               <div class="col-md-1"><label class="form-label">UF</label><input class="form-control" id="state" name="state"></div>
-              <div class="col-md-12"><label class="form-label">Queixa principal</label><textarea class="form-control" name="main_complaint" rows="2"></textarea></div>
+
+              <div class="col-12"><hr class="my-2"><h5 class="mb-1">Saude</h5></div>
+              <div class="col-md-3 form-check ms-2"><input class="form-check-input" type="checkbox" id="depression" name="depression"><label class="form-check-label" for="depression">Depressao</label></div>
+              <div class="col-md-8"><label class="form-label">Medicacao para depressao</label><input class="form-control" name="depression_medication"></div>
+              <div class="col-md-3 form-check ms-2"><input class="form-check-input" type="checkbox" id="anxiety" name="anxiety"><label class="form-check-label" for="anxiety">Ansiedade</label></div>
+              <div class="col-md-8"><label class="form-label">Medicacao para ansiedade</label><input class="form-control" name="anxiety_medication"></div>
+              <div class="col-md-8"><label class="form-label">Tratamento medico (descricao)</label><textarea class="form-control" name="medical_treatment_description" rows="2"></textarea></div>
+              <div class="col-md-4"><label class="form-label">Tratamento medico (medicacao)</label><input class="form-control" name="medical_treatment_medication"></div>
+              <div class="col-md-3 form-check ms-2"><input class="form-check-input" type="checkbox" id="alcoholism" name="alcoholism"><label class="form-check-label" for="alcoholism">Alcoolismo</label></div>
+              <div class="col-md-3 form-check"><input class="form-check-input" type="checkbox" id="drugs" name="drugs"><label class="form-check-label" for="drugs">Drogas</label></div>
+              <div class="col-md-3 form-check"><input class="form-check-input" type="checkbox" id="convulsions" name="convulsions"><label class="form-check-label" for="convulsions">Convulsoes</label></div>
+              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="smoker" name="smoker"><label class="form-check-label" for="smoker">Fumante</label></div>
+              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="hepatitis" name="hepatitis"><label class="form-check-label" for="hepatitis">Hepatite</label></div>
+              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="hypertension" name="hypertension"><label class="form-check-label" for="hypertension">Hipertensao</label></div>
+              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="diabetes" name="diabetes"><label class="form-check-label" for="diabetes">Diabetes</label></div>
+
+              <div class="col-12"><hr class="my-2"><h5 class="mb-1">Vicios</h5><small class="text-muted">Selecione um ou mais</small></div>
+              <div class="col-md-2 form-check ms-2"><input class="form-check-input" type="checkbox" id="vicio_drogas" name="addictions[]" value="Drogas"><label class="form-check-label" for="vicio_drogas">Drogas</label></div>
+              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="vicio_jogos" name="addictions[]" value="Jogos"><label class="form-check-label" for="vicio_jogos">Jogos</label></div>
+              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="vicio_sexo" name="addictions[]" value="Sexo"><label class="form-check-label" for="vicio_sexo">Sexo</label></div>
+              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="vicio_pornografia" name="addictions[]" value="Pornografia"><label class="form-check-label" for="vicio_pornografia">Pornografia</label></div>
+              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="vicio_telas" name="addictions[]" value="Telas"><label class="form-check-label" for="vicio_telas">Telas</label></div>
+              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="vicio_compras" name="addictions[]" value="Compras"><label class="form-check-label" for="vicio_compras">Compras</label></div>
+              <div class="col-md-2 form-check ms-2"><input class="form-check-input" type="checkbox" id="vicio_comida" name="addictions[]" value="Comida"><label class="form-check-label" for="vicio_comida">Comida</label></div>
+              <div class="col-md-2 form-check"><input class="form-check-input" type="checkbox" id="vicio_outros" name="addictions[]" value="Outros"><label class="form-check-label" for="vicio_outros">Outros</label></div>
+
+              <div class="col-12"><hr class="my-2"><h5 class="mb-1">Outros</h5></div>
+              <div class="col-md-3 form-check ms-2"><input class="form-check-input" type="checkbox" id="had_therapy" name="had_therapy"><label class="form-check-label" for="had_therapy">Ja fez terapia?</label></div>
+              <div class="col-md-8"><label class="form-label">Descricao terapia anterior</label><textarea class="form-control" name="therapy_description" rows="2"></textarea></div>
+              <div class="col-md-4"><label class="form-label">Data inicio tratamento</label><input class="form-control" type="date" name="treatment_start_date"></div>
+              <div class="col-md-4"><label class="form-label">Menstruacao</label><input class="form-control" name="menstruation"></div>
+              <div class="col-md-4"><label class="form-label">Intestino</label><input class="form-control" name="bowel"></div>
+              <div class="col-md-12"><label class="form-label">Queixa principal</label><textarea class="form-control" name="main_complaint" rows="3"></textarea></div>
             </div>
             <div class="mt-3 d-flex gap-2">
               <a class="btn btn-light" href="<?php echo $appUrl; ?>/dashboard.php?action=patients">Voltar</a>

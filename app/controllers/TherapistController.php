@@ -60,6 +60,45 @@ class TherapistController extends Controller
         $this->view('therapist/patients/create', ['appUrl' => Config::get('APP_URL', '')]);
     }
 
+    private function boolPost(string $key): int
+    {
+        return isset($_POST[$key]) ? 1 : 0;
+    }
+
+    private function buildMedicalTreatmentText(): string
+    {
+        $description = Utils::sanitize($_POST['medical_treatment_description'] ?? '');
+        $treatmentMedication = Utils::sanitize($_POST['medical_treatment_medication'] ?? '');
+        $depressionMedication = Utils::sanitize($_POST['depression_medication'] ?? '');
+        $anxietyMedication = Utils::sanitize($_POST['anxiety_medication'] ?? '');
+
+        $parts = [];
+        if ($description !== '') {
+            $parts[] = 'Tratamento medico: ' . $description;
+        }
+        if ($treatmentMedication !== '') {
+            $parts[] = 'Medicacao tratamento: ' . $treatmentMedication;
+        }
+        if ($depressionMedication !== '') {
+            $parts[] = 'Medicacao depressao: ' . $depressionMedication;
+        }
+        if ($anxietyMedication !== '') {
+            $parts[] = 'Medicacao ansiedade: ' . $anxietyMedication;
+        }
+
+        return implode("\n", $parts);
+    }
+
+    private function extractMedicalLine(string $medicalTreatment, string $prefix): string
+    {
+        foreach (preg_split('/\r\n|\r|\n/', $medicalTreatment) as $line) {
+            if (str_starts_with($line, $prefix)) {
+                return trim((string) substr($line, strlen($prefix)));
+            }
+        }
+        return '';
+    }
+
     public function storePatient(): void
     {
         $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
@@ -68,6 +107,12 @@ class TherapistController extends Controller
         $cpf = Validator::onlyDigits($_POST['cpf'] ?? '');
         $phone = Validator::onlyDigits($_POST['phone'] ?? '');
         $email = Utils::sanitize($_POST['email'] ?? '');
+        $medicalTreatment = $this->buildMedicalTreatmentText();
+        $addictions = $_POST['addictions'] ?? [];
+        if (!is_array($addictions)) {
+            $addictions = [];
+        }
+        $addictions = array_values(array_map(static fn ($item) => Utils::sanitize((string) $item), $addictions));
         $redirectListBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients';
         $redirectCreateBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-create';
         $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
@@ -102,6 +147,22 @@ class TherapistController extends Controller
             'neighborhood' => Utils::sanitize($_POST['neighborhood'] ?? ''),
             'city' => Utils::sanitize($_POST['city'] ?? ''),
             'state' => Utils::sanitize($_POST['state'] ?? ''),
+            'depression' => $this->boolPost('depression'),
+            'anxiety' => $this->boolPost('anxiety'),
+            'medical_treatment' => $medicalTreatment,
+            'alcoholism' => $this->boolPost('alcoholism'),
+            'drugs' => $this->boolPost('drugs'),
+            'convulsions' => $this->boolPost('convulsions'),
+            'smoker' => $this->boolPost('smoker'),
+            'hepatitis' => $this->boolPost('hepatitis'),
+            'hypertension' => $this->boolPost('hypertension'),
+            'diabetes' => $this->boolPost('diabetes'),
+            'addictions_json' => empty($addictions) ? null : json_encode($addictions, JSON_UNESCAPED_UNICODE),
+            'had_therapy' => $this->boolPost('had_therapy'),
+            'therapy_description' => Utils::sanitize($_POST['therapy_description'] ?? ''),
+            'treatment_start_date' => $_POST['treatment_start_date'] ?? null,
+            'menstruation' => Utils::sanitize($_POST['menstruation'] ?? ''),
+            'bowel' => Utils::sanitize($_POST['bowel'] ?? ''),
             'main_complaint' => Utils::sanitize($_POST['main_complaint'] ?? ''),
             'status' => 'active',
             'created_at' => date('Y-m-d H:i:s'),
@@ -145,9 +206,24 @@ class TherapistController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients');
         }
 
+        $addictions = [];
+        if (!empty($patient['addictions_json'])) {
+            $decoded = json_decode((string) $patient['addictions_json'], true);
+            if (is_array($decoded)) {
+                $addictions = $decoded;
+            }
+        }
+
+        $medicalTreatment = (string) ($patient['medical_treatment'] ?? '');
+        $patient['depression_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicacao depressao:');
+        $patient['anxiety_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicacao ansiedade:');
+        $patient['medical_treatment_description'] = $this->extractMedicalLine($medicalTreatment, 'Tratamento medico:');
+        $patient['medical_treatment_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicacao tratamento:');
+
         $this->view('therapist/patients/edit', [
             'appUrl' => Config::get('APP_URL', ''),
             'patient' => $patient,
+            'addictions' => $addictions,
         ]);
     }
 
@@ -157,6 +233,12 @@ class TherapistController extends Controller
         $therapistId = (int) Auth::id();
         $patientId = (int) ($_POST['id'] ?? 0);
         $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        $medicalTreatment = $this->buildMedicalTreatmentText();
+        $addictions = $_POST['addictions'] ?? [];
+        if (!is_array($addictions)) {
+            $addictions = [];
+        }
+        $addictions = array_values(array_map(static fn ($item) => Utils::sanitize((string) $item), $addictions));
         $redirectListBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients';
         $redirectEditBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-edit&id=' . $patientId;
         $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
@@ -172,10 +254,32 @@ class TherapistController extends Controller
 
         $updated = $this->patientModel->updateById($patientId, [
             'name' => Utils::sanitize($_POST['name'] ?? ''),
+            'birth_date' => $_POST['birth_date'] ?? null,
             'phone' => Validator::onlyDigits($_POST['phone'] ?? ''),
             'email' => Utils::sanitize($_POST['email'] ?? ''),
             'marital_status' => Utils::sanitize($_POST['marital_status'] ?? ''),
             'children' => Utils::sanitize($_POST['children'] ?? ''),
+            'cep' => Validator::onlyDigits($_POST['cep'] ?? ''),
+            'address' => Utils::sanitize($_POST['address'] ?? ''),
+            'neighborhood' => Utils::sanitize($_POST['neighborhood'] ?? ''),
+            'city' => Utils::sanitize($_POST['city'] ?? ''),
+            'state' => Utils::sanitize($_POST['state'] ?? ''),
+            'depression' => $this->boolPost('depression'),
+            'anxiety' => $this->boolPost('anxiety'),
+            'medical_treatment' => $medicalTreatment,
+            'alcoholism' => $this->boolPost('alcoholism'),
+            'drugs' => $this->boolPost('drugs'),
+            'convulsions' => $this->boolPost('convulsions'),
+            'smoker' => $this->boolPost('smoker'),
+            'hepatitis' => $this->boolPost('hepatitis'),
+            'hypertension' => $this->boolPost('hypertension'),
+            'diabetes' => $this->boolPost('diabetes'),
+            'addictions_json' => empty($addictions) ? null : json_encode($addictions, JSON_UNESCAPED_UNICODE),
+            'had_therapy' => $this->boolPost('had_therapy'),
+            'therapy_description' => Utils::sanitize($_POST['therapy_description'] ?? ''),
+            'treatment_start_date' => $_POST['treatment_start_date'] ?? null,
+            'menstruation' => Utils::sanitize($_POST['menstruation'] ?? ''),
+            'bowel' => Utils::sanitize($_POST['bowel'] ?? ''),
             'main_complaint' => Utils::sanitize($_POST['main_complaint'] ?? ''),
         ]);
 
