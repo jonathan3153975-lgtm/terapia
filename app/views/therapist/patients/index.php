@@ -12,7 +12,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table mb-0">
-        <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Email</th><th>Acoes</th></tr></thead>
+        <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Ações</th></tr></thead>
         <tbody>
           <?php if (empty($patients)): ?>
             <tr><td colspan="5" class="text-center py-4 text-muted">Nenhum paciente cadastrado.</td></tr>
@@ -25,7 +25,7 @@
               <td>
                 <div class="btn-group table-actions" role="group">
                   <a class="btn btn-sm btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-show&id=<?php echo (int) $patient['id']; ?>" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
-                  <a class="btn btn-sm btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-history&id=<?php echo (int) $patient['id']; ?>" title="Historico"><i class="fa-solid fa-book-medical"></i></a>
+                  <a class="btn btn-sm btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-history&id=<?php echo (int) $patient['id']; ?>" title="Histórico"><i class="fa-solid fa-book-medical"></i></a>
                   <a class="btn btn-sm btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-edit&id=<?php echo (int) $patient['id']; ?>" title="Editar"><i class="fa-solid fa-pen"></i></a>
                   <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-delete" class="d-inline js-delete-patient-form" data-patient-name="<?php echo htmlspecialchars((string) $patient['name']); ?>">
                     <input type="hidden" name="id" value="<?php echo (int) $patient['id']; ?>">

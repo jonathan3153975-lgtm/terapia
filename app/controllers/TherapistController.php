@@ -67,6 +67,10 @@ class TherapistController extends Controller
 
     private function buildMedicalTreatmentText(): string
     {
+        if (!$this->boolPost('has_medical_treatment')) {
+            return '';
+        }
+
         $description = Utils::sanitize($_POST['medical_treatment_description'] ?? '');
         $treatmentMedication = Utils::sanitize($_POST['medical_treatment_medication'] ?? '');
         $depressionMedication = Utils::sanitize($_POST['depression_medication'] ?? '');
@@ -74,16 +78,16 @@ class TherapistController extends Controller
 
         $parts = [];
         if ($description !== '') {
-            $parts[] = 'Tratamento medico: ' . $description;
+            $parts[] = 'Tratamento médico: ' . $description;
         }
         if ($treatmentMedication !== '') {
-            $parts[] = 'Medicacao tratamento: ' . $treatmentMedication;
+            $parts[] = 'Medicação tratamento: ' . $treatmentMedication;
         }
         if ($depressionMedication !== '') {
-            $parts[] = 'Medicacao depressao: ' . $depressionMedication;
+            $parts[] = 'Medicação depressão: ' . $depressionMedication;
         }
         if ($anxietyMedication !== '') {
-            $parts[] = 'Medicacao ansiedade: ' . $anxietyMedication;
+            $parts[] = 'Medicação ansiedade: ' . $anxietyMedication;
         }
 
         return implode("\n", $parts);
@@ -121,23 +125,23 @@ class TherapistController extends Controller
 
         if ($name === '' || $cpf === '' || $phone === '') {
             if ($isAjax) {
-                $this->error('Nome, CPF e telefone sao obrigatorios');
+                $this->error('Nome, CPF e telefone são obrigatórios');
             }
-            $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'Nome, CPF e telefone sao obrigatorios.'));
+            $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'Nome, CPF e telefone são obrigatórios.'));
         }
 
         if (!Validator::validateCPF($cpf)) {
             if ($isAjax) {
-                $this->error('CPF invalido');
+                $this->error('CPF inválido');
             }
-            $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'CPF invalido.'));
+            $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'CPF inválido.'));
         }
 
         $inserted = $this->patientModel->insert([
             'therapist_id' => $therapistId,
             'name' => $name,
             'cpf' => $cpf,
-            'birth_date' => $_POST['birth_date'] ?? null,
+            'birth_date' => trim((string) ($_POST['birth_date'] ?? '')) !== '' ? $_POST['birth_date'] : null,
             'phone' => $phone,
             'email' => $email,
             'marital_status' => Utils::sanitize($_POST['marital_status'] ?? ''),
@@ -160,7 +164,7 @@ class TherapistController extends Controller
             'addictions_json' => empty($addictions) ? null : json_encode($addictions, JSON_UNESCAPED_UNICODE),
             'had_therapy' => $this->boolPost('had_therapy'),
             'therapy_description' => Utils::sanitize($_POST['therapy_description'] ?? ''),
-            'treatment_start_date' => $_POST['treatment_start_date'] ?? null,
+            'treatment_start_date' => trim((string) ($_POST['treatment_start_date'] ?? '')) !== '' ? $_POST['treatment_start_date'] : null,
             'menstruation' => Utils::sanitize($_POST['menstruation'] ?? ''),
             'bowel' => Utils::sanitize($_POST['bowel'] ?? ''),
             'main_complaint' => Utils::sanitize($_POST['main_complaint'] ?? ''),
@@ -215,10 +219,11 @@ class TherapistController extends Controller
         }
 
         $medicalTreatment = (string) ($patient['medical_treatment'] ?? '');
-        $patient['depression_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicacao depressao:');
-        $patient['anxiety_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicacao ansiedade:');
-        $patient['medical_treatment_description'] = $this->extractMedicalLine($medicalTreatment, 'Tratamento medico:');
-        $patient['medical_treatment_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicacao tratamento:');
+        $patient['depression_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicação depressão:');
+        $patient['anxiety_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicação ansiedade:');
+        $patient['medical_treatment_description'] = $this->extractMedicalLine($medicalTreatment, 'Tratamento médico:');
+        $patient['medical_treatment_medication'] = $this->extractMedicalLine($medicalTreatment, 'Medicação tratamento:');
+        $patient['has_medical_treatment'] = ($patient['medical_treatment_description'] !== '' || $patient['medical_treatment_medication'] !== '' || $patient['depression_medication'] !== '' || $patient['anxiety_medication'] !== '');
 
         $this->view('therapist/patients/edit', [
             'appUrl' => Config::get('APP_URL', ''),
@@ -247,14 +252,14 @@ class TherapistController extends Controller
 
         if (!$patient) {
             if ($isAjax) {
-                $this->error('Paciente nao encontrado', 404);
+                $this->error('Paciente não encontrado', 404);
             }
-            $this->redirect($redirectWithStatus($redirectListBase, 'error', 'Paciente nao encontrado.'));
+            $this->redirect($redirectWithStatus($redirectListBase, 'error', 'Paciente não encontrado.'));
         }
 
         $updated = $this->patientModel->updateById($patientId, [
             'name' => Utils::sanitize($_POST['name'] ?? ''),
-            'birth_date' => $_POST['birth_date'] ?? null,
+            'birth_date' => trim((string) ($_POST['birth_date'] ?? '')) !== '' ? $_POST['birth_date'] : null,
             'phone' => Validator::onlyDigits($_POST['phone'] ?? ''),
             'email' => Utils::sanitize($_POST['email'] ?? ''),
             'marital_status' => Utils::sanitize($_POST['marital_status'] ?? ''),
@@ -277,7 +282,7 @@ class TherapistController extends Controller
             'addictions_json' => empty($addictions) ? null : json_encode($addictions, JSON_UNESCAPED_UNICODE),
             'had_therapy' => $this->boolPost('had_therapy'),
             'therapy_description' => Utils::sanitize($_POST['therapy_description'] ?? ''),
-            'treatment_start_date' => $_POST['treatment_start_date'] ?? null,
+            'treatment_start_date' => trim((string) ($_POST['treatment_start_date'] ?? '')) !== '' ? $_POST['treatment_start_date'] : null,
             'menstruation' => Utils::sanitize($_POST['menstruation'] ?? ''),
             'bowel' => Utils::sanitize($_POST['bowel'] ?? ''),
             'main_complaint' => Utils::sanitize($_POST['main_complaint'] ?? ''),
@@ -310,9 +315,9 @@ class TherapistController extends Controller
 
         if (!$patient) {
             if ($isAjax) {
-                $this->error('Paciente nao encontrado', 404);
+                $this->error('Paciente não encontrado', 404);
             }
-            $this->redirect($redirectWithStatus($redirectListBase, 'error', 'Paciente nao encontrado.'));
+            $this->redirect($redirectWithStatus($redirectListBase, 'error', 'Paciente não encontrado.'));
         }
 
         $deleted = (bool) $this->patientModel->query('DELETE FROM patients WHERE id = ? AND therapist_id = ?', [$patientId, $therapistId]);
@@ -324,10 +329,10 @@ class TherapistController extends Controller
         }
 
         if ($isAjax) {
-            $this->success('Paciente excluido', ['redirect' => $redirectListBase]);
+            $this->success('Paciente excluído', ['redirect' => $redirectListBase]);
         }
 
-        $this->redirect($redirectWithStatus($redirectListBase, 'success', 'Paciente excluido com sucesso.'));
+        $this->redirect($redirectWithStatus($redirectListBase, 'success', 'Paciente excluído com sucesso.'));
     }
 
     public function historyPatient(): void
