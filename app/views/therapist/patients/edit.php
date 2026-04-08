@@ -195,13 +195,23 @@ window.addEventListener('load', function() {
   $('#patientEditForm').on('submit', function(e){
     e.preventDefault();
     const form = this;
+    if (!window.FormSubmitGuard.lock(form, 'Salvando...')) {
+      return;
+    }
     $.ajax({
       url: form.action,
       method: 'POST',
       data: $(form).serialize(),
       headers: {'X-Requested-With':'XMLHttpRequest'},
-      success: function(res){ if (res.success) { window.location.href = res.redirect; return; } Swal.fire('Erro', res.message || 'Falha ao atualizar', 'error'); },
-      error: function(xhr){ Swal.fire('Erro', xhr.responseJSON?.message || 'Falha ao atualizar', 'error'); }
+      success: function(res){
+        if (res.success) { window.location.href = res.redirect; return; }
+        window.FormSubmitGuard.unlock(form);
+        Swal.fire('Erro', res.message || 'Falha ao atualizar', 'error');
+      },
+      error: function(xhr){
+        window.FormSubmitGuard.unlock(form);
+        Swal.fire('Erro', xhr.responseJSON?.message || 'Falha ao atualizar', 'error');
+      }
     });
   });
 });

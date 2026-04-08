@@ -56,10 +56,17 @@ window.addEventListener('load', function() {
   quill.root.innerHTML = $('#historyInput').val() || '';
 
   $('#appointmentEditForm').on('submit', function(e) {
+    const form = this;
+    if (!window.FormSubmitGuard.lock(form, 'Salvando...')) {
+      e.preventDefault();
+      return;
+    }
+
     const html = quill.root.innerHTML;
     const plain = quill.getText().trim();
     if (!plain) {
       e.preventDefault();
+      window.FormSubmitGuard.unlock(form);
       Swal.fire('Campo obrigatório', 'Preencha o histórico do atendimento.', 'warning');
       return;
     }

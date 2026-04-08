@@ -36,6 +36,9 @@ window.addEventListener('load', function() {
   $('#therapistPasswordForm').on('submit', function(e){
     e.preventDefault();
     const form = this;
+    if (!window.FormSubmitGuard.lock(form, 'Salvando...')) {
+      return;
+    }
     $.ajax({
       url: form.action,
       method: 'POST',
@@ -43,9 +46,13 @@ window.addEventListener('load', function() {
       headers: {'X-Requested-With':'XMLHttpRequest'},
       success: function(res){
         if (res.success) { window.location.href = res.redirect; return; }
+        window.FormSubmitGuard.unlock(form);
         Swal.fire('Erro', res.message || 'Falha ao alterar senha', 'error');
       },
-      error: function(xhr){ Swal.fire('Erro', xhr.responseJSON?.message || 'Falha ao alterar senha', 'error'); }
+      error: function(xhr){
+        window.FormSubmitGuard.unlock(form);
+        Swal.fire('Erro', xhr.responseJSON?.message || 'Falha ao alterar senha', 'error');
+      }
     });
   });
 });

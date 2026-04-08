@@ -40,6 +40,9 @@ window.addEventListener('load', function() {
   $('#loginForm').on('submit', function(e){
     e.preventDefault();
     const form = this;
+    if (!window.FormSubmitGuard.lock(form, 'Entrando...')) {
+      return;
+    }
     $.ajax({
       url: form.action,
       method: 'POST',
@@ -50,9 +53,11 @@ window.addEventListener('load', function() {
           window.location.href = res.redirect;
           return;
         }
+        window.FormSubmitGuard.unlock(form);
         Swal.fire('Erro', res.message || 'Falha no login', 'error');
       },
       error: function(xhr){
+        window.FormSubmitGuard.unlock(form);
         const msg = xhr.responseJSON?.message || 'Falha no login';
         Swal.fire('Erro', msg, 'error');
       }

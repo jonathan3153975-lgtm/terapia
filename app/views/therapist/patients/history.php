@@ -52,10 +52,10 @@
   </div>
 
   <div class="row g-3">
-    <div class="col-lg-6">
-      <div class="card h-100">
+    <div class="col-12">
+      <div class="card">
         <div class="card-header bg-transparent"><strong>Atendimentos</strong></div>
-        <div class="card-body">
+        <div class="card-body" style="max-height: 42vh; overflow: auto;">
           <?php if (empty($appointments)): ?>
             <p class="text-muted mb-0">Nenhum atendimento registrado.</p>
           <?php else: ?>
@@ -88,13 +88,13 @@
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="card h-100">
+    <div class="col-12">
+      <div class="card">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
           <strong>Tarefas</strong>
           <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#newTaskModal"><i class="fa-solid fa-list-check"></i> Nova tarefa</button>
         </div>
-        <div class="card-body">
+        <div class="card-body" style="max-height: 42vh; overflow: auto;">
           <?php if (empty($tasks)): ?>
             <p class="text-muted mb-0">Nenhuma tarefa registrada.</p>
           <?php else: ?>
@@ -117,29 +117,29 @@
 </div>
 
 <div class="modal fade" id="newTaskModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header">
+      <div class="modal-header border-0 pb-0">
         <h5 class="modal-title">Cadastrar nova tarefa</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
       <form id="taskForm" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-tasks-store" enctype="multipart/form-data">
-        <div class="modal-body">
+        <div class="modal-body pt-3">
           <input type="hidden" name="patient_id" value="<?php echo (int) $patient['id']; ?>">
           <input type="hidden" name="description" id="taskDescriptionInput">
 
           <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label">Data</label>
               <input class="form-control" type="date" name="due_date" required>
             </div>
-            <div class="col-md-8">
+            <div class="col-md-9">
               <label class="form-label">Título</label>
               <input class="form-control" name="title" required>
             </div>
             <div class="col-12">
               <label class="form-label">Descrição</label>
-              <div id="taskDescriptionEditor" style="height: 220px;"></div>
+              <div id="taskDescriptionEditor" style="height: 260px;"></div>
             </div>
             <div class="col-md-6">
               <label class="form-label">Anexos (PDF e imagens)</label>
@@ -157,7 +157,7 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer border-0 pt-0">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar tarefa</button>
         </div>
@@ -208,10 +208,17 @@ window.addEventListener('load', function() {
   });
 
   $('#appointmentForm').on('submit', function(e) {
+    const form = this;
+    if (!window.FormSubmitGuard.lock(form, 'Salvando...')) {
+      e.preventDefault();
+      return;
+    }
+
     const html = appointmentQuill.root.innerHTML;
     const plain = appointmentQuill.getText().trim();
     if (!plain) {
       e.preventDefault();
+      window.FormSubmitGuard.unlock(form);
       Swal.fire('Campo obrigatório', 'Preencha o histórico do atendimento.', 'warning');
       return;
     }
@@ -219,10 +226,17 @@ window.addEventListener('load', function() {
   });
 
   $('#taskForm').on('submit', function(e) {
+    const form = this;
+    if (!window.FormSubmitGuard.lock(form, 'Salvando...')) {
+      e.preventDefault();
+      return;
+    }
+
     const html = taskQuill.root.innerHTML;
     const plain = taskQuill.getText().trim();
     if (!plain) {
       e.preventDefault();
+      window.FormSubmitGuard.unlock(form);
       Swal.fire('Campo obrigatório', 'Preencha a descrição da tarefa.', 'warning');
       return;
     }

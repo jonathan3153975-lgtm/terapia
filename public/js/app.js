@@ -21,3 +21,48 @@ function generatePassword(length = 12) {
   for (let i = p.length; i < length; i++) p += all[Math.floor(Math.random()*all.length)];
   return p.split('').sort(() => Math.random()-0.5).join('');
 }
+
+const FormSubmitGuard = {
+  lock(form, submittingText = 'Salvando...') {
+    if (!form || form.dataset.submitting === '1') {
+      return false;
+    }
+
+    form.dataset.submitting = '1';
+    const buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+    buttons.forEach((btn) => {
+      if (!btn.dataset.originalLabel) {
+        btn.dataset.originalLabel = btn.tagName.toLowerCase() === 'button' ? btn.innerHTML : btn.value;
+      }
+      btn.disabled = true;
+      if (btn.tagName.toLowerCase() === 'button') {
+        btn.innerHTML = submittingText;
+      } else {
+        btn.value = submittingText;
+      }
+    });
+
+    return true;
+  },
+
+  unlock(form) {
+    if (!form) {
+      return;
+    }
+
+    form.dataset.submitting = '0';
+    const buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+    buttons.forEach((btn) => {
+      btn.disabled = false;
+      if (btn.dataset.originalLabel) {
+        if (btn.tagName.toLowerCase() === 'button') {
+          btn.innerHTML = btn.dataset.originalLabel;
+        } else {
+          btn.value = btn.dataset.originalLabel;
+        }
+      }
+    });
+  }
+};
+
+window.FormSubmitGuard = FormSubmitGuard;
