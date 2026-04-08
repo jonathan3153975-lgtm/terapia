@@ -21,4 +21,25 @@ class Appointment extends Model
         }
         return $stmt->fetchAll();
     }
+
+    public function findByTherapistPatientAndId(int $therapistId, int $patientId, int $appointmentId): ?array
+    {
+        $stmt = $this->query(
+            'SELECT * FROM appointments WHERE id = ? AND therapist_id = ? AND patient_id = ? LIMIT 1',
+            [$appointmentId, $therapistId, $patientId]
+        );
+        if (!$stmt) {
+            return null;
+        }
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function deleteByTherapistPatientAndId(int $therapistId, int $patientId, int $appointmentId): bool
+    {
+        return (bool) $this->query(
+            'DELETE FROM appointments WHERE id = ? AND therapist_id = ? AND patient_id = ?',
+            [$appointmentId, $therapistId, $patientId]
+        );
+    }
 }

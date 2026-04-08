@@ -33,6 +33,11 @@ match ($action) {
     'patients-update' => (new TherapistController())->updatePatient(),
     'patients-delete' => (new TherapistController())->deletePatient(),
     'patients-history' => (new TherapistController())->historyPatient(),
+    'patients-appointments-store' => (new TherapistController())->storePatientAppointment(),
+    'patients-appointments-show' => (new TherapistController())->showPatientAppointment(),
+    'patients-appointments-edit' => (new TherapistController())->editPatientAppointment(),
+    'patients-appointments-update' => (new TherapistController())->updatePatientAppointment(),
+    'patients-appointments-delete' => (new TherapistController())->deletePatientAppointment(),
 
     default => (new TherapistController())->dashboard(),
 };

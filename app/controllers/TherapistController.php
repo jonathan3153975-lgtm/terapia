@@ -361,4 +361,217 @@ class TherapistController extends Controller
             'tasks' => $tasks,
         ]);
     }
+
+    private function sanitizeRichText(string $html): string
+    {
+        $value = trim($html);
+        if ($value === '') {
+            return '';
+        }
+
+        $value = preg_replace('/<\s*(script|style)[^>]*>.*?<\s*\/\s*\1\s*>/is', '', $value) ?? '';
+        $value = preg_replace('/\son\w+\s*=\s*"[^"]*"/i', '', $value) ?? '';
+        $value = preg_replace('/\son\w+\s*=\s*\'[^\']*\'/i', '', $value) ?? '';
+        $value = preg_replace('/\s(href|src)\s*=\s*"\s*javascript:[^"]*"/i', '', $value) ?? '';
+        $value = preg_replace('/\s(href|src)\s*=\s*\'\s*javascript:[^\']*\'/i', '', $value) ?? '';
+
+        return strip_tags($value, '<p><br><strong><b><em><i><u><s><ol><ul><li><blockquote><pre><code><h1><h2><h3><a><span>');
+    }
+
+    public function storePatientAppointment(): void
+    {
+        $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_POST['patient_id'] ?? 0);
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+
+        $redirectHistoryBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId;
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$patient) {
+            if ($isAjax) {
+                $this->error('Paciente não encontrado', 404);
+            }
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $sessionDate = trim((string) ($_POST['session_date'] ?? ''));
+        $description = Utils::sanitize($_POST['description'] ?? '');
+        $history = $this->sanitizeRichText((string) ($_POST['history'] ?? ''));
+
+        if ($sessionDate === '' || $history === '') {
+            if ($isAjax) {
+                $this->error('Data e histórico são obrigatórios');
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Data e histórico são obrigatórios.'));
+        }
+
+        if ($description === '') {
+            $description = Utils::sanitize(substr(trim(strip_tags($history)), 0, 120));
+        }
+
+        $inserted = $this->appointmentModel->insert([
+            'therapist_id' => $therapistId,
+            'patient_id' => $patientId,
+            'session_date' => $sessionDate,
+            'description' => $description,
+            'history' => $history,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$inserted) {
+            if ($isAjax) {
+                $this->error('Falha ao cadastrar atendimento');
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Falha ao cadastrar atendimento.'));
+        }
+
+        if ($isAjax) {
+            $this->success('Atendimento cadastrado', ['redirect' => $redirectHistoryBase]);
+        }
+
+        $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Atendimento cadastrado com sucesso.'));
+    }
+
+    public function showPatientAppointment(): void
+    {
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_GET['patient_id'] ?? 0);
+        $appointmentId = (int) ($_GET['id'] ?? 0);
+
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients');
+        }
+
+        $appointment = $this->appointmentModel->findByTherapistPatientAndId($therapistId, $patientId, $appointmentId);
+        if (!$appointment) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId . '&status=error&msg=' . urlencode('Atendimento não encontrado.'));
+        }
+
+        $this->view('therapist/patients/appointments/show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'patient' => $patient,
+            'appointment' => $appointment,
+        ]);
+    }
+
+    public function editPatientAppointment(): void
+    {
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_GET['patient_id'] ?? 0);
+        $appointmentId = (int) ($_GET['id'] ?? 0);
+
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients');
+        }
+
+        $appointment = $this->appointmentModel->findByTherapistPatientAndId($therapistId, $patientId, $appointmentId);
+        if (!$appointment) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId . '&status=error&msg=' . urlencode('Atendimento não encontrado.'));
+        }
+
+        $this->view('therapist/patients/appointments/edit', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'patient' => $patient,
+            'appointment' => $appointment,
+        ]);
+    }
+
+    public function updatePatientAppointment(): void
+    {
+        $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_POST['patient_id'] ?? 0);
+        $appointmentId = (int) ($_POST['id'] ?? 0);
+
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        $appointment = $this->appointmentModel->findByTherapistPatientAndId($therapistId, $patientId, $appointmentId);
+
+        $redirectHistoryBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId;
+        $redirectEditBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-appointments-edit&patient_id=' . $patientId . '&id=' . $appointmentId;
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$patient || !$appointment) {
+            if ($isAjax) {
+                $this->error('Atendimento não encontrado', 404);
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Atendimento não encontrado.'));
+        }
+
+        $sessionDate = trim((string) ($_POST['session_date'] ?? ''));
+        $description = Utils::sanitize($_POST['description'] ?? '');
+        $history = $this->sanitizeRichText((string) ($_POST['history'] ?? ''));
+
+        if ($sessionDate === '' || $history === '') {
+            if ($isAjax) {
+                $this->error('Data e histórico são obrigatórios');
+            }
+            $this->redirect($redirectWithStatus($redirectEditBase, 'error', 'Data e histórico são obrigatórios.'));
+        }
+
+        if ($description === '') {
+            $description = Utils::sanitize(substr(trim(strip_tags($history)), 0, 120));
+        }
+
+        $updated = $this->appointmentModel->updateById($appointmentId, [
+            'session_date' => $sessionDate,
+            'description' => $description,
+            'history' => $history,
+        ]);
+
+        if (!$updated) {
+            if ($isAjax) {
+                $this->error('Falha ao atualizar atendimento');
+            }
+            $this->redirect($redirectWithStatus($redirectEditBase, 'error', 'Falha ao atualizar atendimento.'));
+        }
+
+        if ($isAjax) {
+            $this->success('Atendimento atualizado', ['redirect' => $redirectHistoryBase]);
+        }
+
+        $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Atendimento atualizado com sucesso.'));
+    }
+
+    public function deletePatientAppointment(): void
+    {
+        $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_POST['patient_id'] ?? $_GET['patient_id'] ?? 0);
+        $appointmentId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        $appointment = $this->appointmentModel->findByTherapistPatientAndId($therapistId, $patientId, $appointmentId);
+        $redirectHistoryBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId;
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$patient || !$appointment) {
+            if ($isAjax) {
+                $this->error('Atendimento não encontrado', 404);
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Atendimento não encontrado.'));
+        }
+
+        $deleted = $this->appointmentModel->deleteByTherapistPatientAndId($therapistId, $patientId, $appointmentId);
+        if (!$deleted) {
+            if ($isAjax) {
+                $this->error('Falha ao excluir atendimento');
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Falha ao excluir atendimento.'));
+        }
+
+        if ($isAjax) {
+            $this->success('Atendimento excluído', ['redirect' => $redirectHistoryBase]);
+        }
+
+        $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Atendimento excluído com sucesso.'));
+    }
 }
