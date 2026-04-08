@@ -24,15 +24,27 @@ class Patient extends Model
     /**
      * Busca pacientes com filtro
      */
-    public function search(string $searchTerm = '', int $offset = 0, int $limit = 15): array
+    public function search(string $searchTerm = '', int $offset = 0, int $limit = 15, ?int $therapistId = null): array
     {
         $sql = "SELECT * FROM {$this->table}";
         $params = [];
+        $conditions = [];
+
+        if ($therapistId !== null) {
+            $conditions[] = "therapist_id = ?";
+            $params[] = $therapistId;
+        }
 
         if (!empty($searchTerm)) {
-            $sql .= " WHERE name LIKE ? OR cpf LIKE ? OR email LIKE ?";
+            $conditions[] = "(name LIKE ? OR cpf LIKE ? OR email LIKE ?)";
             $search = "%{$searchTerm}%";
-            $params = [$search, $search, $search];
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+        }
+
+        if (!empty($conditions)) {
+            $sql .= " WHERE " . implode(' AND ', $conditions);
         }
 
         $sql .= " ORDER BY name ASC LIMIT {$limit} OFFSET {$offset}";
@@ -47,15 +59,27 @@ class Patient extends Model
     /**
      * Conta pacientes com filtro
      */
-    public function countSearch(string $searchTerm = ''): int
+    public function countSearch(string $searchTerm = '', ?int $therapistId = null): int
     {
         $sql = "SELECT COUNT(*) as total FROM {$this->table}";
         $params = [];
+        $conditions = [];
+
+        if ($therapistId !== null) {
+            $conditions[] = "therapist_id = ?";
+            $params[] = $therapistId;
+        }
 
         if (!empty($searchTerm)) {
-            $sql .= " WHERE name LIKE ? OR cpf LIKE ? OR email LIKE ?";
+            $conditions[] = "(name LIKE ? OR cpf LIKE ? OR email LIKE ?)";
             $search = "%{$searchTerm}%";
-            $params = [$search, $search, $search];
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+        }
+
+        if (!empty($conditions)) {
+            $sql .= " WHERE " . implode(' AND ', $conditions);
         }
 
         $stmt = $this->query($sql, $params);
@@ -80,5 +104,13 @@ class Patient extends Model
     public function updatePatient(int $id, array $data): bool
     {
         return $this->update($id, $data);
+    }
+
+    /**
+     * Conta pacientes por terapeuta
+     */
+    public function countByTherapist(int $therapistId): int
+    {
+        return $this->count('therapist_id = ?', [$therapistId]);
     }
 }

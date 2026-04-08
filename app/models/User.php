@@ -57,4 +57,33 @@ class User extends Model
     {
         return $this->find("role = 'admin'", [], 'name ASC');
     }
+
+    /**
+     * Lista terapeutas ativos
+     */
+    public function listTherapists(): array
+    {
+        $sql = "SELECT * FROM {$this->table} WHERE role = 'therapist' ORDER BY created_at DESC";
+        $stmt = $this->query($sql);
+        if (!$stmt) {
+            return [];
+        }
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Conta terapeutas cadastrados
+     */
+    public function countTherapists(): int
+    {
+        return $this->count("role = 'therapist'");
+    }
+
+    /**
+     * Conta pacientes ativos na tabela de usuários
+     */
+    public function countActivePatientUsers(): int
+    {
+        return $this->count("role = 'patient' AND status = 'active'");
+    }
 }

@@ -137,6 +137,61 @@
                         </div>
                     </a>
                 </div>
+
+                <?php if (!empty($isTherapistDashboard)): ?>
+                <div class="col-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="kpi-icon bg-secondary bg-opacity-10 text-secondary">
+                                <i class="fas fa-list-check"></i>
+                            </div>
+                            <div>
+                                <div class="kpi-value"><?php echo (int) ($totalTasks ?? 0); ?></div>
+                                <div class="kpi-label">Tarefas</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <div>
+                                <div class="kpi-value"><?php echo (int) ($totalMessagesSent ?? 0); ?></div>
+                                <div class="kpi-label">Mensagens enviadas</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="kpi-icon bg-info bg-opacity-10 text-info">
+                                <i class="fas fa-folder-open"></i>
+                            </div>
+                            <div>
+                                <div class="kpi-value"><?php echo (int) ($totalStoredMaterials ?? 0); ?></div>
+                                <div class="kpi-label">Materiais armazenados</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="kpi-icon bg-dark bg-opacity-10 text-dark">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div>
+                                <div class="kpi-value"><?php echo (int) ($totalMessagesStored ?? 0); ?></div>
+                                <div class="kpi-label">Mensagens armazenadas</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
 
             <!-- ── AÇÕES RÁPIDAS ── -->

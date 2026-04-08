@@ -24,7 +24,8 @@ class AppointmentController extends Controller
      */
     public function calendar(): void
     {
-        Auth::requireAdmin();
+        Auth::requireTherapist();
+        $therapistId = Auth::therapistId();
 
         $month = $_GET['month'] ?? date('m');
         $year = $_GET['year'] ?? date('Y');
@@ -32,7 +33,7 @@ class AppointmentController extends Controller
         $startDate = "$year-$month-01";
         $endDate = date('Y-m-t', strtotime($startDate));
 
-        $appointments = $this->appointmentModel->findBetweenDates($startDate, $endDate);
+        $appointments = $this->appointmentModel->findBetweenDates($startDate, $endDate, $therapistId);
 
         $this->view('admin/appointments/calendar', [
             'appointments' => $appointments,
@@ -46,7 +47,8 @@ class AppointmentController extends Controller
      */
     public function list(): void
     {
-        Auth::requireAdmin();
+        Auth::requireTherapist();
+        $therapistId = Auth::therapistId();
 
         $page = (int)($_GET['page'] ?? 1);
         $month = $_GET['month'] ?? '';
@@ -67,6 +69,9 @@ class AppointmentController extends Controller
             $params[] = $status;
         }
 
+        $query .= ' AND therapist_id = ?';
+        $params[] = $therapistId;
+
         $appointments = $this->appointmentModel->find($query, $params, 'appointment_date DESC', $limit);
         $totalAppointments = $this->appointmentModel->count($query, $params);
         $totalPages = ceil($totalAppointments / $limit);
@@ -86,9 +91,9 @@ class AppointmentController extends Controller
      */
     public function create(): void
     {
-        Auth::requireAdmin();
+        Auth::requireTherapist();
 
-        $patients = $this->patientModel->findAll();
+        $patients = $this->patientModel->find('therapist_id = ?', [Auth::therapistId()], 'name ASC');
         $this->view('admin/appointments/create', ['patients' => $patients]);
     }
 
@@ -97,7 +102,8 @@ class AppointmentController extends Controller
      */
     public function store(): void
     {
-        Auth::requireAdmin();
+        Auth::requireTherapist();
+        $therapistId = Auth::therapistId();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->error('Método não permitido', 405);
@@ -122,6 +128,10 @@ class AppointmentController extends Controller
             $this->error('Paciente não encontrado');
         }
 
+        if ((int)($patient['therapist_id'] ?? 0) !== (int) $therapistId) {
+            $this->error('Acesso negado', 403);
+        }
+
         $appointmentDateTime = $appointmentDate . ' ' . $appointmentTime;
 
         if ($this->appointmentModel->hasConflict($appointmentDateTime)) {
@@ -130,6 +140,7 @@ class AppointmentController extends Controller
 
         $data = [
             'patient_id' => $patientId,
+            'therapist_id' => $therapistId,
             'appointment_date' => $appointmentDateTime,
             'notes' => $notes,
             'status' => 'confirmed',
@@ -153,7 +164,7 @@ class AppointmentController extends Controller
      */
     public function show(): void
     {
-        Auth::requireAdmin();
+        Auth::requireTherapist();
 
         $appointmentId = (int)($_GET['id'] ?? 0);
 
@@ -165,6 +176,10 @@ class AppointmentController extends Controller
 
         if (!$appointment) {
             $this->error('Agendamento não encontrado', 404);
+        }
+
+        if ((int)($appointment['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
         }
 
         $patient = $this->patientModel->findById($appointment['patient_id']);
@@ -180,7 +195,7 @@ class AppointmentController extends Controller
      */
     public function edit(): void
     {
-        Auth::requireAdmin();
+        Auth::requireTherapist();
 
         $appointmentId = (int)($_GET['id'] ?? 0);
 
@@ -194,7 +209,11 @@ class AppointmentController extends Controller
             $this->error('Agendamento não encontrado', 404);
         }
 
-        $patients = $this->patientModel->findAll();
+        if ((int)($appointment['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
+        }
+
+        $patients = $this->patientModel->find('therapist_id = ?', [Auth::therapistId()], 'name ASC');
 
         $this->view('admin/appointments/edit', [
             'appointment' => $appointment,
@@ -207,7 +226,7 @@ class AppointmentController extends Controller
      */
     public function update(): void
     {
-        Auth::requireAdmin();
+        Auth::requireTherapist();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->error('Método não permitido', 405);
@@ -223,6 +242,10 @@ class AppointmentController extends Controller
 
         if (!$appointment) {
             $this->error('Agendamento não encontrado');
+        }
+
+        if ((int)($appointment['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
         }
 
         $patientId = (int)($_POST['patient_id'] ?? $appointment['patient_id']);
@@ -261,7 +284,7 @@ class AppointmentController extends Controller
      */
     public function delete(): void
     {
-        Auth::requireAdmin();
+        Auth::requireTherapist();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->error('Método não permitido', 405);
@@ -271,6 +294,11 @@ class AppointmentController extends Controller
 
         if ($appointmentId <= 0) {
             $this->error('ID inválido');
+        }
+
+        $appointment = $this->appointmentModel->findById($appointmentId);
+        if (!$appointment || (int)($appointment['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
         }
 
         if ($this->appointmentModel->delete($appointmentId)) {
@@ -287,7 +315,7 @@ class AppointmentController extends Controller
     {
         $date = $_GET['date'] ?? date('Y-m-d');
 
-        $appointments = $this->appointmentModel->findByDate($date);
+        $appointments = $this->appointmentModel->findByDate($date, Auth::therapistId());
 
         $this->json(['success' => true, 'appointments' => $appointments]);
     }
@@ -297,6 +325,7 @@ class AppointmentController extends Controller
      */
     public function getByRange(): void
     {
+        Auth::requireTherapist();
         $start = $_GET['start'] ?? date('Y-m-01');
         $end   = $_GET['end']   ?? date('Y-m-t');
 
@@ -304,7 +333,7 @@ class AppointmentController extends Controller
         $startDate = substr($start, 0, 10);
         $endDate   = substr($end,   0, 10);
 
-        $appointments = $this->appointmentModel->findBetweenDates($startDate, $endDate);
+        $appointments = $this->appointmentModel->findBetweenDates($startDate, $endDate, Auth::therapistId());
 
         $statusColors = [
             'confirmed'  => '#2563eb',
@@ -338,7 +367,7 @@ class AppointmentController extends Controller
      */
     public function approve(): void
     {
-        Auth::requireAdmin();
+        Auth::requireTherapist();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->error('Método não permitido', 405);
@@ -348,6 +377,11 @@ class AppointmentController extends Controller
 
         if ($appointmentId <= 0) {
             $this->error('ID inválido');
+        }
+
+        $appointment = $this->appointmentModel->findById($appointmentId);
+        if (!$appointment || (int)($appointment['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
         }
 
         if ($this->appointmentModel->update($appointmentId, ['status' => 'confirmed'])) {

@@ -131,6 +131,7 @@
                                     type="text" 
                                     name="search" 
                                     class="form-control" 
+                                    id="patientsSearchInput"
                                     placeholder="Buscar por nome, CPF ou email..."
                                     value="<?php echo htmlspecialchars($search); ?>"
                                 >
@@ -162,7 +163,7 @@
                             <tbody>
                                 <?php if (!empty($patients)): ?>
                                     <?php foreach ($patients as $patient): ?>
-                                        <tr>
+                                        <tr class="patient-row" data-search="<?php echo strtolower(htmlspecialchars(($patient['name'] ?? '') . ' ' . ($patient['cpf'] ?? '') . ' ' . ($patient['email'] ?? ''))); ?>">
                                             <td>
                                                 <strong><?php echo htmlspecialchars($patient['name']); ?></strong>
                                             </td>
@@ -179,10 +180,14 @@
                                                 <small><?php echo \Helpers\Utils::formatDate($patient['birth_date']); ?></small>
                                             </td>
                                             <td>
-                                                <div class="table-actions">
+                                                <div class="btn-group table-actions" role="group">
                                                     <a href="<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=patients&subaction=show&id=<?php echo $patient['id']; ?>" 
                                                        class="btn btn-sm btn-primary" title="Visualizar">
                                                         <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=patients&subaction=history&id=<?php echo $patient['id']; ?>" 
+                                                       class="btn btn-sm btn-info" title="Histórico">
+                                                        <i class="fas fa-clock-rotate-left"></i>
                                                     </a>
                                                     <a href="<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=patients&subaction=edit&id=<?php echo $patient['id']; ?>" 
                                                        class="btn btn-sm btn-warning" title="Editar">
@@ -263,9 +268,14 @@
             $('.sidebar').removeClass('active');
         });
 
-        // Search
-        $('#searchInput').on('input', function() {
-            // Implementar busca dinâmica se necessário
+        // Busca dinamica na tabela
+        $('#patientsSearchInput').on('input', function() {
+            const term = ($(this).val() || '').toLowerCase().trim();
+            $('.patient-row').each(function() {
+                const haystack = ($(this).data('search') || '').toString();
+                const visible = term === '' || haystack.includes(term);
+                $(this).toggle(visible);
+            });
         });
     </script>
 </body>

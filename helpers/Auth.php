@@ -12,12 +12,14 @@ class Auth
     /**
      * Faz login do usuário
      */
-    public static function login(int $userId, string $userName, string $userRole): void
+    public static function login(int $userId, string $userName, string $userRole, ?int $therapistId = null, ?int $patientId = null): void
     {
         Session::start();
         $_SESSION['user_id'] = $userId;
         $_SESSION['user_name'] = $userName;
         $_SESSION['user_role'] = $userRole;
+        $_SESSION['therapist_id'] = $therapistId;
+        $_SESSION['patient_id'] = $patientId;
         $_SESSION['login_time'] = time();
     }
 
@@ -66,11 +68,28 @@ class Auth
     }
 
     /**
+     * Obtém patient_id vinculado ao login de paciente
+     */
+    public static function patientId(): ?int
+    {
+        Session::start();
+        return isset($_SESSION['patient_id']) ? (int) $_SESSION['patient_id'] : null;
+    }
+
+    /**
      * Verifica se é admin
      */
     public static function isAdmin(): bool
     {
-        return self::userRole() === 'admin';
+        return in_array(self::userRole(), ['admin', 'super_admin'], true);
+    }
+
+    /**
+     * Verifica se é terapeuta
+     */
+    public static function isTherapist(): bool
+    {
+        return self::userRole() === 'therapist';
     }
 
     /**
@@ -79,6 +98,30 @@ class Auth
     public static function isPatient(): bool
     {
         return self::userRole() === 'patient';
+    }
+
+    /**
+     * Retorna o therapist_id vinculado na sessão
+     */
+    public static function sessionTherapistId(): ?int
+    {
+        Session::start();
+        if (!empty($_SESSION['therapist_id'])) {
+            return (int) $_SESSION['therapist_id'];
+        }
+        return null;
+    }
+
+    /**
+     * Retorna o ID do terapeuta da sessão (o próprio usuário quando role=therapist)
+     */
+    public static function therapistId(): ?int
+    {
+        if (self::isTherapist()) {
+            return self::userId();
+        }
+
+        return self::sessionTherapistId();
     }
 
     /**
@@ -116,7 +159,43 @@ class Auth
     public static function requireAdmin(): void
     {
         self::requireLogin();
+        if (!self::isAdmin() && !self::isTherapist()) {
+            header('Location: ' . \Config\Config::APP_URL . '/index.php?action=login');
+            exit;
+        }
+    }
+
+    /**
+     * Exige usuário terapeuta
+     */
+    public static function requireTherapist(): void
+    {
+        self::requireLogin();
+        if (!self::isTherapist()) {
+            header('Location: ' . \Config\Config::APP_URL . '/index.php?action=login');
+            exit;
+        }
+    }
+
+    /**
+     * Exige usuário super admin
+     */
+    public static function requireSuperAdmin(): void
+    {
+        self::requireLogin();
         if (!self::isAdmin()) {
+            header('Location: ' . \Config\Config::APP_URL . '/index.php?action=login');
+            exit;
+        }
+    }
+
+    /**
+     * Exige usuário paciente
+     */
+    public static function requirePatient(): void
+    {
+        self::requireLogin();
+        if (!self::isPatient()) {
             header('Location: ' . \Config\Config::APP_URL . '/index.php?action=login');
             exit;
         }

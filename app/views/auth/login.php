@@ -307,7 +307,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    window.location.href = data.redirect || '/terapia/dashboard.php';
+                    window.location.href = data.redirect || '<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=dashboard';
                 } else {
                     alert(data.message || 'Erro ao fazer login');
                     btn.disabled = false;

@@ -30,6 +30,12 @@ function initializeApp() {
 
     // Listeners para forms
     setupFormListeners();
+
+    // Mascaras de campos
+    initializeMasks();
+
+    // Busca automatica de CEP quando completo
+    setupAutoCepLookup();
 }
 
 // ========== MENU ATIVO ==========
@@ -229,7 +235,7 @@ function searchCEP(cep) {
     }
 
     $.ajax({
-        url: '/terapia/dashboard.php?action=patients&subaction=search-cep',
+        url: getDashboardBaseUrl() + '?action=patients&subaction=search-cep',
         method: 'GET',
         data: { cep: cleanCep },
         headers: {
@@ -257,6 +263,37 @@ function searchCEP(cep) {
                 text: 'Erro ao buscar CEP',
                 confirmButtonColor: '#ef4444'
             });
+        }
+    });
+}
+
+function getDashboardBaseUrl() {
+    const currentPath = window.location.pathname;
+    const dashboardIndex = currentPath.indexOf('/dashboard.php');
+    if (dashboardIndex > -1) {
+        return currentPath.substring(0, dashboardIndex) + '/dashboard.php';
+    }
+    return '/dashboard.php';
+}
+
+function setupAutoCepLookup() {
+    let lastSearchedCep = '';
+
+    $(document).on('input', '#cep', function() {
+        const cleanCep = ($(this).val() || '').replace(/\D/g, '');
+        if (cleanCep.length !== 8 || cleanCep === lastSearchedCep) {
+            return;
+        }
+
+        lastSearchedCep = cleanCep;
+        searchCEP(cleanCep);
+    });
+
+    $(document).on('click', '#searchCepBtn', function() {
+        const cep = ($('#cep').val() || '').replace(/\D/g, '');
+        if (cep.length === 8) {
+            lastSearchedCep = cep;
+            searchCEP(cep);
         }
     });
 }

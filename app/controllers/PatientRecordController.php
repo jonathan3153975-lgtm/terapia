@@ -15,7 +15,7 @@ class PatientRecordController extends Controller
 
     public function __construct()
     {
-        Auth::requireAdmin();
+        Auth::requireTherapist();
         $this->patientRecordModel = new PatientRecord();
         $this->patientModel = new Patient();
     }
@@ -37,7 +37,11 @@ class PatientRecordController extends Controller
             $this->error('Paciente não encontrado', 404);
         }
 
-        $records = $this->patientRecordModel->findByPatient($patientId);
+        if ((int)($patient['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
+        }
+
+        $records = $this->patientRecordModel->findByPatient($patientId, Auth::therapistId());
 
         $this->view('admin/records/index', [
             'patient' => $patient,
@@ -60,6 +64,10 @@ class PatientRecordController extends Controller
 
         if (!$patient) {
             $this->error('Paciente não encontrado', 404);
+        }
+
+        if ((int)($patient['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
         }
 
         $this->view('admin/records/create', ['patient' => $patient]);
@@ -86,8 +94,13 @@ class PatientRecordController extends Controller
             $this->error('Paciente não encontrado');
         }
 
+        if ((int)($patient['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
+        }
+
         $data = [
             'patient_id' => $patientId,
+            'therapist_id' => Auth::therapistId(),
             'record_date' => $_POST['record_date'] ?? date('Y-m-d'),
             'notes' => $_POST['notes'] ?? '',
             'created_at' => date('Y-m-d H:i:s')
@@ -125,6 +138,10 @@ class PatientRecordController extends Controller
             $this->error('Atendimento não encontrado', 404);
         }
 
+        if ((int)($record['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
+        }
+
         $patient = $this->patientModel->findById($record['patient_id']);
 
         $this->view('admin/records/show', ['record' => $record, 'patient' => $patient]);
@@ -145,6 +162,10 @@ class PatientRecordController extends Controller
 
         if (!$record) {
             $this->error('Atendimento não encontrado', 404);
+        }
+
+        if ((int)($record['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
         }
 
         $patient = $this->patientModel->findById($record['patient_id']);
@@ -174,6 +195,10 @@ class PatientRecordController extends Controller
 
         if (!$record) {
             $this->error('Atendimento não encontrado');
+        }
+
+        if ((int)($record['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
         }
 
         $data = [
@@ -206,6 +231,11 @@ class PatientRecordController extends Controller
 
         if ($recordId <= 0) {
             $this->error('ID inválido');
+        }
+
+        $record = $this->patientRecordModel->findById($recordId);
+        if (!$record || (int)($record['therapist_id'] ?? 0) !== (int) Auth::therapistId()) {
+            $this->error('Acesso negado', 403);
         }
 
         if ($this->patientRecordModel->delete($recordId)) {

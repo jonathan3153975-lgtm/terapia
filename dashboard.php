@@ -14,6 +14,12 @@ try {
 
     match ($action) {
         'dashboard' => (new \App\Controllers\DashboardController())->index(),
+        'therapists' => match ($subaction) {
+            'index' => (new \App\Controllers\TherapistController())->index(),
+            'create' => (new \App\Controllers\TherapistController())->create(),
+            'store' => (new \App\Controllers\TherapistController())->store(),
+            default => (new \App\Controllers\TherapistController())->index()
+        },
         'patients' => match ($subaction) {
             'index' => (new \App\Controllers\PatientController())->index(),
             'create' => (new \App\Controllers\PatientController())->create(),
@@ -22,6 +28,10 @@ try {
             'edit' => (new \App\Controllers\PatientController())->edit(),
             'update' => (new \App\Controllers\PatientController())->update(),
             'delete' => (new \App\Controllers\PatientController())->delete(),
+            'history' => (new \App\Controllers\PatientController())->history(),
+            'store-history-record' => (new \App\Controllers\PatientController())->storeHistoryRecord(),
+            'store-task' => (new \App\Controllers\PatientController())->storeTask(),
+            'send-task' => (new \App\Controllers\PatientController())->sendTask(),
             'search-cep' => (new \App\Controllers\PatientController())->searchCEP(),
             default => (new \App\Controllers\PatientController())->index()
         },

@@ -1,6 +1,7 @@
 <?php
 // Recebe $activeMenu para destacar o item ativo (ex: 'patients', 'appointments', 'payments', 'reports')
 $activeMenu = $activeMenu ?? '';
+$isSuperAdmin = \Helpers\Auth::isAdmin();
 ?>
 <nav class="sidebar">
     <div class="sidebar-header">
@@ -13,6 +14,13 @@ $activeMenu = $activeMenu ?? '';
                 <i class="fas fa-chart-line"></i><span>Dashboard</span>
             </a>
         </li>
+        <?php if ($isSuperAdmin): ?>
+        <li class="nav-item">
+            <a href="<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=therapists" class="nav-link <?php echo $activeMenu === 'therapists' ? 'active' : ''; ?>">
+                <i class="fas fa-user-doctor"></i><span>Terapeutas</span>
+            </a>
+        </li>
+        <?php else: ?>
         <li class="nav-item">
             <a href="<?php echo \Config\Config::APP_URL; ?>/dashboard.php?action=patients" class="nav-link <?php echo $activeMenu === 'patients' ? 'active' : ''; ?>">
                 <i class="fas fa-users"></i><span>Pacientes</span>
@@ -33,6 +41,7 @@ $activeMenu = $activeMenu ?? '';
                 <i class="fas fa-chart-bar"></i><span>Relatórios</span>
             </a>
         </li>
+        <?php endif; ?>
         <li class="nav-divider"></li>
         <li class="nav-item">
             <a href="<?php echo \Config\Config::APP_URL; ?>/index.php?action=logout" class="nav-link text-danger">
@@ -45,7 +54,7 @@ $activeMenu = $activeMenu ?? '';
             <div class="user-avatar"><i class="fas fa-user"></i></div>
             <div class="user-details">
                 <p class="user-name"><?php echo \Helpers\Auth::userName(); ?></p>
-                <p class="user-role">Administrador</p>
+                <p class="user-role"><?php echo $isSuperAdmin ? 'Administrador Geral' : 'Terapeuta'; ?></p>
             </div>
         </div>
     </div>

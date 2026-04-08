@@ -24,7 +24,10 @@ class AuthController extends Controller
     public function login(): void
     {
         if (Auth::isAuthenticated()) {
-            $this->redirect(\Config\Config::APP_URL . '/dashboard.php');
+            if (Auth::isPatient()) {
+                $this->redirect(\Config\Config::APP_URL . '/patient.php?action=dashboard');
+            }
+            $this->redirect(\Config\Config::APP_URL . '/dashboard.php?action=dashboard');
         }
 
         $flash = Session::getFlash();
@@ -61,10 +64,25 @@ class AuthController extends Controller
             $this->error('Usuário inativo');
         }
 
-        Auth::login($user['id'], $user['name'], $user['role']);
+        Auth::login(
+            (int) $user['id'],
+            $user['name'],
+            $user['role'],
+            isset($user['therapist_id']) ? (int) $user['therapist_id'] : null,
+            isset($user['patient_id']) ? (int) $user['patient_id'] : null
+        );
+
+        $redirect = \Config\Config::APP_URL . '/index.php?action=login';
+        if (in_array($user['role'], ['admin', 'super_admin'], true)) {
+            $redirect = \Config\Config::APP_URL . '/dashboard.php?action=dashboard';
+        } elseif ($user['role'] === 'therapist') {
+            $redirect = \Config\Config::APP_URL . '/dashboard.php?action=dashboard';
+        } elseif ($user['role'] === 'patient') {
+            $redirect = \Config\Config::APP_URL . '/patient.php?action=dashboard';
+        }
 
         $this->success('Login realizado com sucesso', [
-            'redirect' => $user['role'] === 'admin' ? \Config\Config::APP_URL . '/dashboard.php' : \Config\Config::APP_URL . '/index.php?action=login'
+            'redirect' => $redirect
         ]);
     }
 

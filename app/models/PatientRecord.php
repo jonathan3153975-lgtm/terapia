@@ -11,10 +11,16 @@ class PatientRecord extends Model
     /**
      * Busca atendimentos do paciente
      */
-    public function findByPatient(int $patientId): array
+    public function findByPatient(int $patientId, ?int $therapistId = null): array
     {
-        $sql = "SELECT * FROM {$this->table} WHERE patient_id = ? ORDER BY record_date DESC";
-        $stmt = $this->query($sql, [$patientId]);
+        $sql = "SELECT * FROM {$this->table} WHERE patient_id = ?";
+        $params = [$patientId];
+        if ($therapistId !== null) {
+            $sql .= " AND therapist_id = ?";
+            $params[] = $therapistId;
+        }
+        $sql .= " ORDER BY record_date DESC";
+        $stmt = $this->query($sql, $params);
         
         if (!$stmt) return [];
         
@@ -56,12 +62,18 @@ class PatientRecord extends Model
     /**
      * Atendimentos recentes com nome do paciente
      */
-    public function findRecentWithPatients(int $limit = 5): array
+    public function findRecentWithPatients(int $limit = 5, ?int $therapistId = null): array
     {
         $sql = "SELECT pr.*, p.name as patient_name FROM {$this->table} pr
                 JOIN patients p ON pr.patient_id = p.id
-                ORDER BY pr.record_date DESC LIMIT {$limit}";
-        $stmt = $this->query($sql);
+                WHERE 1=1";
+        $params = [];
+        if ($therapistId !== null) {
+            $sql .= " AND pr.therapist_id = ?";
+            $params[] = $therapistId;
+        }
+        $sql .= " ORDER BY pr.record_date DESC LIMIT {$limit}";
+        $stmt = $this->query($sql, $params);
         if (!$stmt) return [];
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
@@ -72,5 +84,10 @@ class PatientRecord extends Model
     public function countByPatient(int $patientId): int
     {
         return $this->count("patient_id = ?", [$patientId]);
+    }
+
+    public function countByTherapist(int $therapistId): int
+    {
+        return $this->count('therapist_id = ?', [$therapistId]);
     }
 }

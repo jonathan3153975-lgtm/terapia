@@ -24,11 +24,16 @@ class Payment extends Model
     /**
      * Busca pagamentos com filtros
      */
-    public function search(string $status = '', string $month = '', int $offset = 0, int $limit = 15): array
+    public function search(string $status = '', string $month = '', int $offset = 0, int $limit = 15, ?int $therapistId = null): array
     {
         $sql = "SELECT p.*, pa.name as patient_name FROM {$this->table} p
                 JOIN patients pa ON p.patient_id = pa.id WHERE 1=1";
         $params = [];
+
+        if ($therapistId !== null) {
+            $sql .= " AND p.therapist_id = ?";
+            $params[] = $therapistId;
+        }
 
         if (!empty($status)) {
             $sql .= " AND p.status = ?";
@@ -52,10 +57,15 @@ class Payment extends Model
     /**
      * Conta pagamentos com filtro
      */
-    public function countSearch(string $status = '', string $month = ''): int
+    public function countSearch(string $status = '', string $month = '', ?int $therapistId = null): int
     {
         $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE 1=1";
         $params = [];
+
+        if ($therapistId !== null) {
+            $sql .= " AND therapist_id = ?";
+            $params[] = $therapistId;
+        }
 
         if (!empty($status)) {
             $sql .= " AND status = ?";
@@ -78,10 +88,15 @@ class Payment extends Model
     /**
      * Calcula total de pagamentos
      */
-    public function getTotalAmount(string $status = '', string $month = ''): float
+    public function getTotalAmount(string $status = '', string $month = '', ?int $therapistId = null): float
     {
         $sql = "SELECT SUM(amount) as total FROM {$this->table} WHERE 1=1";
         $params = [];
+
+        if ($therapistId !== null) {
+            $sql .= " AND therapist_id = ?";
+            $params[] = $therapistId;
+        }
 
         if (!empty($status)) {
             $sql .= " AND status = ?";
@@ -115,5 +130,10 @@ class Payment extends Model
         if (!$stmt) return [];
         
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function countByTherapist(int $therapistId): int
+    {
+        return $this->count('therapist_id = ?', [$therapistId]);
     }
 }
