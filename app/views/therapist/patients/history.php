@@ -1,13 +1,28 @@
 <?php $title = 'Histórico do Paciente'; include __DIR__ . '/../../partials/header.php'; include __DIR__ . '/../../partials/nav.php'; ?>
 <div class="page-wrap">
   <?php include __DIR__ . '/../../partials/flash-alert.php'; ?>
+  <?php
+  $formatDateTimeBr = static function (?string $value): string {
+    if (empty($value)) {
+      return '-';
+    }
+    $date = date_create((string) $value);
+    if (!$date) {
+      return htmlspecialchars((string) $value);
+    }
+    return $date->format('d/m/Y H:i');
+  };
+  ?>
 
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Histórico: <?php echo htmlspecialchars((string) $patient['name']); ?></h3>
-    <a class="btn btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
+    <div class="d-flex gap-2">
+      <button id="btnToggleAppointmentForm" class="btn btn-primary" type="button"><i class="fa-solid fa-calendar-plus"></i> Novo atendimento</button>
+      <a class="btn btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
+    </div>
   </div>
 
-  <div class="card mb-3">
+  <div id="appointmentFormCard" class="card mb-3 d-none">
     <div class="card-header bg-transparent"><strong>Novo atendimento</strong></div>
     <div class="card-body">
       <form id="appointmentForm" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-appointments-store">
@@ -37,7 +52,7 @@
   </div>
 
   <div class="row g-3">
-    <div class="col-lg-8">
+    <div class="col-lg-6">
       <div class="card h-100">
         <div class="card-header bg-transparent"><strong>Atendimentos</strong></div>
         <div class="card-body">
@@ -50,13 +65,13 @@
                 <tbody>
                 <?php foreach ($appointments as $appointment): ?>
                   <tr>
-                    <td><?php echo htmlspecialchars((string) ($appointment['session_date'] ?? '-')); ?></td>
+                    <td><?php echo $formatDateTimeBr($appointment['session_date'] ?? null); ?></td>
                     <td><?php echo htmlspecialchars((string) ($appointment['description'] ?? '-')); ?></td>
                     <td class="align-middle">
                       <div class="d-flex align-items-center gap-1 flex-nowrap">
                         <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-appointments-show&patient_id=<?php echo (int) $patient['id']; ?>&id=<?php echo (int) $appointment['id']; ?>" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
                         <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-appointments-edit&patient_id=<?php echo (int) $patient['id']; ?>&id=<?php echo (int) $appointment['id']; ?>" title="Editar"><i class="fa-solid fa-pen"></i></a>
-                        <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-appointments-delete" class="d-flex m-0 js-delete-appointment-form" data-session-date="<?php echo htmlspecialchars((string) ($appointment['session_date'] ?? '')); ?>">
+                        <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-appointments-delete" class="d-flex m-0 js-delete-appointment-form" data-session-date="<?php echo $formatDateTimeBr($appointment['session_date'] ?? null); ?>">
                           <input type="hidden" name="patient_id" value="<?php echo (int) $patient['id']; ?>">
                           <input type="hidden" name="id" value="<?php echo (int) $appointment['id']; ?>">
                           <button class="btn btn-sm btn-outline-danger" style="width:32px;padding:0;line-height:1.8;" type="submit" title="Excluir"><i class="fa-solid fa-trash"></i></button>
@@ -73,9 +88,12 @@
       </div>
     </div>
 
-    <div class="col-lg-4">
+    <div class="col-lg-6">
       <div class="card h-100">
-        <div class="card-header bg-transparent"><strong>Tarefas</strong></div>
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+          <strong>Tarefas</strong>
+          <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#newTaskModal"><i class="fa-solid fa-list-check"></i> Nova tarefa</button>
+        </div>
         <div class="card-body">
           <?php if (empty($tasks)): ?>
             <p class="text-muted mb-0">Nenhuma tarefa registrada.</p>
@@ -97,9 +115,85 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="newTaskModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cadastrar nova tarefa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form id="taskForm" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-tasks-store" enctype="multipart/form-data">
+        <div class="modal-body">
+          <input type="hidden" name="patient_id" value="<?php echo (int) $patient['id']; ?>">
+          <input type="hidden" name="description" id="taskDescriptionInput">
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Data</label>
+              <input class="form-control" type="date" name="due_date" required>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Título</label>
+              <input class="form-control" name="title" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Descrição</label>
+              <div id="taskDescriptionEditor" style="height: 220px;"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Anexos (PDF e imagens)</label>
+              <input class="form-control" type="file" name="task_attachments[]" accept=".pdf,image/*" multiple>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Link</label>
+              <input class="form-control" type="url" name="attachment_link" placeholder="https://...">
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="send_to_patient" id="send_to_patient" value="1">
+                <label class="form-check-label" for="send_to_patient">Enviar para o paciente</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar tarefa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 window.addEventListener('load', function() {
-  const quill = new Quill('#historyEditor', {
+  const appointmentCard = document.getElementById('appointmentFormCard');
+  const toggleAppointmentBtn = document.getElementById('btnToggleAppointmentForm');
+  if (toggleAppointmentBtn && appointmentCard) {
+    toggleAppointmentBtn.addEventListener('click', function() {
+      appointmentCard.classList.toggle('d-none');
+      toggleAppointmentBtn.innerHTML = appointmentCard.classList.contains('d-none')
+        ? '<i class="fa-solid fa-calendar-plus"></i> Novo atendimento'
+        : '<i class="fa-solid fa-xmark"></i> Fechar formulário';
+    });
+  }
+
+  const appointmentQuill = new Quill('#historyEditor', {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['blockquote', 'code-block', 'link'],
+        [{ color: [] }, { background: [] }],
+        ['clean']
+      ]
+    }
+  });
+
+  const taskQuill = new Quill('#taskDescriptionEditor', {
     theme: 'snow',
     modules: {
       toolbar: [
@@ -114,14 +208,25 @@ window.addEventListener('load', function() {
   });
 
   $('#appointmentForm').on('submit', function(e) {
-    const html = quill.root.innerHTML;
-    const plain = quill.getText().trim();
+    const html = appointmentQuill.root.innerHTML;
+    const plain = appointmentQuill.getText().trim();
     if (!plain) {
       e.preventDefault();
       Swal.fire('Campo obrigatório', 'Preencha o histórico do atendimento.', 'warning');
       return;
     }
     $('#historyInput').val(html);
+  });
+
+  $('#taskForm').on('submit', function(e) {
+    const html = taskQuill.root.innerHTML;
+    const plain = taskQuill.getText().trim();
+    if (!plain) {
+      e.preventDefault();
+      Swal.fire('Campo obrigatório', 'Preencha a descrição da tarefa.', 'warning');
+      return;
+    }
+    $('#taskDescriptionInput').val(html);
   });
 
   $('.js-delete-appointment-form').on('submit', function(e) {

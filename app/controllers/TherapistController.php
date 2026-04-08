@@ -574,4 +574,129 @@ class TherapistController extends Controller
 
         $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Atendimento excluído com sucesso.'));
     }
+
+    private function storeTaskAttachments(int $therapistId, int $patientId, int $taskId): void
+    {
+        $uploadBase = dirname(__DIR__, 2) . '/uploads/tasks';
+        if (!is_dir($uploadBase)) {
+            @mkdir($uploadBase, 0775, true);
+        }
+
+        $link = filter_var(trim((string) ($_POST['attachment_link'] ?? '')), FILTER_SANITIZE_URL);
+        if ($link !== '' && filter_var($link, FILTER_VALIDATE_URL)) {
+            $this->fileModel->insert([
+                'therapist_id' => $therapistId,
+                'patient_id' => $patientId,
+                'task_id' => $taskId,
+                'file_name' => $link,
+                'file_path' => $link,
+                'file_type' => 'link',
+                'file_size' => 0,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        if (!isset($_FILES['task_attachments'])) {
+            return;
+        }
+
+        $names = (array) ($_FILES['task_attachments']['name'] ?? []);
+        $tmpNames = (array) ($_FILES['task_attachments']['tmp_name'] ?? []);
+        $sizes = (array) ($_FILES['task_attachments']['size'] ?? []);
+        $errors = (array) ($_FILES['task_attachments']['error'] ?? []);
+
+        $allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+        foreach ($names as $idx => $originalName) {
+            $error = (int) ($errors[$idx] ?? UPLOAD_ERR_NO_FILE);
+            if ($error !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $tmpName = (string) ($tmpNames[$idx] ?? '');
+            $size = (int) ($sizes[$idx] ?? 0);
+            $ext = strtolower(pathinfo((string) $originalName, PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowed, true)) {
+                continue;
+            }
+
+            $safeFile = uniqid('task_', true) . '.' . $ext;
+            $target = $uploadBase . '/' . $safeFile;
+            if (!@move_uploaded_file($tmpName, $target)) {
+                continue;
+            }
+
+            $relativePath = 'uploads/tasks/' . $safeFile;
+            $fileType = $ext === 'pdf' ? 'pdf' : 'image';
+
+            $this->fileModel->insert([
+                'therapist_id' => $therapistId,
+                'patient_id' => $patientId,
+                'task_id' => $taskId,
+                'file_name' => (string) $originalName,
+                'file_path' => $relativePath,
+                'file_type' => $fileType,
+                'file_size' => $size,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+    }
+
+    public function storePatientTask(): void
+    {
+        $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_POST['patient_id'] ?? 0);
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+
+        $redirectHistoryBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId;
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$patient) {
+            if ($isAjax) {
+                $this->error('Paciente não encontrado', 404);
+            }
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $dueDate = trim((string) ($_POST['due_date'] ?? ''));
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
+        $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
+
+        if ($dueDate === '' || $title === '' || $description === '') {
+            if ($isAjax) {
+                $this->error('Data, título e descrição são obrigatórios');
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Data, título e descrição são obrigatórios.'));
+        }
+
+        $taskId = $this->taskModel->insert([
+            'therapist_id' => $therapistId,
+            'patient_id' => $patientId,
+            'due_date' => $dueDate,
+            'title' => $title,
+            'description' => $description,
+            'send_to_patient' => $sendToPatient,
+            'status' => 'pending',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$taskId) {
+            if ($isAjax) {
+                $this->error('Falha ao cadastrar tarefa');
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Falha ao cadastrar tarefa.'));
+        }
+
+        $this->storeTaskAttachments($therapistId, $patientId, (int) $taskId);
+
+        if ($isAjax) {
+            $this->success('Tarefa cadastrada', ['redirect' => $redirectHistoryBase]);
+        }
+
+        $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Tarefa cadastrada com sucesso.'));
+    }
 }

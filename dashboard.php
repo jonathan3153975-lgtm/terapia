@@ -38,6 +38,7 @@ match ($action) {
     'patients-appointments-edit' => (new TherapistController())->editPatientAppointment(),
     'patients-appointments-update' => (new TherapistController())->updatePatientAppointment(),
     'patients-appointments-delete' => (new TherapistController())->deletePatientAppointment(),
+    'patients-tasks-store' => (new TherapistController())->storePatientTask(),
 
     default => (new TherapistController())->dashboard(),
 };
