@@ -28,14 +28,14 @@
                   <option value="Viuvo(a)">Viúvo(a)</option>
                 </select>
               </div>
-              <div class="col-md-4"><label class="form-label">Filhos</label><input class="form-control" name="children" placeholder="Ex.: 2 filhos"></div>
+              <div class="col-md-8"><label class="form-label">Filhos</label><input class="form-control" name="children" placeholder="Ex.: 2 filhos"></div>
 
               <div class="col-12"><hr class="my-2"><h5 class="mb-1">Endereço (opcional)</h5></div>
-              <div class="col-md-4"><label class="form-label">CEP</label><input class="form-control" id="cep" name="cep" maxlength="8"></div>
-              <div class="col-md-4"><label class="form-label">Endereço</label><input class="form-control" id="address" name="address"></div>
-              <div class="col-md-4"><label class="form-label">Bairro</label><input class="form-control" id="neighborhood" name="neighborhood"></div>
-              <div class="col-md-3"><label class="form-label">Cidade</label><input class="form-control" id="city" name="city"></div>
-              <div class="col-md-2"><label class="form-label">UF</label><input class="form-control" id="state" name="state"></div>
+              <div class="col-md-3"><label class="form-label">CEP</label><input class="form-control" id="cep" name="cep" maxlength="8"></div>
+              <div class="col-md-9"><label class="form-label">Endereço</label><input class="form-control" id="address" name="address"></div>
+              <div class="col-md-5"><label class="form-label">Bairro</label><input class="form-control" id="neighborhood" name="neighborhood"></div>
+              <div class="col-md-4"><label class="form-label">Cidade</label><input class="form-control" id="city" name="city"></div>
+              <div class="col-md-3"><label class="form-label">UF</label><input class="form-control" id="state" name="state"></div>
 
               <div class="col-12"><hr class="my-2"><h5 class="mb-1">Saúde</h5></div>
               <div class="col-md-3 form-check ms-2"><input class="form-check-input" type="checkbox" id="depression" name="depression"><label class="form-check-label" for="depression">Depressão</label></div>
@@ -44,11 +44,11 @@
               <div class="col-md-8"><label class="form-label">Medicação para ansiedade</label><input class="form-control" id="anxiety_medication" name="anxiety_medication"></div>
 
               <div class="col-md-4 form-check ms-2"><input class="form-check-input" type="checkbox" id="has_medical_treatment" name="has_medical_treatment"><label class="form-check-label" for="has_medical_treatment">Faz tratamento médico</label></div>
-              <div class="col-md-7"><label class="form-label">Tratamento médico (descrição)</label><textarea class="form-control" id="medical_treatment_description" name="medical_treatment_description" rows="2"></textarea></div>
-              <div class="col-md-5"><label class="form-label">Tratamento médico (medicação)</label><input class="form-control" id="medical_treatment_medication" name="medical_treatment_medication"></div>
+              <div class="col-md-8"><label class="form-label">Tratamento médico (descrição)</label><textarea class="form-control" id="medical_treatment_description" name="medical_treatment_description" rows="2"></textarea></div>
+              <div class="col-12"><label class="form-label">Tratamento médico (medicação)</label><input class="form-control" id="medical_treatment_medication" name="medical_treatment_medication"></div>
 
               <div class="col-12"><h6 class="text-muted mt-1 mb-1">Comorbidades</h6></div>
-              <div class="col-md-6">
+              <div class="col-12">
                 <div class="dropdown">
                   <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <span id="comorbiditiesLabel">Nenhuma selecionada</span>
@@ -67,7 +67,7 @@
               </div>
 
               <div class="col-12"><hr class="my-2"><h5 class="mb-1">Vícios</h5></div>
-              <div class="col-md-6">
+              <div class="col-12">
                 <label class="form-label">Selecione os vícios</label>
                 <div class="dropdown">
                   <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
