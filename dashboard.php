@@ -17,6 +17,12 @@ match ($action) {
     'therapists' => (new AdminController())->therapists(),
     'therapists-create' => (new AdminController())->createTherapist(),
     'therapists-store' => (new AdminController())->storeTherapist(),
+    'therapists-show' => (new AdminController())->showTherapist(),
+    'therapists-edit' => (new AdminController())->editTherapist(),
+    'therapists-update' => (new AdminController())->updateTherapist(),
+    'therapists-password' => (new AdminController())->passwordTherapist(),
+    'therapists-password-update' => (new AdminController())->updatePasswordTherapist(),
+    'therapists-delete' => (new AdminController())->deleteTherapist(),
 
     'therapist-dashboard' => (new TherapistController())->dashboard(),
     'patients' => (new TherapistController())->patients(),

@@ -31,4 +31,19 @@ class User extends Model
     {
         return $this->count('role = ?', [$role]);
     }
+
+    public function findTherapistById(int $id): ?array
+    {
+        $stmt = $this->query("SELECT * FROM users WHERE id = ? AND role = 'therapist' LIMIT 1", [$id]);
+        if (!$stmt) {
+            return null;
+        }
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function deleteTherapistById(int $id): bool
+    {
+        return (bool) $this->query("DELETE FROM users WHERE id = ? AND role = 'therapist'", [$id]);
+    }
 }
