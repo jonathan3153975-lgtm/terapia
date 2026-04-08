@@ -52,26 +52,45 @@ class AdminController extends Controller
 
     public function storeTherapist(): void
     {
+        $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
         $name = Utils::sanitize($_POST['name'] ?? '');
         $cpf = Validator::onlyDigits($_POST['cpf'] ?? '');
         $phone = Validator::onlyDigits($_POST['phone'] ?? '');
         $email = Utils::sanitize($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
 
+        $redirectListBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapists';
+        $redirectCreateBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapists-create';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
         if ($name === '' || $cpf === '' || $phone === '' || $email === '' || $password === '') {
-            $this->error('Preencha todos os campos obrigatorios');
+            if ($isAjax) {
+                $this->error('Preencha todos os campos obrigatorios');
+            }
+            $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'Preencha todos os campos obrigatorios.'));
         }
 
         if (!Validator::validateCPF($cpf)) {
-            $this->error('CPF invalido');
+            if ($isAjax) {
+                $this->error('CPF invalido');
+            }
+            $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'CPF invalido.'));
         }
 
         if (!Utils::isValidEmail($email)) {
-            $this->error('Email invalido');
+            if ($isAjax) {
+                $this->error('Email invalido');
+            }
+            $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'Email invalido.'));
         }
 
         if ($this->userModel->findByEmail($email)) {
-            $this->error('Email ja cadastrado');
+            if ($isAjax) {
+                $this->error('Email ja cadastrado');
+            }
+            $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'Email ja cadastrado.'));
         }
 
         $inserted = $this->userModel->insert([
@@ -87,9 +106,16 @@ class AdminController extends Controller
         ]);
 
         if (!$inserted) {
-            $this->error('Falha ao cadastrar terapeuta');
+            if ($isAjax) {
+                $this->error('Falha ao cadastrar terapeuta');
+            }
+            $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'Falha ao cadastrar terapeuta.'));
         }
 
-        $this->success('Terapeuta cadastrado', ['redirect' => Config::get('APP_URL', '') . '/dashboard.php?action=therapists']);
+        if ($isAjax) {
+            $this->success('Terapeuta cadastrado', ['redirect' => $redirectListBase]);
+        }
+
+        $this->redirect($redirectWithStatus($redirectListBase, 'success', 'Terapeuta cadastrado com sucesso.'));
     }
 }

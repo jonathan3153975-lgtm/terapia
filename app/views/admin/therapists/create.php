@@ -4,6 +4,8 @@
     <div class="col-lg-8">
       <div class="card">
         <div class="card-body">
+          <?php include __DIR__ . '/../../partials/flash-alert.php'; ?>
+
           <h4 class="mb-3">Cadastrar terapeuta</h4>
           <form id="therapistForm" action="<?php echo $appUrl; ?>/dashboard.php?action=therapists-store" method="POST">
             <div class="row g-3">
@@ -30,20 +32,22 @@
   </div>
 </div>
 <script>
-$('#btnPwd').on('click', function(){ $('#pwd').val(generatePassword()); });
-$('#therapistForm').on('submit', function(e){
-  e.preventDefault();
-  const form = this;
-  $.ajax({
-    url: form.action,
-    method: 'POST',
-    data: $(form).serialize(),
-    headers: {'X-Requested-With':'XMLHttpRequest'},
-    success: function(res){
-      if (res.success) { window.location.href = res.redirect; return; }
-      Swal.fire('Erro', res.message || 'Falha ao salvar', 'error');
-    },
-    error: function(xhr){ Swal.fire('Erro', xhr.responseJSON?.message || 'Falha ao salvar', 'error'); }
+window.addEventListener('load', function() {
+  $('#btnPwd').on('click', function(){ $('#pwd').val(generatePassword()); });
+  $('#therapistForm').on('submit', function(e){
+    e.preventDefault();
+    const form = this;
+    $.ajax({
+      url: form.action,
+      method: 'POST',
+      data: $(form).serialize(),
+      headers: {'X-Requested-With':'XMLHttpRequest'},
+      success: function(res){
+        if (res.success) { window.location.href = res.redirect; return; }
+        Swal.fire('Erro', res.message || 'Falha ao salvar', 'error');
+      },
+      error: function(xhr){ Swal.fire('Erro', xhr.responseJSON?.message || 'Falha ao salvar', 'error'); }
+    });
   });
 });
 </script>

@@ -1,8 +1,10 @@
 <?php $title = 'Pacientes'; include __DIR__ . '/../../partials/header.php'; include __DIR__ . '/../../partials/nav.php'; ?>
-<div class="container page-wrap">
+<div class="page-wrap">
+  <?php include __DIR__ . '/../../partials/flash-alert.php'; ?>
+
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Pacientes</h3>
-    <a class="btn btn-primary" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-create">Novo paciente</a>
+    <a class="btn btn-primary" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-create"><i class="fa-solid fa-user-plus"></i> Novo paciente</a>
   </div>
   <div class="card mb-3"><div class="card-body">
     <input id="patientSearch" class="form-control" placeholder="Digite para filtrar dinamicamente" value="<?php echo htmlspecialchars($search); ?>">
@@ -20,7 +22,17 @@
               <td><?php echo htmlspecialchars($patient['cpf']); ?></td>
               <td><?php echo htmlspecialchars($patient['phone']); ?></td>
               <td><?php echo htmlspecialchars($patient['email'] ?? '-'); ?></td>
-              <td><div class="btn-group table-actions" role="group"><button class="btn btn-sm btn-primary">Visualizar</button><button class="btn btn-sm btn-info">Historico</button><button class="btn btn-sm btn-warning">Editar</button><button class="btn btn-sm btn-danger">Excluir</button></div></td>
+              <td>
+                <div class="btn-group table-actions" role="group">
+                  <a class="btn btn-sm btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-show&id=<?php echo (int) $patient['id']; ?>" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
+                  <a class="btn btn-sm btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-history&id=<?php echo (int) $patient['id']; ?>" title="Historico"><i class="fa-solid fa-book-medical"></i></a>
+                  <a class="btn btn-sm btn-outline-dark" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-edit&id=<?php echo (int) $patient['id']; ?>" title="Editar"><i class="fa-solid fa-pen"></i></a>
+                  <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-delete" class="d-inline js-delete-patient-form" data-patient-name="<?php echo htmlspecialchars((string) $patient['name']); ?>">
+                    <input type="hidden" name="id" value="<?php echo (int) $patient['id']; ?>">
+                    <button class="btn btn-sm btn-outline-dark" type="submit" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                  </form>
+                </div>
+              </td>
             </tr>
           <?php endforeach; endif; ?>
         </tbody>
@@ -29,11 +41,48 @@
   </div>
 </div>
 <script>
-$('#patientSearch').on('input', function(){
-  const t = ($(this).val() || '').toLowerCase();
-  $('.row-patient').each(function(){
-    const h = ($(this).data('search') || '').toString();
-    $(this).toggle(t === '' || h.includes(t));
+window.addEventListener('load', function(){
+  $('#patientSearch').on('input', function(){
+    const t = ($(this).val() || '').toLowerCase();
+    $('.row-patient').each(function(){
+      const h = ($(this).data('search') || '').toString();
+      $(this).toggle(t === '' || h.includes(t));
+    });
+  });
+
+  $('.js-delete-patient-form').on('submit', function(e) {
+    const form = this;
+    if (form.dataset.confirmed === '1') {
+      return;
+    }
+
+    e.preventDefault();
+    const patientName = form.getAttribute('data-patient-name') || 'este paciente';
+
+    if (typeof Swal === 'undefined') {
+      if (confirm('Excluir ' + patientName + '?')) {
+        form.dataset.confirmed = '1';
+        form.submit();
+      }
+      return;
+    }
+
+    Swal.fire({
+      title: 'Confirmar exclusao',
+      text: 'Deseja realmente excluir ' + patientName + '?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, excluir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#c0392b'
+    }).then(function(result) {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      form.dataset.confirmed = '1';
+      form.submit();
+    });
   });
 });
 </script>

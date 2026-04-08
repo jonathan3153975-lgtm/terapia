@@ -1,5 +1,7 @@
 <?php $title = 'Terapeutas'; include __DIR__ . '/../../partials/header.php'; include __DIR__ . '/../../partials/nav.php'; ?>
 <div class="container page-wrap">
+  <?php include __DIR__ . '/../../partials/flash-alert.php'; ?>
+
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Terapeutas</h3>
     <a class="btn btn-primary" href="<?php echo $appUrl; ?>/dashboard.php?action=therapists-create">Novo terapeuta</a>

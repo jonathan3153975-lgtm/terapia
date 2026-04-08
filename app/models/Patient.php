@@ -8,6 +8,16 @@ class Patient extends Model
 {
     protected string $table = 'patients';
 
+    public function findByTherapistAndId(int $therapistId, int $patientId): ?array
+    {
+        $stmt = $this->query('SELECT * FROM patients WHERE therapist_id = ? AND id = ? LIMIT 1', [$therapistId, $patientId]);
+        if (!$stmt) {
+            return null;
+        }
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function searchByTherapist(int $therapistId, string $term = ''): array
     {
         $sql = 'SELECT * FROM patients WHERE therapist_id = ?';

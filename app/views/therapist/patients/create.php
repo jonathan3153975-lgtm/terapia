@@ -4,6 +4,8 @@
     <div class="col-lg-10">
       <div class="card">
         <div class="card-body">
+          <?php include __DIR__ . '/../../partials/flash-alert.php'; ?>
+
           <h4 class="mb-3">Cadastro de Paciente</h4>
           <form id="patientForm" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-store">
             <div class="row g-3">
@@ -55,43 +57,45 @@
   </div>
 </div>
 <script>
-const q1 = new Quill('#editorAtendimento', { theme: 'snow' });
-const q2 = new Quill('#editorTarefa', { theme: 'snow', modules: { toolbar: [[{header:[1,2,3,false]}],['bold','italic','underline','strike'],[{list:'ordered'},{list:'bullet'}],['blockquote','code-block','link'],[{color:[]},{background:[]}],['clean']] } });
+window.addEventListener('load', function() {
+  const q1 = new Quill('#editorAtendimento', { theme: 'snow' });
+  const q2 = new Quill('#editorTarefa', { theme: 'snow', modules: { toolbar: [[{header:[1,2,3,false]}],['bold','italic','underline','strike'],[{list:'ordered'},{list:'bullet'}],['blockquote','code-block','link'],[{color:[]},{background:[]}],['clean']] } });
 
-$('#birth_date').on('change', function(){
-  if (!this.value) return;
-  const b = new Date(this.value);
-  const n = new Date();
-  let age = n.getFullYear() - b.getFullYear();
-  const m = n.getMonth() - b.getMonth();
-  if (m < 0 || (m === 0 && n.getDate() < b.getDate())) age--;
-  $('#age_preview').val(age + ' anos');
-});
+  $('#birth_date').on('change', function(){
+    if (!this.value) return;
+    const b = new Date(this.value);
+    const n = new Date();
+    let age = n.getFullYear() - b.getFullYear();
+    const m = n.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && n.getDate() < b.getDate())) age--;
+    $('#age_preview').val(age + ' anos');
+  });
 
-$('#cep').on('input', function(){
-  const cep = (this.value || '').replace(/\D/g, '');
-  if (cep.length !== 8) return;
-  fetch('https://viacep.com.br/ws/' + cep + '/json/')
-    .then(r => r.json())
-    .then(d => {
-      if (d.erro) return;
-      $('#address').val(d.logradouro || '');
-      $('#neighborhood').val(d.bairro || '');
-      $('#city').val(d.localidade || '');
-      $('#state').val(d.uf || '');
+  $('#cep').on('input', function(){
+    const cep = (this.value || '').replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    fetch('https://viacep.com.br/ws/' + cep + '/json/')
+      .then(r => r.json())
+      .then(d => {
+        if (d.erro) return;
+        $('#address').val(d.logradouro || '');
+        $('#neighborhood').val(d.bairro || '');
+        $('#city').val(d.localidade || '');
+        $('#state').val(d.uf || '');
+      });
     });
-});
 
-$('#patientForm').on('submit', function(e){
-  e.preventDefault();
-  const form = this;
-  $.ajax({
-    url: form.action,
-    method: 'POST',
-    data: $(form).serialize(),
-    headers: {'X-Requested-With':'XMLHttpRequest'},
-    success: function(res){ if (res.success) { window.location.href = res.redirect; return; } Swal.fire('Erro', res.message || 'Falha ao salvar', 'error'); },
-    error: function(xhr){ Swal.fire('Erro', xhr.responseJSON?.message || 'Falha ao salvar', 'error'); }
+  $('#patientForm').on('submit', function(e){
+    e.preventDefault();
+    const form = this;
+    $.ajax({
+      url: form.action,
+      method: 'POST',
+      data: $(form).serialize(),
+      headers: {'X-Requested-With':'XMLHttpRequest'},
+      success: function(res){ if (res.success) { window.location.href = res.redirect; return; } Swal.fire('Erro', res.message || 'Falha ao salvar', 'error'); },
+      error: function(xhr){ Swal.fire('Erro', xhr.responseJSON?.message || 'Falha ao salvar', 'error'); }
+    });
   });
 });
 </script>

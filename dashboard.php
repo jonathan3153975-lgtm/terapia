@@ -22,6 +22,11 @@ match ($action) {
     'patients' => (new TherapistController())->patients(),
     'patients-create' => (new TherapistController())->createPatient(),
     'patients-store' => (new TherapistController())->storePatient(),
+    'patients-show' => (new TherapistController())->showPatient(),
+    'patients-edit' => (new TherapistController())->editPatient(),
+    'patients-update' => (new TherapistController())->updatePatient(),
+    'patients-delete' => (new TherapistController())->deletePatient(),
+    'patients-history' => (new TherapistController())->historyPatient(),
 
     default => (new TherapistController())->dashboard(),
 };
