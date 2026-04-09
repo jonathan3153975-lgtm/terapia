@@ -122,12 +122,6 @@ window.addEventListener('load', function () {
     ],
     fileValidateTypeDetectType: function (source, type) {
       return new Promise(function (resolve) {
-        var detected = (type || '').toLowerCase();
-        if (detected) {
-          resolve(detected);
-          return;
-        }
-
         var name = source && source.name ? source.name.toLowerCase() : '';
         if (name.endsWith('.pdf')) {
           resolve('application/pdf');
@@ -171,6 +165,22 @@ window.addEventListener('load', function () {
         }
         if (name.endsWith('.webm')) {
           resolve('video/webm');
+          return;
+        }
+
+        var detected = (type || '').toLowerCase();
+        if (detected === 'application/octet-stream' || detected === 'binary/octet-stream') {
+          resolve('');
+          return;
+        }
+
+        if (detected === 'application/x-pdf' || detected === 'application/acrobat' || detected === 'applications/vnd.pdf') {
+          resolve('application/pdf');
+          return;
+        }
+
+        if (detected) {
+          resolve(detected);
           return;
         }
 
