@@ -77,30 +77,5 @@
       <?php endif; ?>
     </div>
   </div>
-
-  <div class="card">
-    <div class="card-header bg-transparent"><strong>Encaminhamentos</strong></div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
-          <thead><tr><th>Paciente</th><th>Mensagem</th><th>Enviado em</th><th>Status</th></tr></thead>
-          <tbody>
-            <?php if (empty($deliveries)): ?>
-              <tr><td colspan="4" class="text-center text-muted py-3">Material ainda não foi encaminhado.</td></tr>
-            <?php else: ?>
-              <?php foreach ($deliveries as $delivery): ?>
-                <tr>
-                  <td><?php echo htmlspecialchars((string) ($delivery['patient_name'] ?? '-')); ?></td>
-                  <td><?php echo htmlspecialchars((string) ($delivery['message'] ?? '-')); ?></td>
-                  <td><?php echo !empty($delivery['sent_at']) ? date('d/m/Y H:i', strtotime((string) $delivery['sent_at'])) : '-'; ?></td>
-                  <td><?php echo (($delivery['status'] ?? '') === 'viewed') ? 'Visualizado' : 'Enviado'; ?></td>
-                </tr>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 </div>
 <?php include __DIR__ . '/../../partials/footer.php'; ?>

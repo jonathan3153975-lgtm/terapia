@@ -81,4 +81,73 @@ class Task extends Model
             [$taskId, $therapistId, $patientId]
         );
     }
+
+    public function listLinkedMaterials(int $taskId): array
+    {
+        $stmt = $this->query(
+            'SELECT m.*
+             FROM task_material_links tml
+             INNER JOIN materials m ON m.id = tml.material_id
+             WHERE tml.task_id = ?
+             ORDER BY m.title ASC',
+            [$taskId]
+        );
+        if (!$stmt) {
+            return [];
+        }
+
+        return $stmt->fetchAll();
+    }
+
+    public function listLinkedMaterialsGroupedByTask(array $taskIds): array
+    {
+        $taskIds = array_values(array_unique(array_map('intval', $taskIds)));
+        $taskIds = array_filter($taskIds, static fn (int $id): bool => $id > 0);
+        if (empty($taskIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($taskIds), '?'));
+        $stmt = $this->query(
+            'SELECT tml.task_id, m.*
+             FROM task_material_links tml
+             INNER JOIN materials m ON m.id = tml.material_id
+             WHERE tml.task_id IN (' . $placeholders . ')
+             ORDER BY m.title ASC',
+            $taskIds
+        );
+        if (!$stmt) {
+            return [];
+        }
+
+        $grouped = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $grouped[(int) $row['task_id']][] = $row;
+        }
+
+        return $grouped;
+    }
+
+    public function syncLinkedMaterials(int $taskId, array $materialIds): bool
+    {
+        $materialIds = array_values(array_unique(array_map('intval', $materialIds)));
+        $materialIds = array_filter($materialIds, static fn (int $id): bool => $id > 0);
+
+        $deleted = $this->query('DELETE FROM task_material_links WHERE task_id = ?', [$taskId]);
+        if (!$deleted) {
+            return false;
+        }
+
+        foreach ($materialIds as $materialId) {
+            $ok = $this->query(
+                'INSERT INTO task_material_links (task_id, material_id, created_at) VALUES (?, ?, ?)',
+                [$taskId, $materialId, date('Y-m-d H:i:s')]
+            );
+            if (!$ok) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

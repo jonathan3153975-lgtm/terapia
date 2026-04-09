@@ -9,14 +9,15 @@
           <?php if (empty($tasks)): ?>
           <tr><td colspan="5" class="text-center py-4 text-muted">Nenhuma tarefa recebida.</td></tr>
           <?php else: foreach ($tasks as $task): ?>
+          <?php $linkedMaterials = $taskLinkedMaterials[(int) $task['id']] ?? []; ?>
           <tr>
             <td><?php echo htmlspecialchars($task['due_date']); ?></td>
             <td><?php echo htmlspecialchars($task['title']); ?></td>
             <td><?php echo htmlspecialchars($task['status']); ?></td>
             <td><?php echo strip_tags((string)($task['description'] ?? '')); ?></td>
             <td>
-              <?php if (!empty($task['material_id']) && !empty($task['send_to_patient'])): ?>
-                <a class="btn btn-sm btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=task-material&id=<?php echo (int) $task['id']; ?>"><i class="fa-solid fa-link me-1"></i><?php echo htmlspecialchars((string) ($task['material_title'] ?? 'Abrir material')); ?></a>
+              <?php if (!empty($linkedMaterials) && !empty($task['send_to_patient'])): ?>
+                <a class="btn btn-sm btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=task-material&id=<?php echo (int) $task['id']; ?>"><i class="fa-solid fa-link me-1"></i><?php echo count($linkedMaterials); ?> material(is)</a>
               <?php else: ?>
                 <span class="text-muted">-</span>
               <?php endif; ?>

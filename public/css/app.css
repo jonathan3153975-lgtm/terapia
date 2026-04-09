@@ -372,7 +372,7 @@ body.app-body {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	max-height: 320px;
+	max-height: 300px;
 	overflow: auto;
 }
 
@@ -389,6 +389,10 @@ body.app-body {
 	transition: border-color .15s, background .15s, transform .15s;
 }
 
+.material-picker-item--multi {
+	padding: 10px 12px;
+}
+
 .material-picker-item:hover {
 	border-color: var(--primary);
 	background: rgba(15, 23, 42, .02);
@@ -399,6 +403,15 @@ body.app-body {
 	border-color: var(--primary);
 	box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
 	background: rgba(37, 99, 235, .05);
+}
+
+.btn-reset {
+	border: 0;
+	background: transparent;
+	padding: 0;
+	margin: 0;
+	font: inherit;
+	color: inherit;
 }
 
 .material-picker-preview {
@@ -413,6 +426,78 @@ body.app-body {
 	border-radius: 12px;
 	padding: 14px;
 	background: #fff;
+}
+
+.task-modal-body {
+	max-height: calc(100vh - 150px);
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.task-description-editor {
+	min-height: 220px;
+	background: #fff;
+	border-radius: 12px;
+}
+
+.task-description-editor .ql-toolbar.ql-snow {
+	border-top-left-radius: 12px;
+	border-top-right-radius: 12px;
+	background: #fff;
+}
+
+.task-description-editor .ql-container.ql-snow {
+	min-height: 170px;
+	max-height: 320px;
+	overflow: auto;
+	border-bottom-left-radius: 12px;
+	border-bottom-right-radius: 12px;
+	background: #fff;
+}
+
+.task-material-panel {
+	position: sticky;
+	top: 0;
+}
+
+.task-selected-materials {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.task-material-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.task-material-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	border-radius: 999px;
+	background: rgba(37, 99, 235, .08);
+	color: #1d4ed8;
+	font-size: .8rem;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.task-material-badge:hover {
+	background: rgba(37, 99, 235, .14);
+	color: #1d4ed8;
+}
+
+@media (max-width: 991.98px) {
+	.task-material-panel {
+		position: static;
+	}
+
+	.task-modal-body {
+		max-height: calc(100vh - 120px);
+	}
 }
 
 .table-actions {

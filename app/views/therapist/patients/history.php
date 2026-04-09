@@ -127,6 +127,7 @@
                 <?php foreach ($tasks as $task): ?>
                   <?php [$taskStatusLabel, $taskStatusClass] = $taskStatusInfo($task); ?>
                   <?php $taskAttachments = $taskFiles[(int) $task['id']] ?? []; ?>
+                  <?php $taskMaterials = $taskLinkedMaterials[(int) $task['id']] ?? []; ?>
                   <tr>
                     <td><?php echo $formatDateBr($task['due_date'] ?? null); ?></td>
                     <td><?php echo htmlspecialchars((string) ($task['title'] ?? '-')); ?></td>
@@ -149,10 +150,15 @@
                       <?php endif; ?>
                     </td>
                     <td>
-                      <?php if (!empty($task['material_id'])): ?>
-                        <a class="btn btn-sm btn-outline-primary" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-materials-show&id=<?php echo (int) $task['material_id']; ?>" target="_blank" rel="noopener noreferrer" title="Visualizar material vinculado">
-                          <i class="fa-solid fa-link me-1"></i><?php echo htmlspecialchars((string) ($task['material_title'] ?? 'Material')); ?>
-                        </a>
+                      <?php if (!empty($taskMaterials)): ?>
+                        <div class="task-material-badges">
+                          <?php foreach ($taskMaterials as $linkedMaterial): ?>
+                            <a class="task-material-badge" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-materials-show&id=<?php echo (int) $linkedMaterial['id']; ?>" target="_blank" rel="noopener noreferrer" title="Visualizar material vinculado">
+                              <i class="fa-solid fa-link"></i>
+                              <span><?php echo htmlspecialchars((string) ($linkedMaterial['title'] ?? 'Material')); ?></span>
+                            </a>
+                          <?php endforeach; ?>
+                        </div>
                       <?php else: ?>
                         <span class="text-muted small">-</span>
                       <?php endif; ?>
@@ -188,95 +194,107 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
       <form id="taskForm" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-tasks-store" enctype="multipart/form-data">
-        <div class="modal-body pt-3">
+        <div class="modal-body pt-3 task-modal-body">
           <input type="hidden" name="patient_id" value="<?php echo (int) $patient['id']; ?>">
           <input type="hidden" name="description" id="taskDescriptionInput">
-          <input type="hidden" name="material_id" id="linkedMaterialIdInput">
 
           <div class="row g-3">
-            <div class="col-md-3">
-              <label class="form-label">Data</label>
-              <input class="form-control" type="date" name="due_date" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Título</label>
-              <input class="form-control" name="title" required>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Status</label>
-              <select class="form-select" name="status">
-                <option value="pending" selected>Pendente</option>
-                <option value="done">Finalizado</option>
-              </select>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Descrição</label>
-              <div id="taskDescriptionEditor" style="min-height: 180px; max-height: 40vh;"></div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Anexos (PDF e imagens)</label>
-              <input class="form-control" type="file" name="task_attachments[]" accept=".pdf,image/*" multiple>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Link</label>
-              <input class="form-control" type="url" name="attachment_link" placeholder="https://...">
-            </div>
-            <div class="col-12">
-              <label class="form-label d-flex justify-content-between align-items-center gap-2">
-                <span>Material vinculado</span>
-                <span class="text-muted small">Pesquise, visualize e envie apenas o link do material</span>
-              </label>
+            <div class="col-lg-7 d-grid gap-3">
               <div class="card border-0 bg-light-subtle">
                 <div class="card-body p-3">
-                  <div class="row g-3 align-items-start">
-                    <div class="col-lg-5">
-                      <input class="form-control mb-2" type="search" id="materialSearchInput" placeholder="Pesquisar material por título, tipo ou conteúdo...">
-                      <div id="materialPickerList" class="material-picker-list">
-                        <?php foreach (($materials ?? []) as $material): ?>
-                          <?php
-                            $materialTypeLabel = $renderMaterialTypeLabel((string) ($material['type'] ?? ''));
-                            $materialSearch = strtolower(trim((string) ($material['title'] ?? '') . ' ' . $materialTypeLabel . ' ' . strip_tags((string) ($material['description_html'] ?? ''))));
-                          ?>
-                          <button
-                            class="material-picker-item"
-                            type="button"
-                            data-material-id="<?php echo (int) $material['id']; ?>"
-                            data-material-title="<?php echo htmlspecialchars((string) ($material['title'] ?? ''), ENT_QUOTES); ?>"
-                            data-material-type="<?php echo htmlspecialchars((string) ($material['type'] ?? ''), ENT_QUOTES); ?>"
-                            data-material-description="<?php echo htmlspecialchars((string) ($material['description_html'] ?? ''), ENT_QUOTES); ?>"
-                            data-search="<?php echo htmlspecialchars($materialSearch); ?>"
-                          >
-                            <span class="fw-semibold"><?php echo htmlspecialchars((string) ($material['title'] ?? '')); ?></span>
-                            <span class="text-muted small"><?php echo htmlspecialchars($materialTypeLabel); ?></span>
-                          </button>
-                        <?php endforeach; ?>
-                      </div>
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label">Data</label>
+                      <input class="form-control" type="date" name="due_date" required>
                     </div>
-                    <div class="col-lg-7">
-                      <div class="material-picker-preview card h-100">
-                        <div class="card-body">
-                          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                            <div>
-                              <div id="selectedMaterialTitle" class="fw-semibold">Nenhum material selecionado</div>
-                              <div id="selectedMaterialType" class="text-muted small">Pesquise e selecione um material</div>
-                            </div>
-                            <div class="d-flex gap-2">
-                              <a id="selectedMaterialOpenBtn" class="btn btn-sm btn-outline-primary d-none" target="_blank" rel="noopener noreferrer" href="#">Abrir</a>
-                              <button id="clearSelectedMaterialBtn" class="btn btn-sm btn-light d-none" type="button">Remover</button>
-                            </div>
-                          </div>
-                          <div id="selectedMaterialPreview" class="material-picker-preview-content"><div class="text-muted">Selecione um material para visualizar antes de vincular.</div></div>
-                        </div>
+                    <div class="col-md-8">
+                      <label class="form-label">Título</label>
+                      <input class="form-control" name="title" required>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Status</label>
+                      <select class="form-select" name="status">
+                        <option value="pending" selected>Pendente</option>
+                        <option value="done">Finalizado</option>
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Descrição</label>
+                      <div id="taskDescriptionEditor" class="task-description-editor"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card border-0 bg-light-subtle">
+                <div class="card-body p-3">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Anexos (PDF e imagens)</label>
+                      <input class="form-control" type="file" name="task_attachments[]" accept=".pdf,image/*" multiple>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Link adicional</label>
+                      <input class="form-control" type="url" name="attachment_link" placeholder="https://...">
+                    </div>
+                    <div class="col-12">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="send_to_patient" id="send_to_patient" value="1">
+                        <label class="form-check-label" for="send_to_patient">Enviar para o paciente</label>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div class="col-12">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="send_to_patient" id="send_to_patient" value="1">
-                <label class="form-check-label" for="send_to_patient">Enviar para o paciente</label>
+
+            <div class="col-lg-5">
+              <label class="form-label d-flex justify-content-between align-items-center gap-2">
+                <span>Materiais vinculados</span>
+                <span class="text-muted small">Pesquise, visualize e selecione mais de um</span>
+              </label>
+              <div class="card border-0 bg-light-subtle task-material-panel">
+                <div class="card-body p-3">
+                  <input class="form-control mb-2" type="search" id="materialSearchInput" placeholder="Pesquisar material por título, tipo ou conteúdo...">
+                  <div id="materialPickerList" class="material-picker-list mb-3">
+                    <?php foreach (($materials ?? []) as $material): ?>
+                      <?php
+                        $materialTypeLabel = $renderMaterialTypeLabel((string) ($material['type'] ?? ''));
+                        $materialSearch = strtolower(trim((string) ($material['title'] ?? '') . ' ' . $materialTypeLabel . ' ' . strip_tags((string) ($material['description_html'] ?? ''))));
+                      ?>
+                      <label class="material-picker-item material-picker-item--multi" data-search="<?php echo htmlspecialchars($materialSearch); ?>">
+                        <div class="d-flex align-items-start gap-2 w-100">
+                          <input class="form-check-input mt-1 js-material-checkbox" type="checkbox" name="material_ids[]" value="<?php echo (int) $material['id']; ?>"
+                            data-material-id="<?php echo (int) $material['id']; ?>"
+                            data-material-title="<?php echo htmlspecialchars((string) ($material['title'] ?? ''), ENT_QUOTES); ?>"
+                            data-material-type="<?php echo htmlspecialchars((string) ($material['type'] ?? ''), ENT_QUOTES); ?>"
+                            data-material-description="<?php echo htmlspecialchars((string) ($material['description_html'] ?? ''), ENT_QUOTES); ?>">
+                          <button class="btn-reset text-start flex-grow-1 js-material-preview-btn" type="button"
+                            data-material-id="<?php echo (int) $material['id']; ?>"
+                            data-material-title="<?php echo htmlspecialchars((string) ($material['title'] ?? ''), ENT_QUOTES); ?>"
+                            data-material-type="<?php echo htmlspecialchars((string) ($material['type'] ?? ''), ENT_QUOTES); ?>"
+                            data-material-description="<?php echo htmlspecialchars((string) ($material['description_html'] ?? ''), ENT_QUOTES); ?>">
+                            <span class="fw-semibold d-block"><?php echo htmlspecialchars((string) ($material['title'] ?? '')); ?></span>
+                            <span class="text-muted small d-block"><?php echo htmlspecialchars($materialTypeLabel); ?></span>
+                          </button>
+                        </div>
+                      </label>
+                    <?php endforeach; ?>
+                  </div>
+                  <div class="material-picker-preview card h-100">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                        <div>
+                          <div id="selectedMaterialTitle" class="fw-semibold">Nenhum material em foco</div>
+                          <div id="selectedMaterialType" class="text-muted small">Clique em um material para visualizar</div>
+                        </div>
+                        <a id="selectedMaterialOpenBtn" class="btn btn-sm btn-outline-primary d-none" target="_blank" rel="noopener noreferrer" href="#">Abrir</a>
+                      </div>
+                      <div id="selectedMaterialPreview" class="material-picker-preview-content"><div class="text-muted">Clique em um material da lista para visualizar a descrição.</div></div>
+                      <div id="selectedMaterialsSummary" class="task-selected-materials mt-3"><span class="text-muted small">Nenhum material selecionado.</span></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -294,12 +312,13 @@
 window.addEventListener('load', function() {
   const materialSearchInput = document.getElementById('materialSearchInput');
   const materialItems = Array.from(document.querySelectorAll('.material-picker-item'));
-  const linkedMaterialIdInput = document.getElementById('linkedMaterialIdInput');
+  const materialCheckboxes = Array.from(document.querySelectorAll('.js-material-checkbox'));
+  const materialPreviewButtons = Array.from(document.querySelectorAll('.js-material-preview-btn'));
   const selectedMaterialTitle = document.getElementById('selectedMaterialTitle');
   const selectedMaterialType = document.getElementById('selectedMaterialType');
   const selectedMaterialPreview = document.getElementById('selectedMaterialPreview');
   const selectedMaterialOpenBtn = document.getElementById('selectedMaterialOpenBtn');
-  const clearSelectedMaterialBtn = document.getElementById('clearSelectedMaterialBtn');
+  const selectedMaterialsSummary = document.getElementById('selectedMaterialsSummary');
 
   const appointmentCard = document.getElementById('appointmentFormCard');
   const toggleAppointmentBtn = document.getElementById('btnToggleAppointmentForm');
@@ -340,32 +359,49 @@ window.addEventListener('load', function() {
     }
   });
 
-  const updateMaterialSelection = function(item) {
-    materialItems.forEach(function(node) { node.classList.remove('is-selected'); });
-
-    if (!item) {
-      linkedMaterialIdInput.value = '';
-      selectedMaterialTitle.textContent = 'Nenhum material selecionado';
-      selectedMaterialType.textContent = 'Pesquise e selecione um material';
-      selectedMaterialPreview.innerHTML = '<div class="text-muted">Selecione um material para visualizar antes de vincular.</div>';
-      selectedMaterialOpenBtn.classList.add('d-none');
-      clearSelectedMaterialBtn.classList.add('d-none');
+  const renderSelectedMaterialsSummary = function() {
+    const selected = materialCheckboxes.filter(function(checkbox) { return checkbox.checked; });
+    if (selected.length === 0) {
+      selectedMaterialsSummary.innerHTML = '<span class="text-muted small">Nenhum material selecionado.</span>';
       return;
     }
 
-    item.classList.add('is-selected');
-    linkedMaterialIdInput.value = item.dataset.materialId || '';
-    selectedMaterialTitle.textContent = item.dataset.materialTitle || 'Material';
-    selectedMaterialType.textContent = item.dataset.materialType === 'exercise' ? 'Exercício' : 'Material de apoio';
-    selectedMaterialPreview.innerHTML = item.dataset.materialDescription || '<div class="text-muted">Este material não possui descrição.</div>';
-    selectedMaterialOpenBtn.href = '<?php echo $appUrl; ?>/dashboard.php?action=therapist-materials-show&id=' + (item.dataset.materialId || '');
-    selectedMaterialOpenBtn.classList.remove('d-none');
-    clearSelectedMaterialBtn.classList.remove('d-none');
+    selectedMaterialsSummary.innerHTML = selected.map(function(checkbox) {
+      return '<span class="task-material-badge"><i class="fa-solid fa-link"></i><span>' + checkbox.dataset.materialTitle + '</span></span>';
+    }).join('');
   };
 
-  materialItems.forEach(function(item) {
-    item.addEventListener('click', function() {
-      updateMaterialSelection(item);
+  const updateMaterialPreview = function(source) {
+    materialItems.forEach(function(node) { node.classList.remove('is-selected'); });
+    var item = source ? source.closest('.material-picker-item') : null;
+    if (item) {
+      item.classList.add('is-selected');
+    }
+
+    if (!source) {
+      selectedMaterialTitle.textContent = 'Nenhum material em foco';
+      selectedMaterialType.textContent = 'Clique em um material para visualizar';
+      selectedMaterialPreview.innerHTML = '<div class="text-muted">Clique em um material da lista para visualizar a descrição.</div>';
+      selectedMaterialOpenBtn.classList.add('d-none');
+      return;
+    }
+
+    selectedMaterialTitle.textContent = source.dataset.materialTitle || 'Material';
+    selectedMaterialType.textContent = source.dataset.materialType === 'exercise' ? 'Exercício' : 'Material de apoio';
+    selectedMaterialPreview.innerHTML = source.dataset.materialDescription || '<div class="text-muted">Este material não possui descrição.</div>';
+    selectedMaterialOpenBtn.href = '<?php echo $appUrl; ?>/dashboard.php?action=therapist-materials-show&id=' + (source.dataset.materialId || '');
+    selectedMaterialOpenBtn.classList.remove('d-none');
+  };
+
+  materialPreviewButtons.forEach(function(button) {
+    button.addEventListener('click', function() {
+      updateMaterialPreview(button);
+    });
+  });
+
+  materialCheckboxes.forEach(function(checkbox) {
+    checkbox.addEventListener('change', function() {
+      renderSelectedMaterialsSummary();
     });
   });
 
@@ -379,11 +415,7 @@ window.addEventListener('load', function() {
     });
   }
 
-  if (clearSelectedMaterialBtn) {
-    clearSelectedMaterialBtn.addEventListener('click', function() {
-      updateMaterialSelection(null);
-    });
-  }
+  renderSelectedMaterialsSummary();
 
   $('#appointmentForm').on('submit', function(e) {
     const form = this;

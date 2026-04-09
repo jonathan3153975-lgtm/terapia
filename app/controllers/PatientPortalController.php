@@ -38,9 +38,12 @@ class PatientPortalController extends Controller
     public function tasks(): void
     {
         $patientId = (int) Auth::patientId();
+        $tasks = $this->taskModel->listByPatient($patientId);
+        $taskIds = array_map(static fn (array $task): int => (int) ($task['id'] ?? 0), $tasks);
         $this->view('patient/tasks', [
             'appUrl' => Config::get('APP_URL', ''),
-            'tasks' => $this->taskModel->listByPatient($patientId),
+            'tasks' => $tasks,
+            'taskLinkedMaterials' => $this->taskModel->listLinkedMaterialsGroupedByTask($taskIds),
         ]);
     }
 
@@ -50,22 +53,25 @@ class PatientPortalController extends Controller
         $taskId = (int) ($_GET['id'] ?? 0);
 
         $task = $this->taskModel->findByPatientAndId($patientId, $taskId);
-        if (!$task || empty($task['material_id']) || empty($task['send_to_patient'])) {
+        if (!$task || empty($task['send_to_patient'])) {
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks');
         }
 
-        $material = $this->materialModel->findById((int) $task['material_id']);
-        if (!$material) {
+        $materials = $this->taskModel->listLinkedMaterials($taskId);
+        if (empty($materials)) {
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks');
         }
 
-        $assets = $this->materialModel->listAssets((int) $material['id']);
+        $assetsByMaterial = [];
+        foreach ($materials as $material) {
+            $assetsByMaterial[(int) $material['id']] = $this->materialModel->listAssets((int) $material['id']);
+        }
 
         $this->view('patient/task-material', [
             'appUrl' => Config::get('APP_URL', ''),
             'task' => $task,
-            'material' => $material,
-            'assets' => $assets,
+            'materials' => $materials,
+            'assetsByMaterial' => $assetsByMaterial,
         ]);
     }
 }
