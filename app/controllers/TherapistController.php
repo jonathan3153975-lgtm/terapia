@@ -263,11 +263,17 @@ class TherapistController extends Controller
         $uploadBase = $this->materialUploadBasePath();
 
         if (isset($_FILES['material_files'])) {
-            $names = (array) ($_FILES['material_files']['name'] ?? []);
-            $tmpNames = (array) ($_FILES['material_files']['tmp_name'] ?? []);
-            $sizes = (array) ($_FILES['material_files']['size'] ?? []);
-            $errors = (array) ($_FILES['material_files']['error'] ?? []);
-            $types = (array) ($_FILES['material_files']['type'] ?? []);
+            $rawNames = $_FILES['material_files']['name'] ?? [];
+            $rawTmpNames = $_FILES['material_files']['tmp_name'] ?? [];
+            $rawSizes = $_FILES['material_files']['size'] ?? [];
+            $rawErrors = $_FILES['material_files']['error'] ?? [];
+            $rawTypes = $_FILES['material_files']['type'] ?? [];
+
+            $names = is_array($rawNames) ? array_values($rawNames) : [$rawNames];
+            $tmpNames = is_array($rawTmpNames) ? array_values($rawTmpNames) : [$rawTmpNames];
+            $sizes = is_array($rawSizes) ? array_values($rawSizes) : [$rawSizes];
+            $errors = is_array($rawErrors) ? array_values($rawErrors) : [$rawErrors];
+            $types = is_array($rawTypes) ? array_values($rawTypes) : [$rawTypes];
 
             foreach ($names as $idx => $originalName) {
                 $error = (int) ($errors[$idx] ?? UPLOAD_ERR_NO_FILE);
@@ -276,6 +282,10 @@ class TherapistController extends Controller
                 }
 
                 $tmpName = (string) ($tmpNames[$idx] ?? '');
+                if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+                    continue;
+                }
+
                 $size = (int) ($sizes[$idx] ?? 0);
                 $mimeType = (string) ($types[$idx] ?? '');
                 $ext = strtolower(pathinfo((string) $originalName, PATHINFO_EXTENSION));
