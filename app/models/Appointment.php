@@ -8,6 +8,44 @@ class Appointment extends Model
 {
     protected string $table = 'appointments';
 
+    public function calendarByTherapist(int $therapistId, string $startDate, string $endDate): array
+    {
+        $stmt = $this->query(
+            'SELECT a.*, p.name AS patient_name
+             FROM appointments a
+             LEFT JOIN patients p ON p.id = a.patient_id
+             WHERE a.therapist_id = ?
+               AND a.session_date BETWEEN ? AND ?
+             ORDER BY a.session_date ASC',
+            [$therapistId, $startDate . ' 00:00:00', $endDate . ' 23:59:59']
+        );
+
+        if (!$stmt) {
+            return [];
+        }
+
+        return $stmt->fetchAll();
+    }
+
+    public function hasConflictForTherapist(int $therapistId, string $sessionDate, ?int $ignoreAppointmentId = null): bool
+    {
+        $sql = 'SELECT COUNT(*) AS total FROM appointments WHERE therapist_id = ? AND session_date = ?';
+        $params = [$therapistId, $sessionDate];
+
+        if ($ignoreAppointmentId !== null) {
+            $sql .= ' AND id <> ?';
+            $params[] = $ignoreAppointmentId;
+        }
+
+        $stmt = $this->query($sql, $params);
+        if (!$stmt) {
+            return false;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0) > 0;
+    }
+
     public function countByTherapist(int $therapistId): int
     {
         return $this->count('therapist_id = ?', [$therapistId]);

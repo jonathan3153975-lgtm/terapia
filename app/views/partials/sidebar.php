@@ -18,6 +18,7 @@ $role = (string) Auth::role();
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapists') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapists"><i class="fa-solid fa-user-doctor"></i><span>Terapeutas</span></a>
     <?php elseif ($role === 'therapist'): ?>
       <a class="sidebar-link <?php echo $currentAction === 'therapist-dashboard' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-dashboard"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+      <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-schedule') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-schedule"><i class="fa-solid fa-calendar-days"></i><span>Agenda</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'patients') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=patients"><i class="fa-solid fa-users"></i><span>Pacientes</span></a>
     <?php elseif ($role === 'patient'): ?>
       <a class="sidebar-link <?php echo $currentAction === 'dashboard' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=dashboard"><i class="fa-solid fa-gauge"></i><span>Dashboard</span></a>

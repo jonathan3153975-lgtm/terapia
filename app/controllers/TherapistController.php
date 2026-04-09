@@ -42,6 +42,170 @@ class TherapistController extends Controller
         ]);
     }
 
+    private function normalizeMonth(int $month): int
+    {
+        return max(1, min(12, $month));
+    }
+
+    private function normalizeYear(int $year): int
+    {
+        return max(2000, min(2100, $year));
+    }
+
+    private function buildMonthlyCalendarGrid(int $year, int $month, array $appointments): array
+    {
+        $firstOfMonth = sprintf('%04d-%02d-01', $year, $month);
+        $firstWeekday = (int) date('N', strtotime($firstOfMonth));
+        $daysInMonth = (int) date('t', strtotime($firstOfMonth));
+        $weeks = [];
+        $week = [];
+        $appointmentsByDate = [];
+
+        foreach ($appointments as $appointment) {
+            $dateKey = date('Y-m-d', strtotime((string) $appointment['session_date']));
+            if (!isset($appointmentsByDate[$dateKey])) {
+                $appointmentsByDate[$dateKey] = [];
+            }
+            $appointmentsByDate[$dateKey][] = $appointment;
+        }
+
+        for ($i = 1; $i < $firstWeekday; $i++) {
+            $week[] = null;
+        }
+
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+            $week[] = [
+                'day' => $day,
+                'date' => $date,
+                'appointments' => $appointmentsByDate[$date] ?? [],
+                'isToday' => $date === date('Y-m-d'),
+            ];
+
+            if (count($week) === 7) {
+                $weeks[] = $week;
+                $week = [];
+            }
+        }
+
+        if (!empty($week)) {
+            while (count($week) < 7) {
+                $week[] = null;
+            }
+            $weeks[] = $week;
+        }
+
+        return $weeks;
+    }
+
+    public function schedule(): void
+    {
+        $therapistId = (int) Auth::id();
+        $month = $this->normalizeMonth((int) ($_GET['month'] ?? date('n')));
+        $year = $this->normalizeYear((int) ($_GET['year'] ?? date('Y')));
+
+        $startDate = sprintf('%04d-%02d-01', $year, $month);
+        $endDate = date('Y-m-t', strtotime($startDate));
+
+        $appointments = $this->appointmentModel->calendarByTherapist($therapistId, $startDate, $endDate);
+        $patients = $this->patientModel->searchByTherapist($therapistId);
+        $calendarWeeks = $this->buildMonthlyCalendarGrid($year, $month, $appointments);
+        $monthNames = [
+            1 => 'Janeiro',
+            2 => 'Fevereiro',
+            3 => 'Marco',
+            4 => 'Abril',
+            5 => 'Maio',
+            6 => 'Junho',
+            7 => 'Julho',
+            8 => 'Agosto',
+            9 => 'Setembro',
+            10 => 'Outubro',
+            11 => 'Novembro',
+            12 => 'Dezembro',
+        ];
+
+        $previousMonthDate = strtotime($startDate . ' -1 month');
+        $nextMonthDate = strtotime($startDate . ' +1 month');
+
+        $this->view('therapist/schedule', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'month' => $month,
+            'year' => $year,
+            'monthLabel' => ($monthNames[$month] ?? '') . ' de ' . $year,
+            'calendarWeeks' => $calendarWeeks,
+            'patients' => $patients,
+            'previousMonth' => (int) date('n', $previousMonthDate),
+            'previousYear' => (int) date('Y', $previousMonthDate),
+            'nextMonth' => (int) date('n', $nextMonthDate),
+            'nextYear' => (int) date('Y', $nextMonthDate),
+        ]);
+    }
+
+    public function storeScheduleAppointment(): void
+    {
+        $therapistId = (int) Auth::id();
+        $appointmentAtRaw = trim((string) ($_POST['appointment_at'] ?? ''));
+        $patientId = (int) ($_POST['patient_id'] ?? 0);
+        $newPatientName = Utils::sanitize($_POST['new_patient_name'] ?? '');
+        $description = Utils::sanitize($_POST['description'] ?? '');
+
+        $selectedMonth = $this->normalizeMonth((int) ($_POST['month'] ?? date('n')));
+        $selectedYear = $this->normalizeYear((int) ($_POST['year'] ?? date('Y')));
+
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&month=' . $selectedMonth . '&year=' . $selectedYear;
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if ($appointmentAtRaw === '') {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Data e hora são obrigatórias.'));
+        }
+
+        $appointmentTimestamp = strtotime($appointmentAtRaw);
+        if ($appointmentTimestamp === false) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Data e hora inválidas.'));
+        }
+
+        if ($patientId <= 0 && $newPatientName === '') {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Selecione um paciente ou informe um novo paciente.'));
+        }
+
+        if ($patientId > 0) {
+            $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+            if (!$patient) {
+                $this->redirect($redirectWithStatus($redirectBase, 'error', 'Paciente selecionado inválido.'));
+            }
+            $newPatientName = '';
+        }
+
+        $sessionDate = date('Y-m-d H:i:s', $appointmentTimestamp);
+
+        if ($this->appointmentModel->hasConflictForTherapist($therapistId, $sessionDate)) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Já existe um compromisso nesse horário.'));
+        }
+
+        if ($description === '') {
+            $description = $newPatientName !== '' ? 'Compromisso com ' . $newPatientName : 'Compromisso agendado';
+        }
+
+        $created = $this->appointmentModel->insert([
+            'therapist_id' => $therapistId,
+            'patient_id' => $patientId > 0 ? $patientId : null,
+            'guest_patient_name' => $newPatientName !== '' ? $newPatientName : null,
+            'session_date' => $sessionDate,
+            'description' => $description,
+            'history' => null,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$created) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao cadastrar compromisso.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Compromisso cadastrado com sucesso.'));
+    }
+
     public function patients(): void
     {
         $term = Utils::sanitize($_GET['search'] ?? '');

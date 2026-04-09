@@ -25,6 +25,8 @@ match ($action) {
     'therapists-delete' => (new AdminController())->deleteTherapist(),
 
     'therapist-dashboard' => (new TherapistController())->dashboard(),
+    'therapist-schedule' => (new TherapistController())->schedule(),
+    'therapist-schedule-store' => (new TherapistController())->storeScheduleAppointment(),
     'patients' => (new TherapistController())->patients(),
     'patients-create' => (new TherapistController())->createPatient(),
     'patients-store' => (new TherapistController())->storePatient(),

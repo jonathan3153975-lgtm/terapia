@@ -79,7 +79,8 @@ CREATE TABLE IF NOT EXISTS patients (
 CREATE TABLE IF NOT EXISTS appointments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   therapist_id INT NOT NULL,
-  patient_id INT NOT NULL,
+  patient_id INT NULL,
+  guest_patient_name VARCHAR(150) NULL,
   session_date DATETIME NOT NULL,
   description VARCHAR(255) NULL,
   history LONGTEXT NULL,
