@@ -107,7 +107,76 @@ window.addEventListener('load', function () {
     labelIdle: '<span class="filepond--label-action"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Arraste arquivos aqui ou <u>clique para selecionar</u></span>',
     labelMaxFileSizeExceeded: 'Arquivo muito grande (máx 50 MB)',
     labelFileTypeNotAllowed: 'Tipo não permitido',
-    acceptedFileTypes: ['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.mp4', '.mov', '.avi', '.mkv', '.webm'],
+    acceptedFileTypes: [
+      'application/pdf', '.pdf',
+      'image/jpeg', '.jpg', '.jpeg',
+      'image/png', '.png',
+      'image/webp', '.webp',
+      'image/gif', '.gif',
+      'image/bmp', '.bmp',
+      'video/mp4', '.mp4',
+      'video/quicktime', '.mov',
+      'video/x-msvideo', '.avi',
+      'video/x-matroska', '.mkv',
+      'video/webm', '.webm'
+    ],
+    fileValidateTypeDetectType: function (source, type) {
+      return new Promise(function (resolve) {
+        var detected = (type || '').toLowerCase();
+        if (detected) {
+          resolve(detected);
+          return;
+        }
+
+        var name = source && source.name ? source.name.toLowerCase() : '';
+        if (name.endsWith('.pdf')) {
+          resolve('application/pdf');
+          return;
+        }
+        if (name.match(/\.(jpg|jpeg)$/)) {
+          resolve('image/jpeg');
+          return;
+        }
+        if (name.endsWith('.png')) {
+          resolve('image/png');
+          return;
+        }
+        if (name.endsWith('.webp')) {
+          resolve('image/webp');
+          return;
+        }
+        if (name.endsWith('.gif')) {
+          resolve('image/gif');
+          return;
+        }
+        if (name.endsWith('.bmp')) {
+          resolve('image/bmp');
+          return;
+        }
+        if (name.endsWith('.mp4')) {
+          resolve('video/mp4');
+          return;
+        }
+        if (name.endsWith('.mov')) {
+          resolve('video/quicktime');
+          return;
+        }
+        if (name.endsWith('.avi')) {
+          resolve('video/x-msvideo');
+          return;
+        }
+        if (name.endsWith('.mkv')) {
+          resolve('video/x-matroska');
+          return;
+        }
+        if (name.endsWith('.webm')) {
+          resolve('video/webm');
+          return;
+        }
+
+        resolve('');
+      });
+    },
     server: null,
     instantUpload: false,
     styleLoadIndicatorPosition: 'center bottom',
