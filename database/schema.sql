@@ -127,6 +127,7 @@ CREATE TABLE IF NOT EXISTS files (
 CREATE TABLE IF NOT EXISTS payments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   therapist_id INT NOT NULL,
+  appointment_id INT NULL,
   patient_id INT NULL,
   plan_id INT NULL,
   amount DECIMAL(10,2) NOT NULL,
@@ -136,7 +137,9 @@ CREATE TABLE IF NOT EXISTS payments (
   paid_at DATETIME NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_payments_therapist(therapist_id),
+  INDEX idx_payments_appointment(appointment_id),
   FOREIGN KEY (therapist_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
   FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

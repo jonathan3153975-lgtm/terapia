@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\Appointment;
 use App\Models\FileStorage;
 use App\Models\Patient;
+use App\Models\Payment;
 use App\Models\Task;
 use Classes\Controller;
 use Config\Config;
@@ -16,6 +17,7 @@ class TherapistController extends Controller
 {
     private Patient $patientModel;
     private Appointment $appointmentModel;
+    private Payment $paymentModel;
     private Task $taskModel;
     private FileStorage $fileModel;
 
@@ -24,6 +26,7 @@ class TherapistController extends Controller
         Auth::requireRoles(['therapist']);
         $this->patientModel = new Patient();
         $this->appointmentModel = new Appointment();
+        $this->paymentModel = new Payment();
         $this->taskModel = new Task();
         $this->fileModel = new FileStorage();
     }
@@ -40,6 +43,159 @@ class TherapistController extends Controller
             'totalMessages' => 0,
             'totalFiles' => $this->fileModel->countByTherapist($therapistId),
         ]);
+    }
+
+    private function financialRedirectBase(int $month, int $year): string
+    {
+        return Config::get('APP_URL', '') . '/dashboard.php?action=therapist-financial&month=' . $month . '&year=' . $year;
+    }
+
+    public function financial(): void
+    {
+        $therapistId = (int) Auth::id();
+        $month = $this->normalizeMonth((int) ($_GET['month'] ?? date('n')));
+        $year = $this->normalizeYear((int) ($_GET['year'] ?? date('Y')));
+
+        $rows = $this->paymentModel->listAppointmentFinancialMonthly($therapistId, $month, $year);
+        foreach ($rows as &$row) {
+            if (empty($row['payment_id'])) {
+                $newId = $this->paymentModel->ensurePendingForAppointment(
+                    $therapistId,
+                    (int) $row['appointment_id'],
+                    isset($row['patient_id']) ? (int) $row['patient_id'] : null
+                );
+                $row['payment_id'] = $newId ?: null;
+                $row['payment_status'] = 'pending';
+                $row['amount'] = 0.00;
+            }
+        }
+        unset($row);
+
+        $received = 0.0;
+        $pending = 0.0;
+        $appliedAmounts = [];
+
+        foreach ($rows as $row) {
+            $amount = (float) ($row['amount'] ?? 0);
+            if ($amount > 0) {
+                $appliedAmounts[] = $amount;
+            }
+
+            $status = (string) ($row['payment_status'] ?? 'pending');
+            if ($status === 'paid') {
+                $received += $amount;
+            }
+            if ($status === 'pending') {
+                $pending += $amount;
+            }
+        }
+
+        $appointmentsCount = count($rows);
+        $averageTicket = count($appliedAmounts) > 0 ? (array_sum($appliedAmounts) / count($appliedAmounts)) : 0.0;
+        $estimatedRevenue = $averageTicket * $appointmentsCount;
+
+        $monthNames = [
+            1 => 'Janeiro',
+            2 => 'Fevereiro',
+            3 => 'Marco',
+            4 => 'Abril',
+            5 => 'Maio',
+            6 => 'Junho',
+            7 => 'Julho',
+            8 => 'Agosto',
+            9 => 'Setembro',
+            10 => 'Outubro',
+            11 => 'Novembro',
+            12 => 'Dezembro',
+        ];
+
+        $this->view('therapist/financial', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'month' => $month,
+            'year' => $year,
+            'monthLabel' => ($monthNames[$month] ?? '') . ' de ' . $year,
+            'financialRows' => $rows,
+            'receivedTotal' => $received,
+            'pendingTotal' => $pending,
+            'appointmentsCount' => $appointmentsCount,
+            'averageTicket' => $averageTicket,
+            'estimatedRevenue' => $estimatedRevenue,
+        ]);
+    }
+
+    public function financialUpdate(): void
+    {
+        $therapistId = (int) Auth::id();
+        $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
+        $patientIdRaw = $_POST['patient_id'] ?? null;
+        $patientId = ($patientIdRaw === '' || $patientIdRaw === null) ? null : (int) $patientIdRaw;
+        $status = (string) ($_POST['status'] ?? 'pending');
+        $amount = (float) ($_POST['amount'] ?? 0);
+
+        $month = $this->normalizeMonth((int) ($_POST['month'] ?? date('n')));
+        $year = $this->normalizeYear((int) ($_POST['year'] ?? date('Y')));
+        $redirectBase = $this->financialRedirectBase($month, $year);
+        $redirectWithStatus = static function (string $baseUrl, string $type, string $message): string {
+            return $baseUrl . '&status=' . urlencode($type) . '&msg=' . urlencode($message);
+        };
+
+        if ($appointmentId <= 0) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Agendamento inválido.'));
+        }
+
+        if (!in_array($status, ['pending', 'paid'], true)) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Status de pagamento inválido.'));
+        }
+
+        if ($amount < 0) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Valor da consulta inválido.'));
+        }
+
+        $appointment = $this->appointmentModel->findByTherapistAndId($therapistId, $appointmentId);
+        if (!$appointment) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Agendamento não encontrado.'));
+        }
+
+        $ok = $this->paymentModel->upsertAppointmentPayment($therapistId, $appointmentId, $patientId, $amount, $status);
+        if (!$ok) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao atualizar pagamento.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Pagamento atualizado com sucesso.'));
+    }
+
+    public function financialConfirmPayment(): void
+    {
+        $therapistId = (int) Auth::id();
+        $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
+        $month = $this->normalizeMonth((int) ($_POST['month'] ?? date('n')));
+        $year = $this->normalizeYear((int) ($_POST['year'] ?? date('Y')));
+
+        $redirectBase = $this->financialRedirectBase($month, $year);
+        $redirectWithStatus = static function (string $baseUrl, string $type, string $message): string {
+            return $baseUrl . '&status=' . urlencode($type) . '&msg=' . urlencode($message);
+        };
+
+        if ($appointmentId <= 0) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Agendamento inválido.'));
+        }
+
+        $appointment = $this->appointmentModel->findByTherapistAndId($therapistId, $appointmentId);
+        if (!$appointment) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Agendamento não encontrado.'));
+        }
+
+        $payment = $this->paymentModel->findByAppointmentId($appointmentId);
+        if (!$payment || (float) ($payment['amount'] ?? 0) <= 0) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Defina o valor da consulta antes de confirmar pagamento.'));
+        }
+
+        $ok = $this->paymentModel->confirmPaymentByAppointment($therapistId, $appointmentId);
+        if (!$ok) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao confirmar pagamento.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Pagamento confirmado como pago.'));
     }
 
     private function normalizeMonth(int $month): int
@@ -331,6 +487,8 @@ class TherapistController extends Controller
         if (!$created) {
             $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao cadastrar compromisso.'));
         }
+
+        $this->paymentModel->ensurePendingForAppointment($therapistId, (int) $created, $patientId > 0 ? $patientId : null);
 
         $this->redirect($redirectWithStatus($redirectBase, 'success', 'Compromisso cadastrado com sucesso.'));
     }
@@ -878,6 +1036,8 @@ class TherapistController extends Controller
             }
             $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Falha ao cadastrar atendimento.'));
         }
+
+        $this->paymentModel->ensurePendingForAppointment($therapistId, (int) $inserted, $patientId);
 
         if ($isAjax) {
             $this->success('Atendimento cadastrado', ['redirect' => $redirectHistoryBase]);
