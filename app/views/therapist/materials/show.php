@@ -24,23 +24,53 @@
       <?php if (empty($assets)): ?>
         <div class="text-muted">Nenhum arquivo/link anexado.</div>
       <?php else: ?>
-        <div class="materials-preview-grid">
+        <div class="material-asset-view-list">
           <?php foreach ($assets as $asset): ?>
-            <div class="materials-preview-item">
-              <div class="materials-preview-name"><?php echo htmlspecialchars((string) ($asset['file_name'] ?? 'Arquivo')); ?></div>
-              <?php if (($asset['asset_type'] ?? '') === 'image' && !empty($asset['file_path'])): ?>
-                <img class="materials-preview-image" src="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $asset['file_path']); ?>" alt="Imagem">
-              <?php elseif (($asset['asset_type'] ?? '') === 'video' && !empty($asset['file_path'])): ?>
-                <video class="materials-preview-video" src="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $asset['file_path']); ?>" controls></video>
-              <?php elseif (($asset['asset_type'] ?? '') === 'pdf' && !empty($asset['file_path'])): ?>
-                <div class="materials-preview-file"><i class="fa-solid fa-file-pdf"></i> PDF</div>
-                <a class="btn btn-sm btn-outline-danger mt-2" target="_blank" rel="noopener noreferrer" href="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $asset['file_path']); ?>">Abrir PDF</a>
-              <?php elseif (($asset['asset_type'] ?? '') === 'url' && !empty($asset['file_url'])): ?>
-                <div class="materials-preview-file"><i class="fa-solid fa-link"></i> Link</div>
-                <a class="btn btn-sm btn-outline-primary mt-2" target="_blank" rel="noopener noreferrer" href="<?php echo htmlspecialchars((string) $asset['file_url']); ?>">Abrir link</a>
-              <?php else: ?>
-                <div class="materials-preview-file"><i class="fa-solid fa-file"></i> Arquivo</div>
-              <?php endif; ?>
+            <?php
+              $assetType = (string) ($asset['asset_type'] ?? '');
+              $filePath = !empty($asset['file_path']) ? ($appUrl . '/' . ltrim((string) $asset['file_path'], '/')) : '';
+              $fileUrl = !empty($asset['file_url']) ? (string) $asset['file_url'] : '';
+              $viewUrl = $fileUrl !== '' ? $fileUrl : $filePath;
+            ?>
+            <div class="material-asset-view-card">
+              <div class="material-asset-view-header">
+                <div class="material-asset-view-title">
+                  <?php if ($assetType === 'pdf'): ?>
+                    <i class="fa-solid fa-file-pdf text-danger"></i>
+                  <?php elseif ($assetType === 'image'): ?>
+                    <i class="fa-solid fa-file-image text-primary"></i>
+                  <?php elseif ($assetType === 'video'): ?>
+                    <i class="fa-solid fa-file-video text-warning"></i>
+                  <?php elseif ($assetType === 'url'): ?>
+                    <i class="fa-solid fa-link text-info"></i>
+                  <?php else: ?>
+                    <i class="fa-solid fa-file text-secondary"></i>
+                  <?php endif; ?>
+                  <span><?php echo htmlspecialchars((string) ($asset['file_name'] ?? 'Arquivo')); ?></span>
+                </div>
+                <?php if ($viewUrl !== ''): ?>
+                  <a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener noreferrer" href="<?php echo htmlspecialchars($viewUrl); ?>">Abrir</a>
+                <?php endif; ?>
+              </div>
+
+              <div class="material-asset-view-body">
+                <?php if ($assetType === 'image' && $filePath !== ''): ?>
+                  <a class="material-asset-open-link" target="_blank" rel="noopener noreferrer" href="<?php echo htmlspecialchars($filePath); ?>">
+                    <img class="material-view-image" src="<?php echo htmlspecialchars($filePath); ?>" alt="Imagem anexada">
+                  </a>
+                <?php elseif ($assetType === 'video' && $filePath !== ''): ?>
+                  <video class="material-view-video" src="<?php echo htmlspecialchars($filePath); ?>" controls preload="metadata"></video>
+                <?php elseif ($assetType === 'pdf' && $filePath !== ''): ?>
+                  <iframe class="material-view-pdf" src="<?php echo htmlspecialchars($filePath); ?>#toolbar=0&navpanes=0"></iframe>
+                <?php elseif ($assetType === 'url' && $fileUrl !== ''): ?>
+                  <div class="material-view-link-box">
+                    <div class="text-muted small mb-2">Link externo</div>
+                    <a target="_blank" rel="noopener noreferrer" href="<?php echo htmlspecialchars($fileUrl); ?>"><?php echo htmlspecialchars($fileUrl); ?></a>
+                  </div>
+                <?php else: ?>
+                  <div class="material-view-link-box text-muted">Visualização indisponível para este arquivo.</div>
+                <?php endif; ?>
+              </div>
             </div>
           <?php endforeach; ?>
         </div>

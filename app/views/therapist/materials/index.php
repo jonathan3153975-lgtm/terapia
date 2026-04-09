@@ -23,6 +23,7 @@
           <thead>
             <tr>
               <th>Título</th>
+              <th>Anexos</th>
               <th>Tipo</th>
               <th>Enviado</th>
               <th>Criado em</th>
@@ -32,16 +33,40 @@
           <tbody id="materialsTableBody">
             <?php if (empty($materials)): ?>
               <tr id="materialsEmptyRow">
-                <td colspan="5" class="text-center text-muted py-4">Nenhum material cadastrado.</td>
+                <td colspan="6" class="text-center text-muted py-4">Nenhum material cadastrado.</td>
               </tr>
             <?php else: ?>
               <?php foreach ($materials as $material): ?>
                 <?php
                   $typeLabel = ($material['type'] ?? '') === 'exercise' ? 'Exercício' : 'Material de apoio';
                   $searchBlob = strtolower(trim((string) ($material['title'] ?? '') . ' ' . $typeLabel . ' ' . strip_tags((string) ($material['description_html'] ?? ''))));
+                  $assetTypes = !empty($material['asset_types']) ? array_filter(array_map('trim', explode(',', (string) $material['asset_types']))) : [];
+                  $assetCount = (int) ($material['asset_count'] ?? 0);
                 ?>
                 <tr class="materials-data-row" data-search="<?php echo htmlspecialchars($searchBlob); ?>">
                   <td><?php echo htmlspecialchars((string) ($material['title'] ?? '-')); ?></td>
+                  <td>
+                    <?php if ($assetCount > 0): ?>
+                      <div class="material-attachment-icons" title="<?php echo $assetCount; ?> anexo(s)">
+                        <?php foreach ($assetTypes as $assetType): ?>
+                          <?php if ($assetType === 'pdf'): ?>
+                            <span class="material-attachment-icon text-danger"><i class="fa-solid fa-file-pdf"></i></span>
+                          <?php elseif ($assetType === 'image'): ?>
+                            <span class="material-attachment-icon text-primary"><i class="fa-solid fa-file-image"></i></span>
+                          <?php elseif ($assetType === 'video'): ?>
+                            <span class="material-attachment-icon text-warning"><i class="fa-solid fa-file-video"></i></span>
+                          <?php elseif ($assetType === 'url'): ?>
+                            <span class="material-attachment-icon text-info"><i class="fa-solid fa-link"></i></span>
+                          <?php else: ?>
+                            <span class="material-attachment-icon text-secondary"><i class="fa-solid fa-file"></i></span>
+                          <?php endif; ?>
+                        <?php endforeach; ?>
+                        <span class="material-attachment-count"><?php echo $assetCount; ?></span>
+                      </div>
+                    <?php else: ?>
+                      <span class="text-muted small">Sem anexo</span>
+                    <?php endif; ?>
+                  </td>
                   <td><?php echo htmlspecialchars($typeLabel); ?></td>
                   <td><?php echo (int) ($material['sent_count'] ?? 0); ?> paciente(s)</td>
                   <td><?php echo !empty($material['created_at']) ? date('d/m/Y H:i', strtotime((string) $material['created_at'])) : '-'; ?></td>
@@ -151,7 +176,7 @@ window.addEventListener('load', function () {
       if (visibleCount === 0 && tableBody) {
         var tr = document.createElement('tr');
         tr.id = 'materialsNoSearchMatchRow';
-        tr.innerHTML = '<td colspan="5" class="text-center text-muted py-4">Nenhum material encontrado para a busca.</td>';
+        tr.innerHTML = '<td colspan="6" class="text-center text-muted py-4">Nenhum material encontrado para a busca.</td>';
         tableBody.appendChild(tr);
       }
 

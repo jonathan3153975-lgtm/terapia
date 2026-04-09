@@ -268,6 +268,106 @@ body.app-body {
 	background: var(--bg-panel);
 }
 
+.material-attachment-icons {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.material-attachment-icon {
+	width: 28px;
+	height: 28px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	background: rgba(15, 23, 42, .05);
+	font-size: .9rem;
+}
+
+.material-attachment-count {
+	font-size: .78rem;
+	font-weight: 700;
+	color: var(--text-soft);
+}
+
+.material-asset-view-list {
+	display: grid;
+	gap: 14px;
+}
+
+.material-asset-view-card {
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	overflow: hidden;
+	background: var(--bg-panel);
+}
+
+.material-asset-view-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--line);
+	background: rgba(15, 23, 42, .02);
+}
+
+.material-asset-view-title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-weight: 700;
+	min-width: 0;
+}
+
+.material-asset-view-title span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.material-asset-view-body {
+	padding: 14px;
+}
+
+.material-view-image,
+.material-view-video,
+.material-view-pdf {
+	width: 100%;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: #fff;
+}
+
+.material-view-image {
+	max-height: 420px;
+	object-fit: contain;
+	background: #f7f9fc;
+}
+
+.material-view-video {
+	max-height: 420px;
+	background: #000;
+}
+
+.material-view-pdf {
+	height: 640px;
+}
+
+.material-view-link-box {
+	padding: 18px;
+	border: 1px dashed var(--line);
+	border-radius: 12px;
+	background: rgba(15, 23, 42, .02);
+	word-break: break-word;
+}
+
+.material-asset-open-link {
+	display: block;
+}
+
 .table-actions {
 	display: flex;
 	flex-wrap: nowrap;

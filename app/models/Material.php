@@ -10,9 +10,12 @@ class Material extends Model
 
     public function listByTherapist(int $therapistId, string $term = ''): array
     {
-        $sql = 'SELECT m.*, COUNT(md.id) AS sent_count
+        $sql = 'SELECT m.*, COUNT(DISTINCT md.id) AS sent_count,
+                       GROUP_CONCAT(DISTINCT ma.asset_type ORDER BY ma.asset_type SEPARATOR ",") AS asset_types,
+                       COUNT(DISTINCT ma.id) AS asset_count
                 FROM materials m
                 LEFT JOIN material_deliveries md ON md.material_id = m.id
+                LEFT JOIN material_assets ma ON ma.material_id = m.id
                 WHERE m.therapist_id = ?';
         $params = [$therapistId];
 

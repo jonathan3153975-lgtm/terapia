@@ -105,7 +105,31 @@ window.addEventListener('load', function () {
     labelIdle: '<span class="filepond--label-action"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Arraste arquivos aqui ou <u>clique para selecionar</u></span>',
     labelMaxFileSizeExceeded: 'Arquivo muito grande (máx 50 MB)',
     labelFileTypeNotAllowed: 'Tipo não permitido',
-    acceptedFileTypes: ['application/pdf', 'image/*', 'video/*'],
+    acceptedFileTypes: ['application/pdf', '.pdf', 'image/*', 'video/*'],
+    fileValidateTypeDetectType: function (source, type) {
+      return new Promise(function (resolve) {
+        if (type) {
+          resolve(type);
+          return;
+        }
+
+        var name = source && source.name ? source.name.toLowerCase() : '';
+        if (name.endsWith('.pdf')) {
+          resolve('application/pdf');
+          return;
+        }
+        if (name.match(/\.(jpg|jpeg|png|webp|gif|bmp)$/)) {
+          resolve('image/*');
+          return;
+        }
+        if (name.match(/\.(mp4|mov|avi|mkv|webm)$/)) {
+          resolve('video/*');
+          return;
+        }
+
+        resolve(type);
+      });
+    },
     server: null,
     instantUpload: false,
     styleLoadIndicatorPosition: 'center bottom',
