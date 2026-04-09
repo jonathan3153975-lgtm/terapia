@@ -54,8 +54,8 @@ class TherapistController extends Controller
 
     private function normalizeViewMode(string $view): string
     {
-        $allowed = ['month', 'week', 'day'];
-        return in_array($view, $allowed, true) ? $view : 'month';
+        $allowed = ['week', 'day'];
+        return in_array($view, $allowed, true) ? $view : 'week';
     }
 
     private function sanitizeDateParam(string $date): string
@@ -144,10 +144,54 @@ class TherapistController extends Controller
         return $days;
     }
 
+    private function buildDailyHoursGrid(string $date, array $appointments): array
+    {
+        $appointmentsByHour = [];
+        foreach ($appointments as $appointment) {
+            $hour = (int) date('G', strtotime((string) $appointment['session_date']));
+            if (!isset($appointmentsByHour[$hour])) {
+                $appointmentsByHour[$hour] = [];
+            }
+            $appointmentsByHour[$hour][] = $appointment;
+        }
+
+        $hours = [];
+        for ($hour = 0; $hour < 24; $hour++) {
+            $hours[] = [
+                'hour' => $hour,
+                'label' => sprintf('%02d:00', $hour),
+                'appointments' => $appointmentsByHour[$hour] ?? [],
+                'isCurrentHour' => ($date === date('Y-m-d') && (int) date('G') === $hour),
+            ];
+        }
+
+        return $hours;
+    }
+
+    private function scheduleRedirectBaseFromParams(string $viewMode, string $date): string
+    {
+        return Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=' . $viewMode . '&date=' . $date;
+    }
+
+    private function appointmentDisplayName(array $appointment): string
+    {
+        $patientName = trim((string) ($appointment['patient_name'] ?? ''));
+        if ($patientName !== '') {
+            return $patientName;
+        }
+
+        $guestName = trim((string) ($appointment['guest_patient_name'] ?? ''));
+        if ($guestName !== '') {
+            return $guestName;
+        }
+
+        return 'Paciente sem cadastro';
+    }
+
     public function schedule(): void
     {
         $therapistId = (int) Auth::id();
-        $viewMode = $this->normalizeViewMode((string) ($_GET['view'] ?? 'month'));
+        $viewMode = $this->normalizeViewMode((string) ($_GET['view'] ?? 'week'));
         $month = $this->normalizeMonth((int) ($_GET['month'] ?? date('n')));
         $year = $this->normalizeYear((int) ($_GET['year'] ?? date('Y')));
         $selectedDate = $this->sanitizeDateParam((string) ($_GET['date'] ?? date('Y-m-d')));
@@ -157,14 +201,9 @@ class TherapistController extends Controller
         $monthLabel = '';
         $calendarWeeks = [];
         $calendarWeekDays = [];
-        $calendarDayAppointments = [];
+        $calendarDayHours = [];
 
-        if ($viewMode === 'month') {
-            $startDate = sprintf('%04d-%02d-01', $year, $month);
-            $endDate = date('Y-m-t', strtotime($startDate));
-            $appointments = $this->appointmentModel->calendarByTherapist($therapistId, $startDate, $endDate);
-            $calendarWeeks = $this->buildMonthlyCalendarGrid($year, $month, $appointments);
-        } elseif ($viewMode === 'week') {
+        if ($viewMode === 'week') {
             $weekStart = date('Y-m-d', strtotime('monday this week', strtotime($selectedDate)));
             $startDate = $weekStart;
             $endDate = date('Y-m-d', strtotime($weekStart . ' +6 day'));
@@ -174,28 +213,12 @@ class TherapistController extends Controller
             $startDate = $selectedDate;
             $endDate = $selectedDate;
             $appointments = $this->appointmentModel->calendarByTherapist($therapistId, $startDate, $endDate);
-            $calendarDayAppointments = $appointments;
+            $calendarDayHours = $this->buildDailyHoursGrid($selectedDate, $appointments);
         }
 
         $patients = $this->patientModel->searchByTherapist($therapistId);
-        $monthNames = [
-            1 => 'Janeiro',
-            2 => 'Fevereiro',
-            3 => 'Marco',
-            4 => 'Abril',
-            5 => 'Maio',
-            6 => 'Junho',
-            7 => 'Julho',
-            8 => 'Agosto',
-            9 => 'Setembro',
-            10 => 'Outubro',
-            11 => 'Novembro',
-            12 => 'Dezembro',
-        ];
 
-        if ($viewMode === 'month') {
-            $monthLabel = ($monthNames[$month] ?? '') . ' de ' . $year;
-        } elseif ($viewMode === 'week') {
+        if ($viewMode === 'week') {
             $monthLabel = 'Semana de ' . date('d/m', strtotime($startDate)) . ' a ' . date('d/m/Y', strtotime($endDate));
         } else {
             $weekNames = [
@@ -214,10 +237,7 @@ class TherapistController extends Controller
         $month = (int) date('n', strtotime($startDate));
         $year = (int) date('Y', strtotime($startDate));
 
-        if ($viewMode === 'month') {
-            $previousAnchor = date('Y-m-d', strtotime($startDate . ' -1 month'));
-            $nextAnchor = date('Y-m-d', strtotime($startDate . ' +1 month'));
-        } elseif ($viewMode === 'week') {
+        if ($viewMode === 'week') {
             $previousAnchor = date('Y-m-d', strtotime($startDate . ' -7 day'));
             $nextAnchor = date('Y-m-d', strtotime($startDate . ' +7 day'));
         } else {
@@ -225,15 +245,9 @@ class TherapistController extends Controller
             $nextAnchor = date('Y-m-d', strtotime($startDate . ' +1 day'));
         }
 
-        if ($viewMode === 'month') {
-            $previousUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=month&month=' . date('n', strtotime($previousAnchor)) . '&year=' . date('Y', strtotime($previousAnchor));
-            $nextUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=month&month=' . date('n', strtotime($nextAnchor)) . '&year=' . date('Y', strtotime($nextAnchor));
-        } else {
-            $previousUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=' . $viewMode . '&date=' . $previousAnchor;
-            $nextUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=' . $viewMode . '&date=' . $nextAnchor;
-        }
+        $previousUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=' . $viewMode . '&date=' . $previousAnchor;
+        $nextUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=' . $viewMode . '&date=' . $nextAnchor;
 
-        $monthViewUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=month&month=' . date('n', strtotime($startDate)) . '&year=' . date('Y', strtotime($startDate));
         $weekViewUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=week&date=' . $startDate;
         $dayViewUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=day&date=' . $startDate;
 
@@ -246,11 +260,10 @@ class TherapistController extends Controller
             'monthLabel' => $monthLabel,
             'calendarWeeks' => $calendarWeeks,
             'calendarWeekDays' => $calendarWeekDays,
-            'calendarDayAppointments' => $calendarDayAppointments,
+            'calendarDayHours' => $calendarDayHours,
             'patients' => $patients,
             'previousUrl' => $previousUrl,
             'nextUrl' => $nextUrl,
-            'monthViewUrl' => $monthViewUrl,
             'weekViewUrl' => $weekViewUrl,
             'dayViewUrl' => $dayViewUrl,
         ]);
@@ -266,7 +279,7 @@ class TherapistController extends Controller
 
         $selectedMonth = $this->normalizeMonth((int) ($_POST['month'] ?? date('n')));
         $selectedYear = $this->normalizeYear((int) ($_POST['year'] ?? date('Y')));
-        $selectedView = $this->normalizeViewMode((string) ($_POST['view_mode'] ?? 'month'));
+        $selectedView = $this->normalizeViewMode((string) ($_POST['view_mode'] ?? 'week'));
         $selectedDate = $this->sanitizeDateParam((string) ($_POST['date'] ?? date('Y-m-d')));
 
         $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=' . $selectedView . '&month=' . $selectedMonth . '&year=' . $selectedYear . '&date=' . $selectedDate;
@@ -320,6 +333,162 @@ class TherapistController extends Controller
         }
 
         $this->redirect($redirectWithStatus($redirectBase, 'success', 'Compromisso cadastrado com sucesso.'));
+    }
+
+    public function showScheduleAppointment(): void
+    {
+        $therapistId = (int) Auth::id();
+        $appointmentId = (int) ($_GET['id'] ?? 0);
+        $viewMode = $this->normalizeViewMode((string) ($_GET['view'] ?? 'week'));
+        $date = $this->sanitizeDateParam((string) ($_GET['date'] ?? date('Y-m-d')));
+        $backUrl = $this->scheduleRedirectBaseFromParams($viewMode, $date);
+
+        if ($appointmentId <= 0) {
+            $this->redirect($backUrl . '&status=error&msg=' . urlencode('Compromisso inválido.'));
+        }
+
+        $appointment = $this->appointmentModel->findByTherapistAndId($therapistId, $appointmentId);
+        if (!$appointment) {
+            $this->redirect($backUrl . '&status=error&msg=' . urlencode('Compromisso não encontrado.'));
+        }
+
+        $appointment['display_name'] = $this->appointmentDisplayName($appointment);
+
+        $this->view('therapist/schedule-show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'appointment' => $appointment,
+            'viewMode' => $viewMode,
+            'date' => $date,
+            'backUrl' => $backUrl,
+        ]);
+    }
+
+    public function editScheduleAppointment(): void
+    {
+        $therapistId = (int) Auth::id();
+        $appointmentId = (int) ($_GET['id'] ?? 0);
+        $viewMode = $this->normalizeViewMode((string) ($_GET['view'] ?? 'week'));
+        $date = $this->sanitizeDateParam((string) ($_GET['date'] ?? date('Y-m-d')));
+        $backUrl = $this->scheduleRedirectBaseFromParams($viewMode, $date);
+
+        if ($appointmentId <= 0) {
+            $this->redirect($backUrl . '&status=error&msg=' . urlencode('Compromisso inválido.'));
+        }
+
+        $appointment = $this->appointmentModel->findByTherapistAndId($therapistId, $appointmentId);
+        if (!$appointment) {
+            $this->redirect($backUrl . '&status=error&msg=' . urlencode('Compromisso não encontrado.'));
+        }
+
+        $patients = $this->patientModel->searchByTherapist($therapistId);
+
+        $this->view('therapist/schedule-edit', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'appointment' => $appointment,
+            'patients' => $patients,
+            'viewMode' => $viewMode,
+            'date' => $date,
+            'backUrl' => $backUrl,
+        ]);
+    }
+
+    public function updateScheduleAppointment(): void
+    {
+        $therapistId = (int) Auth::id();
+        $appointmentId = (int) ($_POST['id'] ?? 0);
+        $viewMode = $this->normalizeViewMode((string) ($_POST['view_mode'] ?? 'week'));
+        $date = $this->sanitizeDateParam((string) ($_POST['date'] ?? date('Y-m-d')));
+        $redirectBase = $this->scheduleRedirectBaseFromParams($viewMode, $date);
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if ($appointmentId <= 0) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Compromisso inválido.'));
+        }
+
+        $appointment = $this->appointmentModel->findByTherapistAndId($therapistId, $appointmentId);
+        if (!$appointment) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Compromisso não encontrado.'));
+        }
+
+        $appointmentAtRaw = trim((string) ($_POST['appointment_at'] ?? ''));
+        $patientId = (int) ($_POST['patient_id'] ?? 0);
+        $newPatientName = Utils::sanitize($_POST['new_patient_name'] ?? '');
+        $description = Utils::sanitize($_POST['description'] ?? '');
+        $history = $this->sanitizeRichText((string) ($_POST['history'] ?? ''));
+
+        if ($appointmentAtRaw === '') {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Data e hora são obrigatórias.'));
+        }
+
+        $appointmentTimestamp = strtotime($appointmentAtRaw);
+        if ($appointmentTimestamp === false) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Data e hora inválidas.'));
+        }
+
+        if ($patientId <= 0 && $newPatientName === '') {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Selecione um paciente ou informe um novo paciente.'));
+        }
+
+        if ($patientId > 0) {
+            $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+            if (!$patient) {
+                $this->redirect($redirectWithStatus($redirectBase, 'error', 'Paciente selecionado inválido.'));
+            }
+            $newPatientName = '';
+        }
+
+        $sessionDate = date('Y-m-d H:i:s', $appointmentTimestamp);
+        if ($this->appointmentModel->hasConflictForTherapist($therapistId, $sessionDate, $appointmentId)) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Já existe um compromisso nesse horário.'));
+        }
+
+        if ($description === '') {
+            $description = $newPatientName !== '' ? 'Compromisso com ' . $newPatientName : 'Compromisso agendado';
+        }
+
+        $updated = $this->appointmentModel->updateById($appointmentId, [
+            'patient_id' => $patientId > 0 ? $patientId : null,
+            'guest_patient_name' => $newPatientName !== '' ? $newPatientName : null,
+            'session_date' => $sessionDate,
+            'description' => $description,
+            'history' => $history !== '' ? $history : null,
+        ]);
+
+        if (!$updated) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao atualizar compromisso.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Compromisso atualizado com sucesso.'));
+    }
+
+    public function deleteScheduleAppointment(): void
+    {
+        $therapistId = (int) Auth::id();
+        $appointmentId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+        $viewMode = $this->normalizeViewMode((string) ($_POST['view_mode'] ?? $_GET['view'] ?? 'week'));
+        $date = $this->sanitizeDateParam((string) ($_POST['date'] ?? $_GET['date'] ?? date('Y-m-d')));
+        $redirectBase = $this->scheduleRedirectBaseFromParams($viewMode, $date);
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if ($appointmentId <= 0) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Compromisso inválido.'));
+        }
+
+        $appointment = $this->appointmentModel->findByTherapistAndId($therapistId, $appointmentId);
+        if (!$appointment) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Compromisso não encontrado.'));
+        }
+
+        $deleted = $this->appointmentModel->deleteByTherapistAndId($therapistId, $appointmentId);
+        if (!$deleted) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao excluir compromisso.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Compromisso excluído com sucesso.'));
     }
 
     public function patients(): void

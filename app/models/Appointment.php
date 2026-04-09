@@ -46,6 +46,33 @@ class Appointment extends Model
         return (int) ($row['total'] ?? 0) > 0;
     }
 
+    public function findByTherapistAndId(int $therapistId, int $appointmentId): ?array
+    {
+        $stmt = $this->query(
+            'SELECT a.*, p.name AS patient_name
+             FROM appointments a
+             LEFT JOIN patients p ON p.id = a.patient_id
+             WHERE a.id = ? AND a.therapist_id = ?
+             LIMIT 1',
+            [$appointmentId, $therapistId]
+        );
+
+        if (!$stmt) {
+            return null;
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function deleteByTherapistAndId(int $therapistId, int $appointmentId): bool
+    {
+        return (bool) $this->query(
+            'DELETE FROM appointments WHERE id = ? AND therapist_id = ?',
+            [$appointmentId, $therapistId]
+        );
+    }
+
     public function countByTherapist(int $therapistId): int
     {
         return $this->count('therapist_id = ?', [$therapistId]);

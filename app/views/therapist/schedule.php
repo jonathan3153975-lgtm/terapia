@@ -2,19 +2,14 @@
 <div class="page-wrap">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <h3 class="mb-0">Agenda do terapeuta</h3>
-    <div class="d-flex flex-wrap gap-2">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
       <div class="btn-group" role="group" aria-label="Visualizacao da agenda">
-        <a class="btn btn-outline-primary <?php echo ($viewMode === 'month') ? 'active' : ''; ?>" href="<?php echo $monthViewUrl; ?>">Mes</a>
         <a class="btn btn-outline-primary <?php echo ($viewMode === 'week') ? 'active' : ''; ?>" href="<?php echo $weekViewUrl; ?>">Semana</a>
         <a class="btn btn-outline-primary <?php echo ($viewMode === 'day') ? 'active' : ''; ?>" href="<?php echo $dayViewUrl; ?>">Dia</a>
       </div>
-      <a class="btn btn-outline-secondary" href="<?php echo $previousUrl; ?>">
-        <i class="fa-solid fa-chevron-left"></i>
-      </a>
+      <a class="btn btn-outline-secondary" href="<?php echo $previousUrl; ?>"><i class="fa-solid fa-chevron-left"></i></a>
       <button class="btn btn-light" type="button" disabled><?php echo htmlspecialchars((string) $monthLabel); ?></button>
-      <a class="btn btn-outline-secondary" href="<?php echo $nextUrl; ?>">
-        <i class="fa-solid fa-chevron-right"></i>
-      </a>
+      <a class="btn btn-outline-secondary" href="<?php echo $nextUrl; ?>"><i class="fa-solid fa-chevron-right"></i></a>
     </div>
   </div>
 
@@ -24,93 +19,89 @@
     <div class="col-xl-8">
       <div class="card schedule-card">
         <div class="card-body p-2 p-md-3">
-          <?php if ($viewMode === 'month'): ?>
-            <div class="schedule-grid-head">
-              <div>Seg</div>
-              <div>Ter</div>
-              <div>Qua</div>
-              <div>Qui</div>
-              <div>Sex</div>
-              <div>Sab</div>
-              <div>Dom</div>
-            </div>
-
-            <div class="schedule-grid-body">
-              <?php foreach ($calendarWeeks as $week): ?>
-                <?php foreach ($week as $day): ?>
-                  <?php if ($day === null): ?>
-                    <div class="schedule-day schedule-day-empty"></div>
-                  <?php else: ?>
-                    <div class="schedule-day <?php echo !empty($day['isToday']) ? 'schedule-day-today' : ''; ?>">
-                      <div class="schedule-day-number"><?php echo (int) $day['day']; ?></div>
-                      <div class="schedule-day-list">
-                        <?php foreach ($day['appointments'] as $appointment): ?>
-                          <?php
-                            $hour = date('H:i', strtotime((string) $appointment['session_date']));
-                            $patientName = (string) ($appointment['patient_name'] ?? '');
-                            if ($patientName === '') {
-                                $patientName = (string) ($appointment['guest_patient_name'] ?? 'Paciente sem cadastro');
-                            }
-                          ?>
-                          <div class="schedule-item" title="<?php echo htmlspecialchars((string) ($appointment['description'] ?? '')); ?>">
+          <?php if ($viewMode === 'week'): ?>
+            <div class="schedule-week-vertical">
+              <?php foreach ($calendarWeekDays as $day): ?>
+                <div class="schedule-week-row <?php echo !empty($day['isToday']) ? 'schedule-week-row-today' : ''; ?>">
+                  <div class="schedule-week-date-block">
+                    <div class="schedule-day-title"><?php echo htmlspecialchars((string) $day['dayLabel']); ?></div>
+                    <div class="schedule-day-number"><?php echo (int) $day['day']; ?></div>
+                    <div class="schedule-week-date-small"><?php echo date('d/m/Y', strtotime((string) $day['date'])); ?></div>
+                  </div>
+                  <div class="schedule-week-appointments">
+                    <?php if (empty($day['appointments'])): ?>
+                      <div class="text-muted small">Sem atendimentos</div>
+                    <?php else: ?>
+                      <?php foreach ($day['appointments'] as $appointment): ?>
+                        <?php
+                          $hour = date('H:i', strtotime((string) $appointment['session_date']));
+                          $patientName = (string) ($appointment['patient_name'] ?? '');
+                          if ($patientName === '') {
+                              $patientName = (string) ($appointment['guest_patient_name'] ?? 'Paciente sem cadastro');
+                          }
+                          $showUrl = $appUrl . '/dashboard.php?action=therapist-schedule-show&id=' . (int) $appointment['id'] . '&view=' . urlencode((string) $viewMode) . '&date=' . urlencode((string) $selectedDate);
+                          $editUrl = $appUrl . '/dashboard.php?action=therapist-schedule-edit&id=' . (int) $appointment['id'] . '&view=' . urlencode((string) $viewMode) . '&date=' . urlencode((string) $selectedDate);
+                        ?>
+                        <div class="schedule-line-item" title="<?php echo htmlspecialchars((string) ($appointment['description'] ?? '')); ?>">
+                          <div class="schedule-line-main">
                             <span class="schedule-item-hour"><?php echo $hour; ?></span>
                             <span class="schedule-item-name"><?php echo htmlspecialchars($patientName); ?></span>
                           </div>
-                        <?php endforeach; ?>
-                      </div>
-                    </div>
-                  <?php endif; ?>
-                <?php endforeach; ?>
-              <?php endforeach; ?>
-            </div>
-          <?php elseif ($viewMode === 'week'): ?>
-            <div class="schedule-grid-week">
-              <?php foreach ($calendarWeekDays as $day): ?>
-                <div class="schedule-day <?php echo !empty($day['isToday']) ? 'schedule-day-today' : ''; ?>">
-                  <div class="schedule-day-title"><?php echo htmlspecialchars((string) $day['dayLabel']); ?></div>
-                  <div class="schedule-day-number"><?php echo (int) $day['day']; ?></div>
-                  <div class="schedule-day-list">
-                    <?php foreach ($day['appointments'] as $appointment): ?>
-                      <?php
-                        $hour = date('H:i', strtotime((string) $appointment['session_date']));
-                        $patientName = (string) ($appointment['patient_name'] ?? '');
-                        if ($patientName === '') {
-                            $patientName = (string) ($appointment['guest_patient_name'] ?? 'Paciente sem cadastro');
-                        }
-                      ?>
-                      <div class="schedule-item" title="<?php echo htmlspecialchars((string) ($appointment['description'] ?? '')); ?>">
-                        <span class="schedule-item-hour"><?php echo $hour; ?></span>
-                        <span class="schedule-item-name"><?php echo htmlspecialchars($patientName); ?></span>
-                      </div>
-                    <?php endforeach; ?>
+                          <div class="schedule-line-actions">
+                            <a class="btn btn-sm btn-outline-secondary" href="<?php echo $showUrl; ?>">Ver</a>
+                            <a class="btn btn-sm btn-outline-primary" href="<?php echo $editUrl; ?>">Editar</a>
+                            <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-schedule-delete" onsubmit="return confirm('Excluir este compromisso?');">
+                              <input type="hidden" name="id" value="<?php echo (int) $appointment['id']; ?>">
+                              <input type="hidden" name="view_mode" value="<?php echo htmlspecialchars((string) $viewMode); ?>">
+                              <input type="hidden" name="date" value="<?php echo htmlspecialchars((string) $selectedDate); ?>">
+                              <button class="btn btn-sm btn-outline-danger" type="submit">Excluir</button>
+                            </form>
+                          </div>
+                        </div>
+                      <?php endforeach; ?>
+                    <?php endif; ?>
                   </div>
                 </div>
               <?php endforeach; ?>
             </div>
           <?php else: ?>
             <div class="schedule-day-view">
-              <?php if (empty($calendarDayAppointments)): ?>
-                <div class="alert alert-light border mb-0">Nenhum compromisso para este dia.</div>
-              <?php else: ?>
-                <?php foreach ($calendarDayAppointments as $appointment): ?>
-                  <?php
-                    $hour = date('H:i', strtotime((string) $appointment['session_date']));
-                    $patientName = (string) ($appointment['patient_name'] ?? '');
-                    if ($patientName === '') {
-                        $patientName = (string) ($appointment['guest_patient_name'] ?? 'Paciente sem cadastro');
-                    }
-                  ?>
-                  <div class="schedule-day-row">
-                    <div class="schedule-day-row-time"><?php echo $hour; ?></div>
-                    <div>
-                      <div class="schedule-day-row-name"><?php echo htmlspecialchars($patientName); ?></div>
-                      <?php if (!empty($appointment['description'])): ?>
-                        <div class="text-muted small"><?php echo htmlspecialchars((string) $appointment['description']); ?></div>
-                      <?php endif; ?>
-                    </div>
+              <?php foreach ($calendarDayHours as $hourSlot): ?>
+                <div class="schedule-hour-row <?php echo !empty($hourSlot['isCurrentHour']) ? 'schedule-hour-row-now' : ''; ?>">
+                  <div class="schedule-hour-label"><?php echo htmlspecialchars((string) $hourSlot['label']); ?></div>
+                  <div>
+                    <?php if (empty($hourSlot['appointments'])): ?>
+                      <div class="text-muted small">-</div>
+                    <?php else: ?>
+                      <?php foreach ($hourSlot['appointments'] as $appointment): ?>
+                        <?php
+                          $patientName = (string) ($appointment['patient_name'] ?? '');
+                          if ($patientName === '') {
+                              $patientName = (string) ($appointment['guest_patient_name'] ?? 'Paciente sem cadastro');
+                          }
+                          $showUrl = $appUrl . '/dashboard.php?action=therapist-schedule-show&id=' . (int) $appointment['id'] . '&view=' . urlencode((string) $viewMode) . '&date=' . urlencode((string) $selectedDate);
+                          $editUrl = $appUrl . '/dashboard.php?action=therapist-schedule-edit&id=' . (int) $appointment['id'] . '&view=' . urlencode((string) $viewMode) . '&date=' . urlencode((string) $selectedDate);
+                        ?>
+                        <div class="schedule-line-item mb-1" title="<?php echo htmlspecialchars((string) ($appointment['description'] ?? '')); ?>">
+                          <div class="schedule-line-main">
+                            <span class="schedule-item-name"><?php echo htmlspecialchars($patientName); ?></span>
+                          </div>
+                          <div class="schedule-line-actions">
+                            <a class="btn btn-sm btn-outline-secondary" href="<?php echo $showUrl; ?>">Ver</a>
+                            <a class="btn btn-sm btn-outline-primary" href="<?php echo $editUrl; ?>">Editar</a>
+                            <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-schedule-delete" onsubmit="return confirm('Excluir este compromisso?');">
+                              <input type="hidden" name="id" value="<?php echo (int) $appointment['id']; ?>">
+                              <input type="hidden" name="view_mode" value="<?php echo htmlspecialchars((string) $viewMode); ?>">
+                              <input type="hidden" name="date" value="<?php echo htmlspecialchars((string) $selectedDate); ?>">
+                              <button class="btn btn-sm btn-outline-danger" type="submit">Excluir</button>
+                            </form>
+                          </div>
+                        </div>
+                      <?php endforeach; ?>
+                    <?php endif; ?>
                   </div>
-                <?php endforeach; ?>
-              <?php endif; ?>
+                </div>
+              <?php endforeach; ?>
             </div>
           <?php endif; ?>
         </div>
