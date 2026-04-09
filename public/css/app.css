@@ -162,6 +162,51 @@ body.app-body {
 	background: linear-gradient(140deg, rgba(15, 118, 110, .16), rgba(255, 255, 255, .98));
 }
 
+.materials-preview-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 10px;
+}
+
+.materials-preview-item {
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 8px;
+	background: var(--bg-panel);
+	display: grid;
+	gap: 6px;
+}
+
+.materials-preview-name {
+	font-size: .8rem;
+	font-weight: 700;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.materials-preview-image,
+.materials-preview-video {
+	width: 100%;
+	height: 120px;
+	object-fit: cover;
+	border-radius: 10px;
+	border: 1px solid var(--line);
+	background: #f0f4fa;
+}
+
+.materials-preview-file {
+	min-height: 120px;
+	border-radius: 10px;
+	border: 1px dashed var(--line);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	font-weight: 700;
+	color: var(--text-soft);
+}
+
 .table-actions {
 	display: flex;
 	flex-wrap: nowrap;

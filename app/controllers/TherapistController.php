@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use App\Models\Appointment;
 use App\Models\FileStorage;
+use App\Models\Material;
+use App\Models\MaterialDelivery;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\Task;
@@ -17,6 +19,8 @@ class TherapistController extends Controller
 {
     private Patient $patientModel;
     private Appointment $appointmentModel;
+    private Material $materialModel;
+    private MaterialDelivery $materialDeliveryModel;
     private Payment $paymentModel;
     private Task $taskModel;
     private FileStorage $fileModel;
@@ -26,6 +30,8 @@ class TherapistController extends Controller
         Auth::requireRoles(['therapist']);
         $this->patientModel = new Patient();
         $this->appointmentModel = new Appointment();
+        $this->materialModel = new Material();
+        $this->materialDeliveryModel = new MaterialDelivery();
         $this->paymentModel = new Payment();
         $this->taskModel = new Task();
         $this->fileModel = new FileStorage();
@@ -216,6 +222,366 @@ class TherapistController extends Controller
         }
 
         $this->redirect($redirectWithStatus($redirectBase, 'success', 'Pagamento confirmado como pago.'));
+    }
+
+    private function normalizeMaterialType(string $type): string
+    {
+        return in_array($type, ['support', 'exercise'], true) ? $type : 'support';
+    }
+
+    private function materialUploadBasePath(): string
+    {
+        $uploadBase = dirname(__DIR__, 2) . '/uploads/materials';
+        if (!is_dir($uploadBase)) {
+            @mkdir($uploadBase, 0775, true);
+        }
+        return $uploadBase;
+    }
+
+    private function detectMaterialAssetType(string $extension, string $mimeType): string
+    {
+        $extension = strtolower($extension);
+        $mimeType = strtolower($mimeType);
+
+        if ($extension === 'pdf' || str_contains($mimeType, 'pdf')) {
+            return 'pdf';
+        }
+
+        if (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'], true) || str_starts_with($mimeType, 'image/')) {
+            return 'image';
+        }
+
+        if (in_array($extension, ['mp4', 'webm', 'mov', 'avi', 'mkv'], true) || str_starts_with($mimeType, 'video/')) {
+            return 'video';
+        }
+
+        return '';
+    }
+
+    private function saveMaterialAssetsFromRequest(int $materialId): void
+    {
+        $uploadBase = $this->materialUploadBasePath();
+
+        if (isset($_FILES['material_files'])) {
+            $names = (array) ($_FILES['material_files']['name'] ?? []);
+            $tmpNames = (array) ($_FILES['material_files']['tmp_name'] ?? []);
+            $sizes = (array) ($_FILES['material_files']['size'] ?? []);
+            $errors = (array) ($_FILES['material_files']['error'] ?? []);
+            $types = (array) ($_FILES['material_files']['type'] ?? []);
+
+            foreach ($names as $idx => $originalName) {
+                $error = (int) ($errors[$idx] ?? UPLOAD_ERR_NO_FILE);
+                if ($error !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+
+                $tmpName = (string) ($tmpNames[$idx] ?? '');
+                $size = (int) ($sizes[$idx] ?? 0);
+                $mimeType = (string) ($types[$idx] ?? '');
+                $ext = strtolower(pathinfo((string) $originalName, PATHINFO_EXTENSION));
+                $assetType = $this->detectMaterialAssetType($ext, $mimeType);
+                if ($assetType === '') {
+                    continue;
+                }
+
+                $safeFile = uniqid('material_', true) . ($ext !== '' ? ('.' . $ext) : '');
+                $target = $uploadBase . '/' . $safeFile;
+                if (!@move_uploaded_file($tmpName, $target)) {
+                    continue;
+                }
+
+                $this->materialModel->insertAsset([
+                    'material_id' => $materialId,
+                    'asset_type' => $assetType,
+                    'file_name' => (string) $originalName,
+                    'file_path' => 'uploads/materials/' . $safeFile,
+                    'file_url' => null,
+                    'mime_type' => $mimeType,
+                    'file_size' => $size,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
+        }
+
+        $linksRaw = trim((string) ($_POST['material_links'] ?? ''));
+        if ($linksRaw !== '') {
+            $lines = preg_split('/\r\n|\r|\n/', $linksRaw) ?: [];
+            foreach ($lines as $line) {
+                $url = trim((string) $line);
+                if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+                    continue;
+                }
+
+                $this->materialModel->insertAsset([
+                    'material_id' => $materialId,
+                    'asset_type' => 'url',
+                    'file_name' => $url,
+                    'file_path' => null,
+                    'file_url' => $url,
+                    'mime_type' => null,
+                    'file_size' => 0,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
+        }
+    }
+
+    private function deleteMaterialAssetFileIfExists(array $asset): void
+    {
+        $relative = trim((string) ($asset['file_path'] ?? ''));
+        if ($relative === '') {
+            return;
+        }
+
+        $absolute = dirname(__DIR__, 2) . '/' . ltrim($relative, '/');
+        if (is_file($absolute)) {
+            @unlink($absolute);
+        }
+    }
+
+    public function materials(): void
+    {
+        $therapistId = (int) Auth::id();
+        $term = Utils::sanitize($_GET['search'] ?? '');
+        $materials = $this->materialModel->listByTherapist($therapistId, $term);
+        $patients = $this->patientModel->searchByTherapist($therapistId);
+
+        $this->view('therapist/materials/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'materials' => $materials,
+            'patients' => $patients,
+            'search' => $term,
+        ]);
+    }
+
+    public function createMaterial(): void
+    {
+        $this->view('therapist/materials/create', ['appUrl' => Config::get('APP_URL', '')]);
+    }
+
+    public function storeMaterial(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-materials&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $type = $this->normalizeMaterialType((string) ($_POST['type'] ?? 'support'));
+        $descriptionHtml = $this->sanitizeRichText((string) ($_POST['description_html'] ?? ''));
+        $customHtml = trim((string) ($_POST['custom_html'] ?? ''));
+
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-materials';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if ($title === '') {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Título é obrigatório.'));
+        }
+
+        $materialId = $this->materialModel->insert([
+            'therapist_id' => $therapistId,
+            'title' => $title,
+            'type' => $type,
+            'description_html' => $descriptionHtml,
+            'custom_html' => $customHtml !== '' ? $customHtml : null,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$materialId) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao cadastrar material.'));
+        }
+
+        $this->saveMaterialAssetsFromRequest((int) $materialId);
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Material cadastrado com sucesso.'));
+    }
+
+    public function showMaterial(): void
+    {
+        $therapistId = (int) Auth::id();
+        $materialId = (int) ($_GET['id'] ?? 0);
+        $material = $this->materialModel->findByTherapistAndId($therapistId, $materialId);
+
+        if (!$material) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-materials&status=error&msg=' . urlencode('Material não encontrado.'));
+        }
+
+        $assets = $this->materialModel->listAssets($materialId);
+        $deliveries = $this->materialDeliveryModel->listByMaterial($materialId);
+
+        $this->view('therapist/materials/show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'material' => $material,
+            'assets' => $assets,
+            'deliveries' => $deliveries,
+        ]);
+    }
+
+    public function editMaterial(): void
+    {
+        $therapistId = (int) Auth::id();
+        $materialId = (int) ($_GET['id'] ?? 0);
+        $material = $this->materialModel->findByTherapistAndId($therapistId, $materialId);
+
+        if (!$material) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-materials&status=error&msg=' . urlencode('Material não encontrado.'));
+        }
+
+        $assets = $this->materialModel->listAssets($materialId);
+        $this->view('therapist/materials/edit', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'material' => $material,
+            'assets' => $assets,
+        ]);
+    }
+
+    public function updateMaterial(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-materials&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $materialId = (int) ($_POST['id'] ?? 0);
+        $material = $this->materialModel->findByTherapistAndId($therapistId, $materialId);
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-materials';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$material) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Material não encontrado.'));
+        }
+
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $type = $this->normalizeMaterialType((string) ($_POST['type'] ?? 'support'));
+        $descriptionHtml = $this->sanitizeRichText((string) ($_POST['description_html'] ?? ''));
+        $customHtml = trim((string) ($_POST['custom_html'] ?? ''));
+
+        if ($title === '') {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Título é obrigatório.'));
+        }
+
+        $updated = $this->materialModel->updateById($materialId, [
+            'title' => $title,
+            'type' => $type,
+            'description_html' => $descriptionHtml,
+            'custom_html' => $customHtml !== '' ? $customHtml : null,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao atualizar material.'));
+        }
+
+        $removeAssetIds = $_POST['remove_asset_ids'] ?? [];
+        if (!is_array($removeAssetIds)) {
+            $removeAssetIds = [];
+        }
+
+        foreach ($removeAssetIds as $assetIdRaw) {
+            $assetId = (int) $assetIdRaw;
+            if ($assetId <= 0) {
+                continue;
+            }
+
+            $asset = $this->materialModel->findAssetByTherapistAndId($therapistId, $assetId);
+            if (!$asset) {
+                continue;
+            }
+
+            $this->deleteMaterialAssetFileIfExists($asset);
+            $this->materialModel->deleteAssetById($assetId);
+        }
+
+        $this->saveMaterialAssetsFromRequest($materialId);
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Material atualizado com sucesso.'));
+    }
+
+    public function deleteMaterial(): void
+    {
+        $therapistId = (int) Auth::id();
+        $materialId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+        $material = $this->materialModel->findByTherapistAndId($therapistId, $materialId);
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-materials';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$material) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Material não encontrado.'));
+        }
+
+        $assets = $this->materialModel->listAssets($materialId);
+        foreach ($assets as $asset) {
+            $this->deleteMaterialAssetFileIfExists($asset);
+        }
+
+        $deleted = $this->materialModel->deleteByTherapistAndId($therapistId, $materialId);
+        if (!$deleted) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao excluir material.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Material excluído com sucesso.'));
+    }
+
+    public function sendMaterial(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-materials&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $materialId = (int) ($_POST['material_id'] ?? 0);
+        $message = Utils::sanitize($_POST['message'] ?? '');
+        $patientIds = $_POST['patient_ids'] ?? [];
+        if (!is_array($patientIds)) {
+            $patientIds = [];
+        }
+
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-materials';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        $material = $this->materialModel->findByTherapistAndId($therapistId, $materialId);
+        if (!$material) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Material não encontrado.'));
+        }
+
+        if (empty($patientIds)) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Selecione ao menos um paciente para encaminhar.'));
+        }
+
+        $allowedPatients = $this->patientModel->searchByTherapist($therapistId);
+        $allowedMap = [];
+        foreach ($allowedPatients as $patient) {
+            $allowedMap[(int) $patient['id']] = true;
+        }
+
+        $safePatientIds = [];
+        foreach ($patientIds as $patientIdRaw) {
+            $patientId = (int) $patientIdRaw;
+            if ($patientId > 0 && isset($allowedMap[$patientId])) {
+                $safePatientIds[] = $patientId;
+            }
+        }
+        $safePatientIds = array_values(array_unique($safePatientIds));
+
+        if (empty($safePatientIds)) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Nenhum paciente válido selecionado.'));
+        }
+
+        $sent = $this->materialDeliveryModel->sendToPatients($therapistId, $materialId, $safePatientIds, $message);
+        if ($sent <= 0) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao encaminhar material.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Material encaminhado para ' . $sent . ' paciente(s).'));
     }
 
     private function normalizeMonth(int $month): int
