@@ -34,6 +34,11 @@
               </div>
               <div class="col-md-8"><label class="form-label">Filhos</label><input class="form-control" name="children" value="<?php echo htmlspecialchars((string) ($patient['children'] ?? '')); ?>"></div>
 
+              <div class="col-12"><hr class="my-2"><h5 class="mb-1">Dados Familiares</h5></div>
+              <div class="col-md-6"><label class="form-label">Pai</label><input class="form-control" name="father" value="<?php echo htmlspecialchars((string) ($patient['father'] ?? '')); ?>" placeholder="Nome do pai"></div>
+              <div class="col-md-6"><label class="form-label">Mãe</label><input class="form-control" name="mother" value="<?php echo htmlspecialchars((string) ($patient['mother'] ?? '')); ?>" placeholder="Nome da mãe"></div>
+              <div class="col-md-12"><label class="form-label">A primeira palavra que vem a mente</label><input class="form-control" name="first_word" value="<?php echo htmlspecialchars((string) ($patient['first_word'] ?? '')); ?>" placeholder="Digite a primeira palavra que vem a mente"></div>
+
               <div class="col-12"><hr class="my-2"><h5 class="mb-1">Endereço (opcional)</h5></div>
               <div class="col-md-3"><label class="form-label">CEP</label><input class="form-control" id="cep" name="cep" maxlength="8" value="<?php echo htmlspecialchars((string) ($patient['cep'] ?? '')); ?>"></div>
               <div class="col-md-9"><label class="form-label">Endereço</label><input class="form-control" id="address" name="address" value="<?php echo htmlspecialchars((string) ($patient['address'] ?? '')); ?>"></div>
