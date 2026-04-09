@@ -1,4 +1,9 @@
 <?php $title = 'Novo Material'; include __DIR__ . '/../../partials/header.php'; include __DIR__ . '/../../partials/nav.php'; ?>
+
+<!-- FilePond -->
+<link rel="stylesheet" href="https://unpkg.com/filepond@^4/dist/filepond.min.css">
+<link rel="stylesheet" href="https://unpkg.com/filepond-plugin-image-preview@^4/dist/filepond-plugin-image-preview.min.css">
+
 <div class="page-wrap">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">Cadastrar material</h4>
@@ -29,24 +34,32 @@
           </div>
 
           <div class="col-12">
-            <label class="form-label">Arquivos (PDF, imagem e vídeo)</label>
-            <input class="form-control" type="file" name="material_files[]" id="materialFilesInput" accept=".pdf,image/*,video/*" multiple>
-            <div class="form-text">Você pode carregar mais de um arquivo.</div>
-            <div id="materialFilesPreview" class="materials-preview-grid mt-2"></div>
+            <label class="form-label">Arquivos <span class="text-muted fw-normal">(PDF, imagem e vídeo — arraste ou clique)</span></label>
+            <input class="filepond-input" type="file" name="material_files[]" id="materialFilesInput" accept=".pdf,image/*,video/*" multiple>
           </div>
 
           <div class="col-12">
-            <label class="form-label">Links URL (um por linha)</label>
-            <textarea class="form-control" name="material_links" rows="3" placeholder="https://...\nhttps://..."></textarea>
+            <label class="form-label">Links URL <span class="text-muted fw-normal">(um por linha)</span></label>
+            <textarea class="form-control" name="material_links" rows="3" placeholder="https://exemplo.com&#10;https://outro.com"></textarea>
           </div>
 
           <div class="col-12">
-            <label class="form-label">Código HTML do material (opcional)</label>
-            <textarea class="form-control" name="custom_html" rows="8" placeholder="Insira aqui o código HTML para criar material direto no sistema."></textarea>
+            <label class="form-label d-flex align-items-center justify-content-between gap-2">
+              Código HTML do material <span class="text-muted fw-normal">(opcional)</span>
+              <button class="btn btn-sm btn-outline-secondary" type="button" id="toggleHtmlPreviewBtn"><i class="fa-solid fa-eye me-1"></i>Pré-visualizar</button>
+            </label>
+            <textarea class="form-control font-monospace" name="custom_html" id="customHtmlInput" rows="10" placeholder="<h2>Título</h2>&#10;<p>Conteúdo do material em HTML...</p>" style="font-size: .85rem;"></textarea>
+            <div id="htmlPreviewBox" class="html-preview-box d-none">
+              <div class="html-preview-toolbar">
+                <span class="html-preview-label"><i class="fa-solid fa-eye me-1"></i>Pré-visualização</span>
+                <button class="btn btn-sm btn-outline-secondary py-0" type="button" id="closeHtmlPreviewBtn"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <div id="htmlPreviewContent" class="html-preview-content"></div>
+            </div>
           </div>
         </div>
 
-        <div class="mt-3 d-flex gap-2">
+        <div class="mt-4 d-flex gap-2">
           <button class="btn btn-primary" type="submit">Salvar material</button>
           <a class="btn btn-light" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-materials">Cancelar</a>
         </div>
@@ -55,13 +68,15 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/filepond-plugin-image-preview@^4/dist/filepond-plugin-image-preview.min.js"></script>
+<script src="https://unpkg.com/filepond-plugin-file-validate-type@^1/dist/filepond-plugin-file-validate-type.min.js"></script>
+<script src="https://unpkg.com/filepond-plugin-file-validate-size@^2/dist/filepond-plugin-file-validate-size.min.js"></script>
+<script src="https://unpkg.com/filepond@^4/dist/filepond.min.js"></script>
+
 <script>
 window.addEventListener('load', function () {
-  var materialForm = document.getElementById('materialForm');
+  /* ---------- Quill ---------- */
   var descriptionHtmlInput = document.getElementById('descriptionHtmlInput');
-  var filesInput = document.getElementById('materialFilesInput');
-  var filesPreview = document.getElementById('materialFilesPreview');
-
   var quill = new Quill('#materialDescriptionEditor', {
     theme: 'snow',
     modules: {
@@ -76,58 +91,73 @@ window.addEventListener('load', function () {
     }
   });
 
-  var renderFilePreview = function (files) {
-    if (!filesPreview) {
-      return;
+  /* ---------- FilePond ---------- */
+  FilePond.registerPlugin(
+    FilePondPluginImagePreview,
+    FilePondPluginFileValidateType,
+    FilePondPluginFileValidateSize
+  );
+
+  FilePond.create(document.getElementById('materialFilesInput'), {
+    allowMultiple: true,
+    allowReorder: true,
+    maxFileSize: '50MB',
+    labelIdle: '<span class="filepond--label-action"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Arraste arquivos aqui ou <u>clique para selecionar</u></span>',
+    labelMaxFileSizeExceeded: 'Arquivo muito grande (máx 50 MB)',
+    labelFileTypeNotAllowed: 'Tipo não permitido',
+    acceptedFileTypes: ['application/pdf', 'image/*', 'video/*'],
+    server: null,
+    instantUpload: false,
+    styleLoadIndicatorPosition: 'center bottom',
+    styleProgressIndicatorPosition: 'right bottom',
+    styleButtonRemoveItemPosition: 'left bottom',
+    styleButtonProcessItemPosition: 'right bottom',
+    credits: false
+  });
+
+  /* ---------- Preview HTML ---------- */
+  var customHtmlInput = document.getElementById('customHtmlInput');
+  var htmlPreviewBox = document.getElementById('htmlPreviewBox');
+  var htmlPreviewContent = document.getElementById('htmlPreviewContent');
+  var toggleHtmlPreviewBtn = document.getElementById('toggleHtmlPreviewBtn');
+  var closeHtmlPreviewBtn = document.getElementById('closeHtmlPreviewBtn');
+
+  var updateHtmlPreview = function () {
+    if (htmlPreviewContent) {
+      htmlPreviewContent.innerHTML = customHtmlInput ? customHtmlInput.value : '';
     }
-
-    filesPreview.innerHTML = '';
-    if (!files || files.length === 0) {
-      return;
-    }
-
-    Array.from(files).forEach(function (file) {
-      var item = document.createElement('div');
-      item.className = 'materials-preview-item';
-
-      var head = document.createElement('div');
-      head.className = 'materials-preview-name';
-      head.textContent = file.name;
-      item.appendChild(head);
-
-      if (file.type.indexOf('image/') === 0) {
-        var img = document.createElement('img');
-        img.className = 'materials-preview-image';
-        img.src = URL.createObjectURL(file);
-        item.appendChild(img);
-      } else if (file.type.indexOf('video/') === 0) {
-        var video = document.createElement('video');
-        video.className = 'materials-preview-video';
-        video.src = URL.createObjectURL(file);
-        video.controls = true;
-        item.appendChild(video);
-      } else if (file.type.indexOf('pdf') !== -1 || file.name.toLowerCase().endsWith('.pdf')) {
-        var pdf = document.createElement('div');
-        pdf.className = 'materials-preview-file';
-        pdf.innerHTML = '<i class="fa-solid fa-file-pdf"></i> PDF';
-        item.appendChild(pdf);
-      } else {
-        var generic = document.createElement('div');
-        generic.className = 'materials-preview-file';
-        generic.innerHTML = '<i class="fa-solid fa-file"></i> Arquivo';
-        item.appendChild(generic);
-      }
-
-      filesPreview.appendChild(item);
-    });
   };
 
-  if (filesInput) {
-    filesInput.addEventListener('change', function () {
-      renderFilePreview(filesInput.files);
+  if (toggleHtmlPreviewBtn) {
+    toggleHtmlPreviewBtn.addEventListener('click', function () {
+      if (htmlPreviewBox.classList.contains('d-none')) {
+        updateHtmlPreview();
+        htmlPreviewBox.classList.remove('d-none');
+        toggleHtmlPreviewBtn.innerHTML = '<i class="fa-solid fa-eye-slash me-1"></i>Fechar prévia';
+      } else {
+        htmlPreviewBox.classList.add('d-none');
+        toggleHtmlPreviewBtn.innerHTML = '<i class="fa-solid fa-eye me-1"></i>Pré-visualizar';
+      }
     });
   }
 
+  if (closeHtmlPreviewBtn) {
+    closeHtmlPreviewBtn.addEventListener('click', function () {
+      htmlPreviewBox.classList.add('d-none');
+      toggleHtmlPreviewBtn.innerHTML = '<i class="fa-solid fa-eye me-1"></i>Pré-visualizar';
+    });
+  }
+
+  if (customHtmlInput) {
+    customHtmlInput.addEventListener('input', function () {
+      if (!htmlPreviewBox.classList.contains('d-none')) {
+        updateHtmlPreview();
+      }
+    });
+  }
+
+  /* ---------- Submit ---------- */
+  var materialForm = document.getElementById('materialForm');
   if (materialForm) {
     materialForm.addEventListener('submit', function (e) {
       if (!window.FormSubmitGuard.lock(materialForm, 'Salvando...')) {
