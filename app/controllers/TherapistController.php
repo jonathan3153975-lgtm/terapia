@@ -50,6 +50,26 @@ class TherapistController extends Controller
         return Config::get('APP_URL', '') . '/dashboard.php?action=therapist-financial&month=' . $month . '&year=' . $year;
     }
 
+    private function parseMoneyInput(string $value): float
+    {
+        $raw = trim($value);
+        if ($raw === '') {
+            return 0.0;
+        }
+
+        $normalized = preg_replace('/[^0-9,\.]/', '', $raw) ?? '';
+        if ($normalized === '') {
+            return 0.0;
+        }
+
+        if (str_contains($normalized, ',')) {
+            $normalized = str_replace('.', '', $normalized);
+            $normalized = str_replace(',', '.', $normalized);
+        }
+
+        return (float) $normalized;
+    }
+
     public function financial(): void
     {
         $therapistId = (int) Auth::id();
@@ -130,7 +150,7 @@ class TherapistController extends Controller
         $patientIdRaw = $_POST['patient_id'] ?? null;
         $patientId = ($patientIdRaw === '' || $patientIdRaw === null) ? null : (int) $patientIdRaw;
         $status = (string) ($_POST['status'] ?? 'pending');
-        $amount = (float) ($_POST['amount'] ?? 0);
+        $amount = $this->parseMoneyInput((string) ($_POST['amount'] ?? '0'));
 
         $month = $this->normalizeMonth((int) ($_POST['month'] ?? date('n')));
         $year = $this->normalizeYear((int) ($_POST['year'] ?? date('Y')));

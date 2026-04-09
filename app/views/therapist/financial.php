@@ -24,23 +24,52 @@
 
   <div class="row g-3 mb-3">
     <div class="col-md-6 col-xl-3">
-      <div class="card card-kpi"><div class="card-body"><small>Valor recebido</small><h4 class="mb-0">R$ <?php echo number_format((float) $receivedTotal, 2, ',', '.'); ?></h4></div></div>
+      <div class="card financial-kpi financial-kpi-received">
+        <div class="card-body">
+          <div class="financial-kpi-top"><span>Valor recebido</span><i class="fa-solid fa-circle-check"></i></div>
+          <h4 class="mb-0">R$ <?php echo number_format((float) $receivedTotal, 2, ',', '.'); ?></h4>
+        </div>
+      </div>
     </div>
     <div class="col-md-6 col-xl-3">
-      <div class="card card-kpi"><div class="card-body"><small>Valor pendente</small><h4 class="mb-0">R$ <?php echo number_format((float) $pendingTotal, 2, ',', '.'); ?></h4></div></div>
+      <div class="card financial-kpi financial-kpi-pending">
+        <div class="card-body">
+          <div class="financial-kpi-top"><span>Valor pendente</span><i class="fa-solid fa-hourglass-half"></i></div>
+          <h4 class="mb-0">R$ <?php echo number_format((float) $pendingTotal, 2, ',', '.'); ?></h4>
+        </div>
+      </div>
     </div>
     <div class="col-md-6 col-xl-3">
-      <div class="card card-kpi"><div class="card-body"><small>Consultas marcadas</small><h4 class="mb-0"><?php echo (int) $appointmentsCount; ?></h4></div></div>
+      <div class="card financial-kpi financial-kpi-appointments">
+        <div class="card-body">
+          <div class="financial-kpi-top"><span>Consultas marcadas</span><i class="fa-solid fa-calendar-days"></i></div>
+          <h4 class="mb-0"><?php echo (int) $appointmentsCount; ?></h4>
+        </div>
+      </div>
     </div>
     <div class="col-md-6 col-xl-3">
-      <div class="card card-kpi"><div class="card-body"><small>Prévia de receita</small><h4 class="mb-0">R$ <?php echo number_format((float) $estimatedRevenue, 2, ',', '.'); ?></h4><small class="text-muted">Média: R$ <?php echo number_format((float) $averageTicket, 2, ',', '.'); ?></small></div></div>
+      <div class="card financial-kpi financial-kpi-estimate">
+        <div class="card-body">
+          <div class="financial-kpi-top"><span>Prévia de receita</span><i class="fa-solid fa-chart-column"></i></div>
+          <h4 class="mb-0">R$ <?php echo number_format((float) $estimatedRevenue, 2, ',', '.'); ?></h4>
+          <small class="text-muted">Média: R$ <?php echo number_format((float) $averageTicket, 2, ',', '.'); ?></small>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="card">
+    <div class="card-body p-3 pb-0">
+      <div class="row g-2 align-items-center mb-3">
+        <div class="col-12 col-lg-6">
+          <label class="form-label mb-1" for="financialSearchInput">Buscar na tabela</label>
+          <input id="financialSearchInput" class="form-control" type="search" placeholder="Digite paciente, descrição, data, status ou valor...">
+        </div>
+      </div>
+    </div>
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0" id="financialTable">
           <thead>
             <tr>
               <th>Data/Hora</th>
@@ -51,9 +80,9 @@
               <th>Ações</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="financialTableBody">
             <?php if (empty($financialRows)): ?>
-              <tr>
+              <tr id="financialEmptyRow">
                 <td colspan="6" class="text-center text-muted py-4">Nenhuma consulta encontrada para o período.</td>
               </tr>
             <?php else: ?>
@@ -69,7 +98,7 @@
                       $patientName = 'Paciente sem cadastro';
                   }
                 ?>
-                <tr>
+                <tr class="financial-data-row">
                   <td><?php echo date('d/m/Y H:i', strtotime((string) $row['session_date'])); ?></td>
                   <td><?php echo htmlspecialchars($patientName); ?></td>
                   <td><?php echo htmlspecialchars((string) ($row['description'] ?? '-')); ?></td>
@@ -83,7 +112,10 @@
                         <input type="hidden" name="appointment_id" value="<?php echo (int) $row['appointment_id']; ?>">
                         <input type="hidden" name="patient_id" value="<?php echo htmlspecialchars((string) ($row['patient_id'] ?? '')); ?>">
                         <div class="col-12 col-xl-4">
-                          <input class="form-control form-control-sm" type="number" step="0.01" min="0" name="amount" value="<?php echo number_format((float) ($row['amount'] ?? 0), 2, '.', ''); ?>" required>
+                          <div class="input-group input-group-sm">
+                            <span class="input-group-text">R$</span>
+                            <input class="form-control money-input" type="text" inputmode="numeric" name="amount" value="<?php echo number_format((float) ($row['amount'] ?? 0), 2, ',', '.'); ?>" required>
+                          </div>
                         </div>
                         <div class="col-12 col-xl-4">
                           <select class="form-select form-select-sm" name="status">
@@ -115,4 +147,78 @@
     </div>
   </div>
 </div>
+
+<script>
+window.addEventListener('load', function () {
+  var moneyInputs = document.querySelectorAll('.money-input');
+  var searchInput = document.getElementById('financialSearchInput');
+  var dataRows = document.querySelectorAll('.financial-data-row');
+  var tableBody = document.getElementById('financialTableBody');
+  var emptyRow = document.getElementById('financialEmptyRow');
+
+  var formatMoney = function (rawValue) {
+    var digits = rawValue.replace(/\D/g, '');
+    if (digits === '') {
+      return '0,00';
+    }
+
+    var integerPart = digits.slice(0, -2);
+    var decimalPart = digits.slice(-2);
+    if (integerPart === '') {
+      integerPart = '0';
+    }
+
+    integerPart = integerPart.replace(/^0+(?=\d)/, '');
+    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+    return integerPart + ',' + decimalPart;
+  };
+
+  moneyInputs.forEach(function (input) {
+    input.value = formatMoney(input.value || '0');
+
+    input.addEventListener('input', function () {
+      input.value = formatMoney(input.value);
+    });
+
+    input.addEventListener('blur', function () {
+      input.value = formatMoney(input.value);
+    });
+  });
+
+  if (searchInput && dataRows.length > 0) {
+    searchInput.addEventListener('input', function () {
+      var term = searchInput.value.toLowerCase().trim();
+      var visibleCount = 0;
+
+      dataRows.forEach(function (row) {
+        var text = (row.innerText || row.textContent || '').toLowerCase();
+        var match = term === '' || text.indexOf(term) !== -1;
+        row.style.display = match ? '' : 'none';
+        if (match) {
+          visibleCount++;
+        }
+      });
+
+      if (tableBody) {
+        var existingDynamicEmpty = document.getElementById('financialNoSearchMatchRow');
+        if (existingDynamicEmpty) {
+          existingDynamicEmpty.remove();
+        }
+
+        if (visibleCount === 0) {
+          var tr = document.createElement('tr');
+          tr.id = 'financialNoSearchMatchRow';
+          tr.innerHTML = '<td colspan="6" class="text-center text-muted py-4">Nenhum registro encontrado para a busca.</td>';
+          tableBody.appendChild(tr);
+        }
+      }
+
+      if (emptyRow) {
+        emptyRow.style.display = 'none';
+      }
+    });
+  }
+});
+</script>
 <?php include __DIR__ . '/../partials/footer.php'; ?>

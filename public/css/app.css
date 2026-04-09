@@ -120,6 +120,48 @@ body.app-body {
 
 .card-kpi h2 { margin: 0; font-size: 1.8rem; }
 
+.financial-kpi {
+	position: relative;
+	overflow: hidden;
+	border-radius: 16px;
+	box-shadow: 0 6px 18px rgba(12, 27, 56, .08);
+}
+
+.financial-kpi .card-body {
+	padding: 16px;
+}
+
+.financial-kpi-top {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: .9rem;
+	font-weight: 700;
+	color: var(--text-soft);
+	margin-bottom: 8px;
+}
+
+.financial-kpi h4 {
+	font-size: 1.45rem;
+	letter-spacing: .2px;
+}
+
+.financial-kpi-received {
+	background: linear-gradient(140deg, rgba(22, 163, 74, .16), rgba(255, 255, 255, .98));
+}
+
+.financial-kpi-pending {
+	background: linear-gradient(140deg, rgba(234, 179, 8, .18), rgba(255, 255, 255, .98));
+}
+
+.financial-kpi-appointments {
+	background: linear-gradient(140deg, rgba(59, 130, 246, .16), rgba(255, 255, 255, .98));
+}
+
+.financial-kpi-estimate {
+	background: linear-gradient(140deg, rgba(15, 118, 110, .16), rgba(255, 255, 255, .98));
+}
+
 .table-actions {
 	display: flex;
 	flex-wrap: nowrap;
