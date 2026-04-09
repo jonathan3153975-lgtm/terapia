@@ -69,7 +69,6 @@
 </div>
 
 <script src="https://unpkg.com/filepond-plugin-image-preview@^4/dist/filepond-plugin-image-preview.min.js"></script>
-<script src="https://unpkg.com/filepond-plugin-file-validate-type@^1/dist/filepond-plugin-file-validate-type.min.js"></script>
 <script src="https://unpkg.com/filepond-plugin-file-validate-size@^2/dist/filepond-plugin-file-validate-size.min.js"></script>
 <script src="https://unpkg.com/filepond@^4/dist/filepond.min.js"></script>
 
@@ -94,7 +93,6 @@ window.addEventListener('load', function () {
   /* ---------- FilePond ---------- */
   FilePond.registerPlugin(
     FilePondPluginImagePreview,
-    FilePondPluginFileValidateType,
     FilePondPluginFileValidateSize
   );
 
@@ -106,87 +104,6 @@ window.addEventListener('load', function () {
     maxFileSize: '50MB',
     labelIdle: '<span class="filepond--label-action"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Arraste arquivos aqui ou <u>clique para selecionar</u></span>',
     labelMaxFileSizeExceeded: 'Arquivo muito grande (máx 50 MB)',
-    labelFileTypeNotAllowed: 'Tipo não permitido',
-    acceptedFileTypes: [
-      'application/pdf', '.pdf',
-      'image/jpeg', '.jpg', '.jpeg',
-      'image/png', '.png',
-      'image/webp', '.webp',
-      'image/gif', '.gif',
-      'image/bmp', '.bmp',
-      'video/mp4', '.mp4',
-      'video/quicktime', '.mov',
-      'video/x-msvideo', '.avi',
-      'video/x-matroska', '.mkv',
-      'video/webm', '.webm'
-    ],
-    fileValidateTypeDetectType: function (source, type) {
-      return new Promise(function (resolve) {
-        var name = source && source.name ? source.name.toLowerCase() : '';
-        if (name.endsWith('.pdf')) {
-          resolve('application/pdf');
-          return;
-        }
-        if (name.match(/\.(jpg|jpeg)$/)) {
-          resolve('image/jpeg');
-          return;
-        }
-        if (name.endsWith('.png')) {
-          resolve('image/png');
-          return;
-        }
-        if (name.endsWith('.webp')) {
-          resolve('image/webp');
-          return;
-        }
-        if (name.endsWith('.gif')) {
-          resolve('image/gif');
-          return;
-        }
-        if (name.endsWith('.bmp')) {
-          resolve('image/bmp');
-          return;
-        }
-        if (name.endsWith('.mp4')) {
-          resolve('video/mp4');
-          return;
-        }
-        if (name.endsWith('.mov')) {
-          resolve('video/quicktime');
-          return;
-        }
-        if (name.endsWith('.avi')) {
-          resolve('video/x-msvideo');
-          return;
-        }
-        if (name.endsWith('.mkv')) {
-          resolve('video/x-matroska');
-          return;
-        }
-        if (name.endsWith('.webm')) {
-          resolve('video/webm');
-          return;
-        }
-
-        var detected = (type || '').toLowerCase();
-        if (detected === 'application/octet-stream' || detected === 'binary/octet-stream') {
-          resolve('');
-          return;
-        }
-
-        if (detected === 'application/x-pdf' || detected === 'application/acrobat' || detected === 'applications/vnd.pdf') {
-          resolve('application/pdf');
-          return;
-        }
-
-        if (detected) {
-          resolve(detected);
-          return;
-        }
-
-        resolve('');
-      });
-    },
     server: null,
     instantUpload: false,
     styleLoadIndicatorPosition: 'center bottom',
