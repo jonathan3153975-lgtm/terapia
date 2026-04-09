@@ -22,13 +22,13 @@
           <?php if ($viewMode === 'week'): ?>
             <div class="schedule-week-vertical">
               <?php foreach ($calendarWeekDays as $day): ?>
-                <div class="schedule-week-row <?php echo !empty($day['isToday']) ? 'schedule-week-row-today' : ''; ?>">
-                  <div class="schedule-week-date-block">
+                <div class="schedule-day-card <?php echo !empty($day['isToday']) ? 'schedule-day-card-today' : ''; ?>">
+                  <div class="schedule-day-card-head">
                     <div class="schedule-day-title"><?php echo htmlspecialchars((string) $day['dayLabel']); ?></div>
                     <div class="schedule-day-number"><?php echo (int) $day['day']; ?></div>
                     <div class="schedule-week-date-small"><?php echo date('d/m/Y', strtotime((string) $day['date'])); ?></div>
                   </div>
-                  <div class="schedule-week-appointments">
+                  <div class="schedule-day-card-body">
                     <?php if (empty($day['appointments'])): ?>
                       <div class="text-muted small">Sem atendimentos</div>
                     <?php else: ?>
@@ -48,13 +48,19 @@
                             <span class="schedule-item-name"><?php echo htmlspecialchars($patientName); ?></span>
                           </div>
                           <div class="schedule-line-actions">
-                            <a class="btn btn-sm btn-outline-secondary" href="<?php echo $showUrl; ?>">Ver</a>
-                            <a class="btn btn-sm btn-outline-primary" href="<?php echo $editUrl; ?>">Editar</a>
+                            <a class="btn btn-sm btn-outline-secondary schedule-icon-btn" href="<?php echo $showUrl; ?>" title="Visualizar">
+                              <i class="fa-solid fa-eye"></i>
+                            </a>
+                            <a class="btn btn-sm btn-outline-primary schedule-icon-btn" href="<?php echo $editUrl; ?>" title="Editar">
+                              <i class="fa-solid fa-pen"></i>
+                            </a>
                             <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-schedule-delete" onsubmit="return confirm('Excluir este compromisso?');">
                               <input type="hidden" name="id" value="<?php echo (int) $appointment['id']; ?>">
                               <input type="hidden" name="view_mode" value="<?php echo htmlspecialchars((string) $viewMode); ?>">
                               <input type="hidden" name="date" value="<?php echo htmlspecialchars((string) $selectedDate); ?>">
-                              <button class="btn btn-sm btn-outline-danger" type="submit">Excluir</button>
+                              <button class="btn btn-sm btn-outline-danger schedule-icon-btn" type="submit" title="Excluir">
+                                <i class="fa-solid fa-trash"></i>
+                              </button>
                             </form>
                           </div>
                         </div>
@@ -66,42 +72,50 @@
             </div>
           <?php else: ?>
             <div class="schedule-day-view">
+              <?php $hasDayAppointments = false; ?>
               <?php foreach ($calendarDayHours as $hourSlot): ?>
+                <?php if (empty($hourSlot['appointments'])) { continue; } ?>
+                <?php $hasDayAppointments = true; ?>
                 <div class="schedule-hour-row <?php echo !empty($hourSlot['isCurrentHour']) ? 'schedule-hour-row-now' : ''; ?>">
                   <div class="schedule-hour-label"><?php echo htmlspecialchars((string) $hourSlot['label']); ?></div>
                   <div>
-                    <?php if (empty($hourSlot['appointments'])): ?>
-                      <div class="text-muted small">-</div>
-                    <?php else: ?>
-                      <?php foreach ($hourSlot['appointments'] as $appointment): ?>
-                        <?php
-                          $patientName = (string) ($appointment['patient_name'] ?? '');
-                          if ($patientName === '') {
-                              $patientName = (string) ($appointment['guest_patient_name'] ?? 'Paciente sem cadastro');
-                          }
-                          $showUrl = $appUrl . '/dashboard.php?action=therapist-schedule-show&id=' . (int) $appointment['id'] . '&view=' . urlencode((string) $viewMode) . '&date=' . urlencode((string) $selectedDate);
-                          $editUrl = $appUrl . '/dashboard.php?action=therapist-schedule-edit&id=' . (int) $appointment['id'] . '&view=' . urlencode((string) $viewMode) . '&date=' . urlencode((string) $selectedDate);
-                        ?>
-                        <div class="schedule-line-item mb-1" title="<?php echo htmlspecialchars((string) ($appointment['description'] ?? '')); ?>">
-                          <div class="schedule-line-main">
-                            <span class="schedule-item-name"><?php echo htmlspecialchars($patientName); ?></span>
-                          </div>
-                          <div class="schedule-line-actions">
-                            <a class="btn btn-sm btn-outline-secondary" href="<?php echo $showUrl; ?>">Ver</a>
-                            <a class="btn btn-sm btn-outline-primary" href="<?php echo $editUrl; ?>">Editar</a>
-                            <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-schedule-delete" onsubmit="return confirm('Excluir este compromisso?');">
-                              <input type="hidden" name="id" value="<?php echo (int) $appointment['id']; ?>">
-                              <input type="hidden" name="view_mode" value="<?php echo htmlspecialchars((string) $viewMode); ?>">
-                              <input type="hidden" name="date" value="<?php echo htmlspecialchars((string) $selectedDate); ?>">
-                              <button class="btn btn-sm btn-outline-danger" type="submit">Excluir</button>
-                            </form>
-                          </div>
+                    <?php foreach ($hourSlot['appointments'] as $appointment): ?>
+                      <?php
+                        $patientName = (string) ($appointment['patient_name'] ?? '');
+                        if ($patientName === '') {
+                            $patientName = (string) ($appointment['guest_patient_name'] ?? 'Paciente sem cadastro');
+                        }
+                        $showUrl = $appUrl . '/dashboard.php?action=therapist-schedule-show&id=' . (int) $appointment['id'] . '&view=' . urlencode((string) $viewMode) . '&date=' . urlencode((string) $selectedDate);
+                        $editUrl = $appUrl . '/dashboard.php?action=therapist-schedule-edit&id=' . (int) $appointment['id'] . '&view=' . urlencode((string) $viewMode) . '&date=' . urlencode((string) $selectedDate);
+                      ?>
+                      <div class="schedule-line-item mb-1" title="<?php echo htmlspecialchars((string) ($appointment['description'] ?? '')); ?>">
+                        <div class="schedule-line-main">
+                          <span class="schedule-item-name"><?php echo htmlspecialchars($patientName); ?></span>
                         </div>
-                      <?php endforeach; ?>
-                    <?php endif; ?>
+                        <div class="schedule-line-actions">
+                          <a class="btn btn-sm btn-outline-secondary schedule-icon-btn" href="<?php echo $showUrl; ?>" title="Visualizar">
+                            <i class="fa-solid fa-eye"></i>
+                          </a>
+                          <a class="btn btn-sm btn-outline-primary schedule-icon-btn" href="<?php echo $editUrl; ?>" title="Editar">
+                            <i class="fa-solid fa-pen"></i>
+                          </a>
+                          <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-schedule-delete" onsubmit="return confirm('Excluir este compromisso?');">
+                            <input type="hidden" name="id" value="<?php echo (int) $appointment['id']; ?>">
+                            <input type="hidden" name="view_mode" value="<?php echo htmlspecialchars((string) $viewMode); ?>">
+                            <input type="hidden" name="date" value="<?php echo htmlspecialchars((string) $selectedDate); ?>">
+                            <button class="btn btn-sm btn-outline-danger schedule-icon-btn" type="submit" title="Excluir">
+                              <i class="fa-solid fa-trash"></i>
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    <?php endforeach; ?>
                   </div>
                 </div>
               <?php endforeach; ?>
+              <?php if (!$hasDayAppointments): ?>
+                <div class="alert alert-light border mb-0">Nenhum atendimento registrado neste dia.</div>
+              <?php endif; ?>
             </div>
           <?php endif; ?>
         </div>
@@ -145,7 +159,7 @@
               <input class="form-control" type="text" name="description" maxlength="255" placeholder="Ex.: Sessão inicial">
             </div>
 
-            <button class="btn btn-primary w-100" type="submit">Salvar compromisso</button>
+            <button class="btn btn-primary w-100" type="submit" id="scheduleSubmitButton">Salvar compromisso</button>
           </form>
         </div>
       </div>
@@ -158,6 +172,8 @@ window.addEventListener('load', function () {
   var patientSearchInput = document.getElementById('patientSearchInput');
   var patientIdInput = document.getElementById('patientIdInput');
   var newPatientInput = document.getElementById('newPatientInput');
+  var scheduleForm = document.getElementById('scheduleForm');
+  var scheduleSubmitButton = document.getElementById('scheduleSubmitButton');
   var options = document.querySelectorAll('#patientsList option');
 
   if (!patientSearchInput || !patientIdInput || !newPatientInput) {
@@ -186,6 +202,13 @@ window.addEventListener('load', function () {
       patientIdInput.value = '';
     }
   });
+
+  if (scheduleForm && scheduleSubmitButton) {
+    scheduleForm.addEventListener('submit', function () {
+      scheduleSubmitButton.disabled = true;
+      scheduleSubmitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+    });
+  }
 });
 </script>
 <?php include __DIR__ . '/../partials/footer.php'; ?>
