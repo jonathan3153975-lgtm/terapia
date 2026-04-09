@@ -29,6 +29,40 @@
             <?php echo (string) ($task['description'] ?? ''); ?>
           </div>
         </div>
+        <?php if (!empty($linkedMaterial)): ?>
+        <div class="col-12">
+          <strong>Material vinculado:</strong>
+          <div class="mt-2 border rounded p-3 bg-white">
+            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+              <div>
+                <div class="fw-semibold"><?php echo htmlspecialchars((string) ($linkedMaterial['title'] ?? '-')); ?></div>
+                <div class="text-muted small"><?php echo (($linkedMaterial['type'] ?? '') === 'exercise') ? 'Exercício' : 'Material de apoio'; ?></div>
+              </div>
+              <a class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-materials-show&id=<?php echo (int) $linkedMaterial['id']; ?>"><i class="fa-solid fa-eye me-1"></i>Ver material</a>
+            </div>
+            <?php if (!empty($linkedMaterial['description_html'])): ?>
+              <div class="mt-3 border rounded p-3 bg-light-subtle" style="max-height: 32vh; overflow:auto;">
+                <?php echo (string) $linkedMaterial['description_html']; ?>
+              </div>
+            <?php endif; ?>
+            <?php if (!empty($linkedMaterialAssets)): ?>
+              <div class="mt-3 d-flex flex-wrap gap-2">
+                <?php foreach ($linkedMaterialAssets as $asset): ?>
+                  <?php if (($asset['asset_type'] ?? '') === 'pdf'): ?>
+                    <span class="btn btn-sm btn-outline-danger disabled"><i class="fa-solid fa-file-pdf me-1"></i><?php echo htmlspecialchars((string) ($asset['file_name'] ?? 'PDF')); ?></span>
+                  <?php elseif (($asset['asset_type'] ?? '') === 'image'): ?>
+                    <span class="btn btn-sm btn-outline-primary disabled"><i class="fa-solid fa-file-image me-1"></i><?php echo htmlspecialchars((string) ($asset['file_name'] ?? 'Imagem')); ?></span>
+                  <?php elseif (($asset['asset_type'] ?? '') === 'video'): ?>
+                    <span class="btn btn-sm btn-outline-warning disabled"><i class="fa-solid fa-file-video me-1"></i><?php echo htmlspecialchars((string) ($asset['file_name'] ?? 'Vídeo')); ?></span>
+                  <?php elseif (($asset['asset_type'] ?? '') === 'url'): ?>
+                    <span class="btn btn-sm btn-outline-info disabled"><i class="fa-solid fa-link me-1"></i><?php echo htmlspecialchars((string) ($asset['file_name'] ?? 'Link')); ?></span>
+                  <?php endif; ?>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php endif; ?>
         <?php if (!empty($files)): ?>
         <div class="col-12">
           <strong>Anexos:</strong>

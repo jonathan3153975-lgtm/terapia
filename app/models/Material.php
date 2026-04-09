@@ -57,6 +57,17 @@ class Material extends Model
         return $stmt->fetchAll();
     }
 
+    public function findById(int $materialId): ?array
+    {
+        $stmt = $this->query('SELECT * FROM materials WHERE id = ? LIMIT 1', [$materialId]);
+        if (!$stmt) {
+            return null;
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function insertAsset(array $data): int|false
     {
         $cols = array_keys($data);

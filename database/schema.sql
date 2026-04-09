@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   id INT AUTO_INCREMENT PRIMARY KEY,
   therapist_id INT NOT NULL,
   patient_id INT NOT NULL,
+  material_id INT NULL,
   due_date DATE NOT NULL,
   title VARCHAR(255) NOT NULL,
   description LONGTEXT NOT NULL,
@@ -104,6 +105,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_tasks_therapist(therapist_id),
   INDEX idx_tasks_patient(patient_id),
+  INDEX idx_tasks_material(material_id),
   FOREIGN KEY (therapist_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -199,6 +201,10 @@ CREATE TABLE IF NOT EXISTS material_deliveries (
   FOREIGN KEY (therapist_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE tasks
+  ADD CONSTRAINT fk_tasks_material
+  FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE SET NULL;
 
 INSERT INTO plans (target, name, billing_cycle, price) VALUES
 ('therapist','Plano Terapeuta Mensal','mensal',99.90),

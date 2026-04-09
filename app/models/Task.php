@@ -15,7 +15,14 @@ class Task extends Model
 
     public function listByPatient(int $patientId): array
     {
-        $stmt = $this->query('SELECT * FROM tasks WHERE patient_id = ? ORDER BY due_date DESC', [$patientId]);
+        $stmt = $this->query(
+            'SELECT t.*, m.title AS material_title, m.type AS material_type
+             FROM tasks t
+             LEFT JOIN materials m ON m.id = t.material_id
+             WHERE t.patient_id = ?
+             ORDER BY t.due_date DESC',
+            [$patientId]
+        );
         if (!$stmt) {
             return [];
         }
@@ -35,12 +42,34 @@ class Task extends Model
     public function findByTherapistPatientAndId(int $therapistId, int $patientId, int $taskId): ?array
     {
         $stmt = $this->query(
-            'SELECT * FROM tasks WHERE id = ? AND therapist_id = ? AND patient_id = ? LIMIT 1',
+            'SELECT t.*, m.title AS material_title, m.type AS material_type
+             FROM tasks t
+             LEFT JOIN materials m ON m.id = t.material_id
+             WHERE t.id = ? AND t.therapist_id = ? AND t.patient_id = ?
+             LIMIT 1',
             [$taskId, $therapistId, $patientId]
         );
         if (!$stmt) {
             return null;
         }
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function findByPatientAndId(int $patientId, int $taskId): ?array
+    {
+        $stmt = $this->query(
+            'SELECT t.*, m.title AS material_title, m.type AS material_type
+             FROM tasks t
+             LEFT JOIN materials m ON m.id = t.material_id
+             WHERE t.id = ? AND t.patient_id = ?
+             LIMIT 1',
+            [$taskId, $patientId]
+        );
+        if (!$stmt) {
+            return null;
+        }
+
         $row = $stmt->fetch();
         return $row ?: null;
     }

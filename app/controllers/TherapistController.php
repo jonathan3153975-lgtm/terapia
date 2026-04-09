@@ -1357,6 +1357,7 @@ class TherapistController extends Controller
         $appointments = $this->appointmentModel->listByPatient($patientId);
         $tasks = $this->taskModel->listByPatient($patientId);
         $taskFiles = $this->fileModel->listByPatientGroupedByTask($patientId);
+        $materials = $this->materialModel->listByTherapist($therapistId);
 
         $this->view('therapist/patients/history', [
             'appUrl' => Config::get('APP_URL', ''),
@@ -1364,6 +1365,7 @@ class TherapistController extends Controller
             'appointments' => $appointments,
             'tasks' => $tasks,
             'taskFiles' => $taskFiles,
+            'materials' => $materials,
         ]);
     }
 
@@ -1672,9 +1674,21 @@ class TherapistController extends Controller
         $title = Utils::sanitize($_POST['title'] ?? '');
         $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
         $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
+        $materialId = (int) ($_POST['material_id'] ?? 0);
         $status = Utils::sanitize($_POST['status'] ?? 'pending');
         if (!in_array($status, ['pending', 'done'], true)) {
             $status = 'pending';
+        }
+
+        $selectedMaterial = null;
+        if ($materialId > 0) {
+            $selectedMaterial = $this->materialModel->findByTherapistAndId($therapistId, $materialId);
+            if (!$selectedMaterial) {
+                if ($isAjax) {
+                    $this->error('Material selecionado é inválido');
+                }
+                $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Material selecionado é inválido.'));
+            }
         }
 
         if ($dueDate === '' || $title === '' || $description === '') {
@@ -1687,6 +1701,7 @@ class TherapistController extends Controller
         $taskId = $this->taskModel->insert([
             'therapist_id' => $therapistId,
             'patient_id' => $patientId,
+            'material_id' => $selectedMaterial ? (int) $selectedMaterial['id'] : null,
             'due_date' => $dueDate,
             'title' => $title,
             'description' => $description,
@@ -1728,12 +1743,16 @@ class TherapistController extends Controller
         }
 
         $files = $this->fileModel->listByTask($taskId);
+        $linkedMaterial = !empty($task['material_id']) ? $this->materialModel->findByTherapistAndId($therapistId, (int) $task['material_id']) : null;
+        $linkedMaterialAssets = $linkedMaterial ? $this->materialModel->listAssets((int) $linkedMaterial['id']) : [];
 
         $this->view('therapist/patients/tasks/show', [
             'appUrl' => Config::get('APP_URL', ''),
             'patient' => $patient,
             'task' => $task,
             'files' => $files,
+            'linkedMaterial' => $linkedMaterial,
+            'linkedMaterialAssets' => $linkedMaterialAssets,
         ]);
     }
 
@@ -1753,10 +1772,15 @@ class TherapistController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId . '&status=error&msg=' . urlencode('Tarefa não encontrada.'));
         }
 
+        $materials = $this->materialModel->listByTherapist($therapistId);
+        $linkedMaterial = !empty($task['material_id']) ? $this->materialModel->findByTherapistAndId($therapistId, (int) $task['material_id']) : null;
+
         $this->view('therapist/patients/tasks/edit', [
             'appUrl' => Config::get('APP_URL', ''),
             'patient' => $patient,
             'task' => $task,
+            'materials' => $materials,
+            'linkedMaterial' => $linkedMaterial,
         ]);
     }
 
@@ -1787,9 +1811,21 @@ class TherapistController extends Controller
         $title = Utils::sanitize($_POST['title'] ?? '');
         $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
         $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
+        $materialId = (int) ($_POST['material_id'] ?? 0);
         $status = Utils::sanitize($_POST['status'] ?? 'pending');
         if (!in_array($status, ['pending', 'done'], true)) {
             $status = 'pending';
+        }
+
+        $selectedMaterial = null;
+        if ($materialId > 0) {
+            $selectedMaterial = $this->materialModel->findByTherapistAndId($therapistId, $materialId);
+            if (!$selectedMaterial) {
+                if ($isAjax) {
+                    $this->error('Material selecionado é inválido');
+                }
+                $this->redirect($redirectWithStatus($redirectEditBase, 'error', 'Material selecionado é inválido.'));
+            }
         }
 
         if ($dueDate === '' || $title === '' || $description === '') {
@@ -1803,6 +1839,7 @@ class TherapistController extends Controller
             'due_date' => $dueDate,
             'title' => $title,
             'description' => $description,
+            'material_id' => $selectedMaterial ? (int) $selectedMaterial['id'] : null,
             'send_to_patient' => $sendToPatient,
             'status' => $status,
         ]);
