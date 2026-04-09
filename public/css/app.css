@@ -211,6 +211,12 @@ body.app-body {
 	gap: 8px;
 }
 
+.schedule-grid-week {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	gap: 8px;
+}
+
 .schedule-day {
 	border: 1px solid var(--line);
 	border-radius: 12px;
@@ -236,6 +242,13 @@ body.app-body {
 .schedule-day-number {
 	font-weight: 700;
 	font-size: .95rem;
+}
+
+.schedule-day-title {
+	font-size: .78rem;
+	text-transform: uppercase;
+	color: var(--text-soft);
+	font-weight: 700;
 }
 
 .schedule-day-list {
@@ -264,6 +277,31 @@ body.app-body {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+.schedule-day-view {
+	display: grid;
+	gap: 8px;
+}
+
+.schedule-day-row {
+	display: grid;
+	grid-template-columns: 72px 1fr;
+	align-items: start;
+	gap: 10px;
+	padding: 10px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: rgba(19, 99, 223, .03);
+}
+
+.schedule-day-row-time {
+	font-weight: 700;
+	color: var(--accent);
+}
+
+.schedule-day-row-name {
+	font-weight: 700;
 }
 
 @keyframes float-in {
@@ -328,6 +366,10 @@ body.app-body {
 
 	.schedule-grid-head,
 	.schedule-grid-body {
+		grid-template-columns: repeat(1, minmax(0, 1fr));
+	}
+
+	.schedule-grid-week {
 		grid-template-columns: repeat(1, minmax(0, 1fr));
 	}
 

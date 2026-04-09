@@ -52,15 +52,30 @@ class TherapistController extends Controller
         return max(2000, min(2100, $year));
     }
 
-    private function buildMonthlyCalendarGrid(int $year, int $month, array $appointments): array
+    private function normalizeViewMode(string $view): string
     {
-        $firstOfMonth = sprintf('%04d-%02d-01', $year, $month);
-        $firstWeekday = (int) date('N', strtotime($firstOfMonth));
-        $daysInMonth = (int) date('t', strtotime($firstOfMonth));
-        $weeks = [];
-        $week = [];
-        $appointmentsByDate = [];
+        $allowed = ['month', 'week', 'day'];
+        return in_array($view, $allowed, true) ? $view : 'month';
+    }
 
+    private function sanitizeDateParam(string $date): string
+    {
+        $value = trim($date);
+        if ($value === '') {
+            return date('Y-m-d');
+        }
+
+        $timestamp = strtotime($value);
+        if ($timestamp === false) {
+            return date('Y-m-d');
+        }
+
+        return date('Y-m-d', $timestamp);
+    }
+
+    private function buildAppointmentsByDate(array $appointments): array
+    {
+        $appointmentsByDate = [];
         foreach ($appointments as $appointment) {
             $dateKey = date('Y-m-d', strtotime((string) $appointment['session_date']));
             if (!isset($appointmentsByDate[$dateKey])) {
@@ -68,6 +83,18 @@ class TherapistController extends Controller
             }
             $appointmentsByDate[$dateKey][] = $appointment;
         }
+
+        return $appointmentsByDate;
+    }
+
+    private function buildMonthlyCalendarGrid(int $year, int $month, array $appointments): array
+    {
+        $firstOfMonth = sprintf('%04d-%02d-01', $year, $month);
+        $firstWeekday = (int) date('N', strtotime($firstOfMonth));
+        $daysInMonth = (int) date('t', strtotime($firstOfMonth));
+        $weeks = [];
+        $week = [];
+        $appointmentsByDate = $this->buildAppointmentsByDate($appointments);
 
         for ($i = 1; $i < $firstWeekday; $i++) {
             $week[] = null;
@@ -98,18 +125,59 @@ class TherapistController extends Controller
         return $weeks;
     }
 
+    private function buildWeeklyCalendarGrid(string $weekStartDate, array $appointments): array
+    {
+        $appointmentsByDate = $this->buildAppointmentsByDate($appointments);
+        $days = [];
+
+        for ($i = 0; $i < 7; $i++) {
+            $currentDate = date('Y-m-d', strtotime($weekStartDate . ' +' . $i . ' day'));
+            $days[] = [
+                'dayLabel' => ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'][$i],
+                'date' => $currentDate,
+                'day' => (int) date('d', strtotime($currentDate)),
+                'appointments' => $appointmentsByDate[$currentDate] ?? [],
+                'isToday' => $currentDate === date('Y-m-d'),
+            ];
+        }
+
+        return $days;
+    }
+
     public function schedule(): void
     {
         $therapistId = (int) Auth::id();
+        $viewMode = $this->normalizeViewMode((string) ($_GET['view'] ?? 'month'));
         $month = $this->normalizeMonth((int) ($_GET['month'] ?? date('n')));
         $year = $this->normalizeYear((int) ($_GET['year'] ?? date('Y')));
+        $selectedDate = $this->sanitizeDateParam((string) ($_GET['date'] ?? date('Y-m-d')));
 
-        $startDate = sprintf('%04d-%02d-01', $year, $month);
-        $endDate = date('Y-m-t', strtotime($startDate));
+        $startDate = '';
+        $endDate = '';
+        $monthLabel = '';
+        $calendarWeeks = [];
+        $calendarWeekDays = [];
+        $calendarDayAppointments = [];
 
-        $appointments = $this->appointmentModel->calendarByTherapist($therapistId, $startDate, $endDate);
+        if ($viewMode === 'month') {
+            $startDate = sprintf('%04d-%02d-01', $year, $month);
+            $endDate = date('Y-m-t', strtotime($startDate));
+            $appointments = $this->appointmentModel->calendarByTherapist($therapistId, $startDate, $endDate);
+            $calendarWeeks = $this->buildMonthlyCalendarGrid($year, $month, $appointments);
+        } elseif ($viewMode === 'week') {
+            $weekStart = date('Y-m-d', strtotime('monday this week', strtotime($selectedDate)));
+            $startDate = $weekStart;
+            $endDate = date('Y-m-d', strtotime($weekStart . ' +6 day'));
+            $appointments = $this->appointmentModel->calendarByTherapist($therapistId, $startDate, $endDate);
+            $calendarWeekDays = $this->buildWeeklyCalendarGrid($weekStart, $appointments);
+        } else {
+            $startDate = $selectedDate;
+            $endDate = $selectedDate;
+            $appointments = $this->appointmentModel->calendarByTherapist($therapistId, $startDate, $endDate);
+            $calendarDayAppointments = $appointments;
+        }
+
         $patients = $this->patientModel->searchByTherapist($therapistId);
-        $calendarWeeks = $this->buildMonthlyCalendarGrid($year, $month, $appointments);
         $monthNames = [
             1 => 'Janeiro',
             2 => 'Fevereiro',
@@ -125,20 +193,66 @@ class TherapistController extends Controller
             12 => 'Dezembro',
         ];
 
-        $previousMonthDate = strtotime($startDate . ' -1 month');
-        $nextMonthDate = strtotime($startDate . ' +1 month');
+        if ($viewMode === 'month') {
+            $monthLabel = ($monthNames[$month] ?? '') . ' de ' . $year;
+        } elseif ($viewMode === 'week') {
+            $monthLabel = 'Semana de ' . date('d/m', strtotime($startDate)) . ' a ' . date('d/m/Y', strtotime($endDate));
+        } else {
+            $weekNames = [
+                'Sunday' => 'Domingo',
+                'Monday' => 'Segunda-feira',
+                'Tuesday' => 'Terca-feira',
+                'Wednesday' => 'Quarta-feira',
+                'Thursday' => 'Quinta-feira',
+                'Friday' => 'Sexta-feira',
+                'Saturday' => 'Sabado',
+            ];
+            $dayName = $weekNames[date('l', strtotime($startDate))] ?? '';
+            $monthLabel = $dayName . ', ' . date('d/m/Y', strtotime($startDate));
+        }
+
+        $month = (int) date('n', strtotime($startDate));
+        $year = (int) date('Y', strtotime($startDate));
+
+        if ($viewMode === 'month') {
+            $previousAnchor = date('Y-m-d', strtotime($startDate . ' -1 month'));
+            $nextAnchor = date('Y-m-d', strtotime($startDate . ' +1 month'));
+        } elseif ($viewMode === 'week') {
+            $previousAnchor = date('Y-m-d', strtotime($startDate . ' -7 day'));
+            $nextAnchor = date('Y-m-d', strtotime($startDate . ' +7 day'));
+        } else {
+            $previousAnchor = date('Y-m-d', strtotime($startDate . ' -1 day'));
+            $nextAnchor = date('Y-m-d', strtotime($startDate . ' +1 day'));
+        }
+
+        if ($viewMode === 'month') {
+            $previousUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=month&month=' . date('n', strtotime($previousAnchor)) . '&year=' . date('Y', strtotime($previousAnchor));
+            $nextUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=month&month=' . date('n', strtotime($nextAnchor)) . '&year=' . date('Y', strtotime($nextAnchor));
+        } else {
+            $previousUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=' . $viewMode . '&date=' . $previousAnchor;
+            $nextUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=' . $viewMode . '&date=' . $nextAnchor;
+        }
+
+        $monthViewUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=month&month=' . date('n', strtotime($startDate)) . '&year=' . date('Y', strtotime($startDate));
+        $weekViewUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=week&date=' . $startDate;
+        $dayViewUrl = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=day&date=' . $startDate;
 
         $this->view('therapist/schedule', [
             'appUrl' => Config::get('APP_URL', ''),
             'month' => $month,
             'year' => $year,
-            'monthLabel' => ($monthNames[$month] ?? '') . ' de ' . $year,
+            'viewMode' => $viewMode,
+            'selectedDate' => $startDate,
+            'monthLabel' => $monthLabel,
             'calendarWeeks' => $calendarWeeks,
+            'calendarWeekDays' => $calendarWeekDays,
+            'calendarDayAppointments' => $calendarDayAppointments,
             'patients' => $patients,
-            'previousMonth' => (int) date('n', $previousMonthDate),
-            'previousYear' => (int) date('Y', $previousMonthDate),
-            'nextMonth' => (int) date('n', $nextMonthDate),
-            'nextYear' => (int) date('Y', $nextMonthDate),
+            'previousUrl' => $previousUrl,
+            'nextUrl' => $nextUrl,
+            'monthViewUrl' => $monthViewUrl,
+            'weekViewUrl' => $weekViewUrl,
+            'dayViewUrl' => $dayViewUrl,
         ]);
     }
 
@@ -152,8 +266,10 @@ class TherapistController extends Controller
 
         $selectedMonth = $this->normalizeMonth((int) ($_POST['month'] ?? date('n')));
         $selectedYear = $this->normalizeYear((int) ($_POST['year'] ?? date('Y')));
+        $selectedView = $this->normalizeViewMode((string) ($_POST['view_mode'] ?? 'month'));
+        $selectedDate = $this->sanitizeDateParam((string) ($_POST['date'] ?? date('Y-m-d')));
 
-        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&month=' . $selectedMonth . '&year=' . $selectedYear;
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-schedule&view=' . $selectedView . '&month=' . $selectedMonth . '&year=' . $selectedYear . '&date=' . $selectedDate;
         $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
             return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
         };
