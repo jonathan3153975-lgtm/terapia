@@ -47,7 +47,7 @@ class PatientPortalController extends Controller
     private function normalizeDailyMessageCategory(string $value): string
     {
         $value = strtolower(trim($value));
-        return in_array($value, ['dores', 'reflexivas', 'cura'], true) ? $value : 'dores';
+        return in_array($value, ['dores', 'reflexivas', 'cura', 'motivacionais', 'conflitos'], true) ? $value : 'dores';
     }
 
     private function sanitizeRichText(string $html): string
@@ -309,7 +309,7 @@ class PatientPortalController extends Controller
         }
 
         $category = (string) ($_GET['category'] ?? '');
-        if ($category !== '' && !in_array($category, ['dores', 'reflexivas', 'cura'], true)) {
+        if ($category !== '' && !in_array($category, ['dores', 'reflexivas', 'cura', 'motivacionais', 'conflitos'], true)) {
             $category = '';
         }
 

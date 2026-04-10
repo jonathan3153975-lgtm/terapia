@@ -20,6 +20,8 @@
                 <option value="dores">Dores</option>
                 <option value="reflexivas">Reflexivas</option>
                 <option value="cura">Cura</option>
+                <option value="motivacionais">Motivacionais</option>
+                <option value="conflitos">Conflitos</option>
               </select>
             </div>
             <div class="mb-3">
@@ -48,7 +50,9 @@
           <pre class="messenger-json-example mb-0">[
   {"category":"dores","text":"Respire fundo e nomeie sua dor com gentileza."},
   {"category":"reflexivas","text":"O que você gostaria de acolher em si hoje?"},
-  {"category":"cura","text":"A cura também acontece nos pequenos passos."}
+  {"category":"cura","text":"A cura também acontece nos pequenos passos."},
+  {"category":"motivacionais","text":"Você é capaz de dar o próximo passo hoje."},
+  {"category":"conflitos","text":"Qual conflito interno pede escuta neste momento?"}
 ]</pre>
         </div>
       </div>
@@ -66,6 +70,8 @@
             <option value="dores" <?php echo (($filters['category'] ?? '') === 'dores') ? 'selected' : ''; ?>>Dores</option>
             <option value="reflexivas" <?php echo (($filters['category'] ?? '') === 'reflexivas') ? 'selected' : ''; ?>>Reflexivas</option>
             <option value="cura" <?php echo (($filters['category'] ?? '') === 'cura') ? 'selected' : ''; ?>>Cura</option>
+            <option value="motivacionais" <?php echo (($filters['category'] ?? '') === 'motivacionais') ? 'selected' : ''; ?>>Motivacionais</option>
+            <option value="conflitos" <?php echo (($filters['category'] ?? '') === 'conflitos') ? 'selected' : ''; ?>>Conflitos</option>
           </select>
         </div>
         <div class="col-12 col-md-7">
@@ -99,7 +105,13 @@
                   <td>
                     <?php
                       $cat = (string) ($message['category'] ?? 'dores');
-                      $label = $cat === 'reflexivas' ? 'Reflexivas' : ($cat === 'cura' ? 'Cura' : 'Dores');
+                      $label = $cat === 'reflexivas'
+                        ? 'Reflexivas'
+                        : ($cat === 'cura'
+                          ? 'Cura'
+                          : ($cat === 'motivacionais'
+                            ? 'Motivacionais'
+                            : ($cat === 'conflitos' ? 'Conflitos' : 'Dores')));
                     ?>
                     <span class="badge rounded-pill text-bg-secondary"><?php echo htmlspecialchars($label); ?></span>
                   </td>

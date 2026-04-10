@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS task_material_links (
 CREATE TABLE IF NOT EXISTS daily_messages (
   id INT AUTO_INCREMENT PRIMARY KEY,
   therapist_id INT NOT NULL,
-  category ENUM('dores','reflexivas','cura') NOT NULL,
+  category ENUM('dores','reflexivas','cura','motivacionais','conflitos') NOT NULL,
   message_text TEXT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -235,7 +235,7 @@ CREATE TABLE IF NOT EXISTS patient_message_entries (
   therapist_id INT NOT NULL,
   patient_id INT NOT NULL,
   message_id INT NULL,
-  message_category ENUM('dores','reflexivas','cura') NOT NULL,
+  message_category ENUM('dores','reflexivas','cura','motivacionais','conflitos') NOT NULL,
   message_text TEXT NOT NULL,
   patient_note LONGTEXT NOT NULL,
   share_with_therapist TINYINT(1) NOT NULL DEFAULT 0,

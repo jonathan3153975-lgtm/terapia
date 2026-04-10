@@ -66,7 +66,7 @@ class TherapistController extends Controller
     private function normalizeDailyMessageCategory(string $value): string
     {
         $value = strtolower(trim($value));
-        return in_array($value, ['dores', 'reflexivas', 'cura'], true) ? $value : 'dores';
+        return in_array($value, ['dores', 'reflexivas', 'cura', 'motivacionais', 'conflitos'], true) ? $value : 'dores';
     }
 
     public function dailyMessages(): void
@@ -75,7 +75,7 @@ class TherapistController extends Controller
         $category = (string) ($_GET['category'] ?? '');
         $search = trim((string) ($_GET['q'] ?? ''));
 
-        if ($category !== '' && !in_array($category, ['dores', 'reflexivas', 'cura'], true)) {
+        if ($category !== '' && !in_array($category, ['dores', 'reflexivas', 'cura', 'motivacionais', 'conflitos'], true)) {
             $category = '';
         }
 

@@ -15,6 +15,8 @@
             <option value="dores">Dores</option>
             <option value="reflexivas">Reflexivas</option>
             <option value="cura">Cura</option>
+            <option value="motivacionais">Motivacionais</option>
+            <option value="conflitos">Conflitos</option>
           </select>
           <button id="drawMessageBtn" class="btn btn-dark" type="button">
             <i class="fa-solid fa-box-open me-1"></i>Abrir baú
@@ -108,6 +110,12 @@ window.addEventListener('load', function () {
     }
     if (cat === 'cura') {
       return 'Cura';
+    }
+    if (cat === 'motivacionais') {
+      return 'Motivacionais';
+    }
+    if (cat === 'conflitos') {
+      return 'Conflitos';
     }
     return 'Dores';
   };
