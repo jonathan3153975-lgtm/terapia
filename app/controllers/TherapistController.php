@@ -3,10 +3,12 @@
 namespace App\Controllers;
 
 use App\Models\Appointment;
+use App\Models\DailyMessage;
 use App\Models\FileStorage;
 use App\Models\Material;
 use App\Models\MaterialDelivery;
 use App\Models\Patient;
+use App\Models\PatientMessageEntry;
 use App\Models\Payment;
 use App\Models\Task;
 use App\Models\User;
@@ -29,6 +31,8 @@ class TherapistController extends Controller
     private Task $taskModel;
     private FileStorage $fileModel;
     private User $userModel;
+    private DailyMessage $dailyMessageModel;
+    private PatientMessageEntry $patientMessageEntryModel;
 
     public function __construct()
     {
@@ -41,6 +45,8 @@ class TherapistController extends Controller
         $this->taskModel = new Task();
         $this->fileModel = new FileStorage();
         $this->userModel = new User();
+        $this->dailyMessageModel = new DailyMessage();
+        $this->patientMessageEntryModel = new PatientMessageEntry();
     }
 
     public function dashboard(): void
@@ -52,9 +58,120 @@ class TherapistController extends Controller
             'totalPatients' => $this->patientModel->countByTherapist($therapistId),
             'totalAppointments' => $this->appointmentModel->countByTherapist($therapistId),
             'totalTasks' => $this->taskModel->countByTherapist($therapistId),
-            'totalMessages' => 0,
+            'totalMessages' => $this->dailyMessageModel->countByTherapist($therapistId),
             'totalFiles' => $this->fileModel->countByTherapist($therapistId),
         ]);
+    }
+
+    private function normalizeDailyMessageCategory(string $value): string
+    {
+        $value = strtolower(trim($value));
+        return in_array($value, ['dores', 'reflexivas', 'cura'], true) ? $value : 'dores';
+    }
+
+    public function dailyMessages(): void
+    {
+        $therapistId = (int) Auth::id();
+        $category = (string) ($_GET['category'] ?? '');
+        $search = trim((string) ($_GET['q'] ?? ''));
+
+        if ($category !== '' && !in_array($category, ['dores', 'reflexivas', 'cura'], true)) {
+            $category = '';
+        }
+
+        $messages = $this->dailyMessageModel->listByTherapist($therapistId, $category, $search);
+        $sharedEntries = $this->patientMessageEntryModel->listSharedByTherapist($therapistId, 100);
+
+        $this->view('therapist/messages/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'messages' => $messages,
+            'sharedEntries' => $sharedEntries,
+            'filters' => [
+                'category' => $category,
+                'q' => $search,
+            ],
+        ]);
+    }
+
+    public function storeDailyMessage(): void
+    {
+        $therapistId = (int) Auth::id();
+        $category = $this->normalizeDailyMessageCategory((string) ($_POST['category'] ?? 'dores'));
+        $messageText = trim((string) ($_POST['message_text'] ?? ''));
+
+        if ($messageText === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-messages&status=error&msg=' . urlencode('A mensagem é obrigatória.'));
+        }
+
+        $saved = $this->dailyMessageModel->insert([
+            'therapist_id' => $therapistId,
+            'category' => $category,
+            'message_text' => $messageText,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-messages&status=error&msg=' . urlencode('Falha ao cadastrar mensagem.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-messages&status=success&msg=' . urlencode('Mensagem cadastrada com sucesso.'));
+    }
+
+    public function bulkDailyMessages(): void
+    {
+        $therapistId = (int) Auth::id();
+        if (!isset($_FILES['messages_json']) || (int) ($_FILES['messages_json']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-messages&status=error&msg=' . urlencode('Envie um arquivo JSON válido.'));
+        }
+
+        $tmpFile = (string) ($_FILES['messages_json']['tmp_name'] ?? '');
+        if ($tmpFile === '' || !is_uploaded_file($tmpFile)) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-messages&status=error&msg=' . urlencode('Falha ao ler o arquivo enviado.'));
+        }
+
+        $raw = file_get_contents($tmpFile);
+        if ($raw === false || trim($raw) === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-messages&status=error&msg=' . urlencode('Arquivo JSON vazio.'));
+        }
+
+        $payload = json_decode($raw, true);
+        if (!is_array($payload)) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-messages&status=error&msg=' . urlencode('JSON inválido.'));
+        }
+
+        $items = isset($payload['messages']) && is_array($payload['messages']) ? $payload['messages'] : $payload;
+        $inserted = 0;
+
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $category = $this->normalizeDailyMessageCategory((string) ($item['category'] ?? 'dores'));
+            $messageText = trim((string) ($item['text'] ?? $item['message_text'] ?? ''));
+            if ($messageText === '') {
+                continue;
+            }
+
+            $saved = $this->dailyMessageModel->insert([
+                'therapist_id' => $therapistId,
+                'category' => $category,
+                'message_text' => $messageText,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            if ($saved) {
+                $inserted++;
+            }
+        }
+
+        if ($inserted <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-messages&status=error&msg=' . urlencode('Nenhuma mensagem válida foi inserida.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-messages&status=success&msg=' . urlencode($inserted . ' mensagens inseridas com sucesso.'));
     }
 
     private function financialRedirectBase(int $month, int $year): string

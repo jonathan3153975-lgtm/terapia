@@ -3,10 +3,12 @@
 namespace App\Controllers;
 
 use App\Models\Appointment;
+use App\Models\DailyMessage;
 use App\Models\FileStorage;
 use App\Models\Material;
 use App\Models\MaterialDelivery;
 use App\Models\Patient;
+use App\Models\PatientMessageEntry;
 use App\Models\Task;
 use App\Models\User;
 use Classes\Controller;
@@ -25,6 +27,8 @@ class PatientPortalController extends Controller
     private FileStorage $fileModel;
     private Patient $patientModel;
     private User $userModel;
+    private DailyMessage $dailyMessageModel;
+    private PatientMessageEntry $patientMessageEntryModel;
 
     public function __construct()
     {
@@ -36,6 +40,14 @@ class PatientPortalController extends Controller
         $this->fileModel = new FileStorage();
         $this->patientModel = new Patient();
         $this->userModel = new User();
+        $this->dailyMessageModel = new DailyMessage();
+        $this->patientMessageEntryModel = new PatientMessageEntry();
+    }
+
+    private function normalizeDailyMessageCategory(string $value): string
+    {
+        $value = strtolower(trim($value));
+        return in_array($value, ['dores', 'reflexivas', 'cura'], true) ? $value : 'dores';
     }
 
     private function sanitizeRichText(string $html): string
@@ -265,6 +277,109 @@ class PatientPortalController extends Controller
             'taskLinkedMaterials' => $taskLinkedMaterials,
             'assetsByMaterial' => $assetsByMaterial,
         ]);
+    }
+
+    public function messenger(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $entries = $this->patientMessageEntryModel->listByPatient($patientId);
+
+        $this->view('patient/messenger', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'entries' => $entries,
+        ]);
+    }
+
+    public function drawMessengerMessage(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->error('Paciente não encontrado', 404);
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        if ($therapistId <= 0) {
+            $this->error('Terapeuta não encontrado', 404);
+        }
+
+        $category = (string) ($_GET['category'] ?? '');
+        if ($category !== '' && !in_array($category, ['dores', 'reflexivas', 'cura'], true)) {
+            $category = '';
+        }
+
+        $message = $this->dailyMessageModel->randomByTherapist($therapistId, $category);
+        if (!$message) {
+            $this->error('Nenhuma mensagem disponível para sorteio nesta categoria.', 404);
+        }
+
+        $this->success('Mensagem sorteada', [
+            'message' => [
+                'id' => (int) ($message['id'] ?? 0),
+                'category' => (string) ($message['category'] ?? ''),
+                'text' => (string) ($message['message_text'] ?? ''),
+            ],
+        ]);
+    }
+
+    public function saveMessengerEntry(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        if ($therapistId <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Terapeuta não vinculado.'));
+        }
+
+        $messageId = (int) ($_POST['message_id'] ?? 0);
+        $messageCategory = $this->normalizeDailyMessageCategory((string) ($_POST['message_category'] ?? 'dores'));
+        $messageText = trim((string) ($_POST['message_text'] ?? ''));
+        $patientNote = trim((string) ($_POST['patient_note'] ?? ''));
+        $shareWithTherapist = isset($_POST['share_with_therapist']) ? 1 : 0;
+
+        if ($messageText === '' || $patientNote === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('A mensagem sorteada e sua reflexão são obrigatórias.'));
+        }
+
+        $saved = $this->patientMessageEntryModel->insert([
+            'therapist_id' => $therapistId,
+            'patient_id' => $patientId,
+            'message_id' => $messageId > 0 ? $messageId : null,
+            'message_category' => $messageCategory,
+            'message_text' => $messageText,
+            'patient_note' => $patientNote,
+            'share_with_therapist' => $shareWithTherapist,
+            'drawn_at' => date('Y-m-d H:i:s'),
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Falha ao salvar reflexão.'));
+        }
+
+        if ($shareWithTherapist === 1) {
+            $therapist = $this->userModel->findById($therapistId);
+            if ($therapist) {
+                $subject = 'Nova reflexão no Mensageiro';
+                $message = 'Seu paciente compartilhou uma nova reflexão no Mensageiro. Acesse o painel para visualizar.';
+                AlertDispatcher::dispatch(['email'], (string) ($therapist['email'] ?? ''), null, $subject, $message);
+            }
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=success&msg=' . urlencode('Mensagem salva com sucesso.'));
     }
 
     public function showTaskMaterial(): void

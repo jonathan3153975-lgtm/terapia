@@ -609,6 +609,51 @@ body.app-body {
 	color: #1d4ed8;
 }
 
+.messenger-json-example {
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 12px;
+	background: rgba(15, 23, 42, .03);
+	font-size: .82rem;
+	max-height: 220px;
+	overflow: auto;
+}
+
+.messenger-shared-card,
+.messenger-entry-card {
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 14px;
+	background: linear-gradient(180deg, rgba(19, 99, 223, .04), rgba(255, 255, 255, .95));
+}
+
+.messenger-hero {
+	position: relative;
+	overflow: hidden;
+	border-radius: 16px;
+	background:
+		radial-gradient(600px 220px at -10% -20%, rgba(19, 99, 223, .22), transparent 60%),
+		radial-gradient(420px 160px at 120% 120%, rgba(244, 158, 36, .18), transparent 65%),
+		var(--bg-panel);
+}
+
+.messenger-hero-select {
+	min-width: 220px;
+}
+
+.messenger-draw-text {
+	font-size: 1.07rem;
+	line-height: 1.7;
+	white-space: pre-wrap;
+}
+
+@media (max-width: 575.98px) {
+	.messenger-hero-select {
+		min-width: 0;
+		width: 100%;
+	}
+}
+
 @media (max-width: 991.98px) {
 	.task-material-panel {
 		position: static;
