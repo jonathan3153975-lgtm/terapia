@@ -1903,9 +1903,9 @@ class TherapistController extends Controller
         $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
         $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
         $deliveryKind = $this->normalizeDeliveryKind((string) ($_POST['delivery_kind'] ?? 'task'));
-        $notifyChannels = $_POST['notify_channels'] ?? ['email', 'whatsapp'];
+        $notifyChannels = $_POST['notify_channels'] ?? ['email'];
         if (!is_array($notifyChannels)) {
-            $notifyChannels = ['email', 'whatsapp'];
+            $notifyChannels = ['email'];
         }
         $materialIds = $_POST['material_ids'] ?? [];
         if (!is_array($materialIds)) {
@@ -2069,9 +2069,9 @@ class TherapistController extends Controller
         $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
         $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
         $deliveryKind = $this->normalizeDeliveryKind((string) ($_POST['delivery_kind'] ?? ($task['delivery_kind'] ?? 'task')));
-        $notifyChannels = $_POST['notify_channels'] ?? ['email', 'whatsapp'];
+        $notifyChannels = $_POST['notify_channels'] ?? ['email'];
         if (!is_array($notifyChannels)) {
-            $notifyChannels = ['email', 'whatsapp'];
+            $notifyChannels = ['email'];
         }
         $materialIds = $_POST['material_ids'] ?? [];
         if (!is_array($materialIds)) {

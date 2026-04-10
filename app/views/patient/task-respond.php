@@ -77,10 +77,6 @@
                   <input class="form-check-input" type="checkbox" name="notify_channels[]" id="notify_email" value="email" checked>
                   <label class="form-check-label" for="notify_email">E-mail</label>
                 </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" name="notify_channels[]" id="notify_whatsapp" value="whatsapp" checked>
-                  <label class="form-check-label" for="notify_whatsapp">WhatsApp</label>
-                </div>
               </div>
 
               <div class="mt-3 d-grid">

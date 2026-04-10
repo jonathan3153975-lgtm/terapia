@@ -436,6 +436,8 @@ body.app-body {
 
 .task-description-editor {
 	min-height: 260px;
+	max-width: 100%;
+	overflow: hidden;
 	background: #fff;
 	border-radius: 12px;
 }
@@ -443,6 +445,8 @@ body.app-body {
 .task-description-editor .ql-toolbar.ql-snow {
 	position: relative;
 	z-index: 1;
+	overflow-x: auto;
+	max-width: 100%;
 	border-top-left-radius: 12px;
 	border-top-right-radius: 12px;
 	background: #fff;
@@ -452,6 +456,7 @@ body.app-body {
 	min-height: 200px;
 	height: 220px;
 	overflow-y: auto;
+	max-width: 100%;
 	border-bottom-left-radius: 12px;
 	border-bottom-right-radius: 12px;
 	background: #fff;
@@ -459,6 +464,9 @@ body.app-body {
 
 .task-description-editor .ql-editor {
 	min-height: 180px;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	word-break: break-word;
 }
 
 .task-form-shell {
@@ -467,6 +475,7 @@ body.app-body {
 	background: linear-gradient(180deg, rgba(19, 99, 223, .03), rgba(255, 255, 255, .85));
 	padding: 16px;
 	display: grid;
+	min-width: 0;
 	gap: 14px;
 }
 
@@ -474,6 +483,7 @@ body.app-body {
 	border: 1px solid var(--line);
 	border-radius: 12px;
 	background: var(--bg-panel);
+	min-width: 0;
 	padding: 14px;
 }
 
@@ -526,6 +536,7 @@ body.app-body {
 .task-response-actions {
 	display: grid;
 	gap: 12px;
+	min-width: 0;
 	align-content: start;
 }
 

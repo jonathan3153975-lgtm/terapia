@@ -227,17 +227,11 @@
                       <input class="form-control" name="title" required>
                     </div>
                     <div class="col-12">
-                      <label class="form-label d-block mb-2">Tipo de envio</label>
-                      <div class="d-flex gap-3 flex-wrap">
-                        <div class="form-check">
-                          <input class="form-check-input" type="radio" name="delivery_kind" id="delivery_kind_task" value="task" checked>
-                          <label class="form-check-label" for="delivery_kind_task">Envio de tarefa (com devolutiva)</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="radio" name="delivery_kind" id="delivery_kind_material" value="material">
-                          <label class="form-check-label" for="delivery_kind_material">Envio de material (consulta do paciente)</label>
-                        </div>
-                      </div>
+                      <label class="form-label">Tipo de envio</label>
+                      <select class="form-select w-100" name="delivery_kind" id="delivery_kind" required>
+                        <option value="task" selected>Envio de tarefa (com devolutiva)</option>
+                        <option value="material">Envio de material (consulta do paciente)</option>
+                      </select>
                     </div>
                     <div class="col-12">
                       <label class="form-label">Descrição</label>
@@ -271,10 +265,6 @@
                         <div class="form-check">
                           <input class="form-check-input" type="checkbox" name="notify_channels[]" id="task_notify_email" value="email" checked>
                           <label class="form-check-label" for="task_notify_email">E-mail</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="checkbox" name="notify_channels[]" id="task_notify_whatsapp" value="whatsapp" checked>
-                          <label class="form-check-label" for="task_notify_whatsapp">WhatsApp</label>
                         </div>
                       </div>
                     </div>

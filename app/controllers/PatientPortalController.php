@@ -343,9 +343,9 @@ class PatientPortalController extends Controller
 
         $therapist = $this->userModel->findById((int) ($task['therapist_id'] ?? 0));
         if ($therapist) {
-            $channels = $_POST['notify_channels'] ?? ['email', 'whatsapp'];
+            $channels = $_POST['notify_channels'] ?? ['email'];
             if (!is_array($channels)) {
-                $channels = ['email', 'whatsapp'];
+                $channels = ['email'];
             }
 
             $summary = $this->dispatchTaskAlertSafely($therapist, (string) ($task['title'] ?? 'Tarefa'), $channels);
