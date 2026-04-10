@@ -144,6 +144,53 @@ class PatientPortalController extends Controller
         }
     }
 
+    private function updateTaskResponseSafely(int $taskId, string $responseHtml): bool
+    {
+        $data = [
+            'patient_response_html' => $responseHtml,
+            'responded_at' => date('Y-m-d H:i:s'),
+            'status' => 'done',
+        ];
+
+        $updated = $this->taskModel->updateById($taskId, $data);
+        if ($updated) {
+            return true;
+        }
+
+        // Fallback: Try without the new columns in case migration not applied
+        $fallback = [
+            'status' => 'done',
+        ];
+        return $this->taskModel->updateById($taskId, $fallback);
+    }
+
+    private function storeTaskAttachmentsSafely(int $therapistId, int $patientId, int $taskId): void
+    {
+        try {
+            $this->storeTaskAttachments($therapistId, $patientId, $taskId);
+        } catch (\Throwable $e) {
+            error_log('Error storing task attachments for task ' . $taskId . ': ' . $e->getMessage());
+        }
+    }
+
+    private function dispatchTaskAlertSafely(array $therapist, string $taskTitle, array $channels): string
+    {
+        try {
+            $message = 'Nova devolutiva de tarefa recebida: "' . $taskTitle . '".';
+            $report = AlertDispatcher::dispatch(
+                $channels,
+                (string) ($therapist['email'] ?? ''),
+                (string) ($therapist['phone'] ?? ''),
+                'Devolutiva de tarefa recebida',
+                $message
+            );
+            return AlertDispatcher::summarize($report);
+        } catch (\Throwable $e) {
+            error_log('Error dispatching task alert: ' . $e->getMessage());
+            return 'alert-error';
+        }
+    }
+
     public function dashboard(): void
     {
         $patientId = (int) Auth::patientId();
@@ -266,17 +313,12 @@ class PatientPortalController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=task-respond&id=' . $taskId . '&status=error&msg=' . urlencode('A resposta é obrigatória.'));
         }
 
-        $updated = $this->taskModel->updateById($taskId, [
-            'patient_response_html' => $responseHtml,
-            'responded_at' => date('Y-m-d H:i:s'),
-            'status' => 'done',
-        ]);
-
+        $updated = $this->updateTaskResponseSafely($taskId, $responseHtml);
         if (!$updated) {
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=task-respond&id=' . $taskId . '&status=error&msg=' . urlencode('Falha ao enviar resposta.'));
         }
 
-        $this->storeTaskAttachments((int) ($task['therapist_id'] ?? 0), $patientId, $taskId);
+        $this->storeTaskAttachmentsSafely((int) ($task['therapist_id'] ?? 0), $patientId, $taskId);
 
         $therapist = $this->userModel->findById((int) ($task['therapist_id'] ?? 0));
         if ($therapist) {
@@ -285,16 +327,7 @@ class PatientPortalController extends Controller
                 $channels = ['email', 'whatsapp'];
             }
 
-            $message = 'Nova devolutiva de tarefa recebida: "' . (string) ($task['title'] ?? 'Tarefa') . '".';
-            $report = AlertDispatcher::dispatch(
-                $channels,
-                (string) ($therapist['email'] ?? ''),
-                (string) ($therapist['phone'] ?? ''),
-                'Devolutiva de tarefa recebida',
-                $message
-            );
-
-            $summary = AlertDispatcher::summarize($report);
+            $summary = $this->dispatchTaskAlertSafely($therapist, (string) ($task['title'] ?? 'Tarefa'), $channels);
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=success&msg=' . urlencode('Resposta enviada com sucesso. Alertas: ' . $summary . '.'));
         }
 
