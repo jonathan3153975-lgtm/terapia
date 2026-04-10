@@ -47,6 +47,8 @@ match ($action) {
     'patients-store' => (new TherapistController())->storePatient(),
     'patients-show' => (new TherapistController())->showPatient(),
     'patients-edit' => (new TherapistController())->editPatient(),
+    'patients-password' => (new TherapistController())->passwordPatient(),
+    'patients-password-update' => (new TherapistController())->updatePasswordPatient(),
     'patients-update' => (new TherapistController())->updatePatient(),
     'patients-delete' => (new TherapistController())->deletePatient(),
     'patients-history' => (new TherapistController())->historyPatient(),

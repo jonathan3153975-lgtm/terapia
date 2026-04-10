@@ -26,6 +26,7 @@
                 <div class="d-flex align-items-center gap-1 flex-nowrap">
                   <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-show&id=<?php echo (int) $patient['id']; ?>" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
                   <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-history&id=<?php echo (int) $patient['id']; ?>" title="Histórico"><i class="fa-solid fa-book-medical"></i></a>
+                  <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-password&id=<?php echo (int) $patient['id']; ?>" title="Redefinir senha"><i class="fa-solid fa-key"></i></a>
                   <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-edit&id=<?php echo (int) $patient['id']; ?>" title="Editar"><i class="fa-solid fa-pen"></i></a>
                   <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-delete" class="d-flex m-0 js-delete-patient-form" data-patient-name="<?php echo htmlspecialchars((string) $patient['name']); ?>">
                     <input type="hidden" name="id" value="<?php echo (int) $patient['id']; ?>">

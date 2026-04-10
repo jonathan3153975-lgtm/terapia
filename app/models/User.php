@@ -42,6 +42,20 @@ class User extends Model
         return $row ?: null;
     }
 
+    public function findPatientAccessByTherapistAndPatient(int $therapistId, int $patientId): ?array
+    {
+        $stmt = $this->query(
+            "SELECT * FROM users WHERE role = 'patient' AND therapist_id = ? AND patient_id = ? LIMIT 1",
+            [$therapistId, $patientId]
+        );
+        if (!$stmt) {
+            return null;
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function deleteTherapistById(int $id): bool
     {
         return (bool) $this->query("DELETE FROM users WHERE id = ? AND role = 'therapist'", [$id]);

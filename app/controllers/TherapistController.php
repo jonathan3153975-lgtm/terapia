@@ -1244,6 +1244,122 @@ class TherapistController extends Controller
         ]);
     }
 
+    public function passwordPatient(): void
+    {
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_GET['id'] ?? 0);
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $patientAccess = $this->userModel->findPatientAccessByTherapistAndPatient($therapistId, $patientId);
+
+        $this->view('therapist/patients/password', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'patient' => $patient,
+            'patientAccess' => $patientAccess,
+        ]);
+    }
+
+    public function updatePasswordPatient(): void
+    {
+        $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_POST['id'] ?? 0);
+        $password = (string) ($_POST['password'] ?? '');
+
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        $patientAccess = $this->userModel->findPatientAccessByTherapistAndPatient($therapistId, $patientId);
+
+        $redirectListBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients';
+        $redirectPasswordBase = Config::get('APP_URL', '') . '/dashboard.php?action=patients-password&id=' . $patientId;
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$patient) {
+            if ($isAjax) {
+                $this->error('Paciente não encontrado', 404);
+            }
+            $this->redirect($redirectWithStatus($redirectListBase, 'error', 'Paciente não encontrado.'));
+        }
+
+        if (trim($password) === '') {
+            if ($isAjax) {
+                $this->error('Informe uma senha válida');
+            }
+            $this->redirect($redirectWithStatus($redirectPasswordBase, 'error', 'Informe uma senha válida.'));
+        }
+
+        $patientEmail = trim((string) ($patient['email'] ?? ''));
+        if ($patientAccess === null) {
+            if ($patientEmail === '' || !Utils::isValidEmail($patientEmail)) {
+                if ($isAjax) {
+                    $this->error('Cadastre um e-mail válido no paciente antes de criar o acesso');
+                }
+                $this->redirect($redirectWithStatus($redirectPasswordBase, 'error', 'Cadastre um e-mail válido no paciente antes de criar o acesso.'));
+            }
+
+            $existingUserByEmail = $this->userModel->findByEmail($patientEmail);
+            if ($existingUserByEmail && ((int) ($existingUserByEmail['patient_id'] ?? 0) !== $patientId || (string) ($existingUserByEmail['role'] ?? '') !== 'patient')) {
+                if ($isAjax) {
+                    $this->error('O e-mail do paciente já está em uso por outro usuário');
+                }
+                $this->redirect($redirectWithStatus($redirectPasswordBase, 'error', 'O e-mail do paciente já está em uso por outro usuário.'));
+            }
+
+            $created = $this->userModel->insert([
+                'name' => (string) ($patient['name'] ?? ''),
+                'cpf' => (string) ($patient['cpf'] ?? ''),
+                'phone' => (string) ($patient['phone'] ?? ''),
+                'email' => $patientEmail,
+                'password' => Utils::hashPassword($password),
+                'role' => 'patient',
+                'therapist_id' => $therapistId,
+                'patient_id' => $patientId,
+                'status' => 'active',
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            if (!$created) {
+                if ($isAjax) {
+                    $this->error('Falha ao criar acesso do paciente');
+                }
+                $this->redirect($redirectWithStatus($redirectPasswordBase, 'error', 'Falha ao criar acesso do paciente.'));
+            }
+
+            if ($isAjax) {
+                $this->success('Acesso do paciente criado', ['redirect' => $redirectListBase]);
+            }
+
+            $this->redirect($redirectWithStatus($redirectListBase, 'success', 'Acesso do paciente criado com sucesso.'));
+        }
+
+        $updated = $this->userModel->updateById((int) $patientAccess['id'], [
+            'password' => Utils::hashPassword($password),
+            'name' => (string) ($patient['name'] ?? ''),
+            'cpf' => (string) ($patient['cpf'] ?? ''),
+            'phone' => (string) ($patient['phone'] ?? ''),
+            'email' => $patientEmail !== '' ? $patientEmail : (string) ($patientAccess['email'] ?? ''),
+            'status' => 'active',
+        ]);
+
+        if (!$updated) {
+            if ($isAjax) {
+                $this->error('Falha ao redefinir senha do paciente');
+            }
+            $this->redirect($redirectWithStatus($redirectPasswordBase, 'error', 'Falha ao redefinir senha do paciente.'));
+        }
+
+        if ($isAjax) {
+            $this->success('Senha do paciente alterada', ['redirect' => $redirectListBase]);
+        }
+
+        $this->redirect($redirectWithStatus($redirectListBase, 'success', 'Senha do paciente alterada com sucesso.'));
+    }
+
     public function updatePatient(): void
     {
         $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
