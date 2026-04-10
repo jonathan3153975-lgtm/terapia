@@ -13,24 +13,45 @@
       <?php $assets = $assetsByMaterial[(int) $material['id']] ?? []; ?>
       <div class="card">
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
-            <div>
-              <h5 class="mb-1"><?php echo htmlspecialchars((string) ($material['title'] ?? 'Material')); ?></h5>
-              <div class="text-muted small"><?php echo (($material['type'] ?? '') === 'exercise') ? 'Exercício' : 'Material de apoio'; ?></div>
-            </div>
-          </div>
-          <div class="border rounded p-3 bg-light-subtle"><?php echo (string) ($material['description_html'] ?? ''); ?></div>
-          <?php if (!empty($material['custom_html'])): ?>
-            <div class="mt-3 border rounded p-3"><?php echo (string) $material['custom_html']; ?></div>
-          <?php endif; ?>
-          <div class="mt-3">
-            <strong>Arquivos e links do material</strong>
-          </div>
-          <?php if (empty($assets)): ?>
-            <div class="text-muted mt-2">Nenhum arquivo ou link anexado.</div>
-          <?php else: ?>
-            <div class="material-asset-view-list mt-3">
-              <?php foreach ($assets as $asset): ?>
+          <div class="material-task-layout">
+            <aside class="material-task-aside">
+              <div class="material-task-meta">
+                <span class="material-task-label">Título</span>
+                <div class="fw-semibold"><?php echo htmlspecialchars((string) ($material['title'] ?? 'Material')); ?></div>
+              </div>
+              <div class="material-task-meta">
+                <span class="material-task-label">Tipo</span>
+                <div><?php echo (($material['type'] ?? '') === 'exercise') ? 'Exercício' : 'Material de apoio'; ?></div>
+              </div>
+              <div class="material-task-meta">
+                <span class="material-task-label">Observação</span>
+                <div class="text-muted"><?php echo !empty($task['description']) ? trim(strip_tags((string) $task['description'])) : 'Sem observações adicionais'; ?></div>
+              </div>
+              <div class="material-task-meta">
+                <span class="material-task-label">Total de anexos</span>
+                <div><?php echo (int) count($assets); ?></div>
+              </div>
+            </aside>
+
+            <section class="material-task-content">
+              <div>
+                <div class="material-task-label mb-2">Conteúdo principal</div>
+                <div class="border rounded p-3 bg-light-subtle"><?php echo (string) ($material['description_html'] ?? ''); ?></div>
+              </div>
+              <?php if (!empty($material['custom_html'])): ?>
+                <div>
+                  <div class="material-task-label mb-2">Conteúdo complementar</div>
+                  <div class="border rounded p-3"><?php echo (string) $material['custom_html']; ?></div>
+                </div>
+              <?php endif; ?>
+
+              <div>
+                <div class="material-task-label mb-2">Arquivos e links do material</div>
+                <?php if (empty($assets)): ?>
+                  <div class="text-muted">Nenhum arquivo ou link anexado.</div>
+                <?php else: ?>
+                  <div class="material-asset-view-list">
+                    <?php foreach ($assets as $asset): ?>
             <?php
               $assetType = (string) ($asset['asset_type'] ?? '');
               $filePath = !empty($asset['file_path']) ? ($appUrl . '/' . ltrim((string) $asset['file_path'], '/')) : '';
@@ -71,9 +92,12 @@
                 <?php endif; ?>
               </div>
             </div>
-              <?php endforeach; ?>
-            </div>
-          <?php endif; ?>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     <?php endforeach; ?>

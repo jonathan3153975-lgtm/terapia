@@ -435,24 +435,132 @@ body.app-body {
 }
 
 .task-description-editor {
-	min-height: 220px;
+	min-height: 260px;
 	background: #fff;
 	border-radius: 12px;
 }
 
 .task-description-editor .ql-toolbar.ql-snow {
+	position: relative;
+	z-index: 1;
 	border-top-left-radius: 12px;
 	border-top-right-radius: 12px;
 	background: #fff;
 }
 
 .task-description-editor .ql-container.ql-snow {
-	min-height: 170px;
-	max-height: 320px;
-	overflow: auto;
+	min-height: 200px;
+	height: 220px;
+	overflow-y: auto;
 	border-bottom-left-radius: 12px;
 	border-bottom-right-radius: 12px;
 	background: #fff;
+}
+
+.task-description-editor .ql-editor {
+	min-height: 180px;
+}
+
+.task-form-shell {
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: linear-gradient(180deg, rgba(19, 99, 223, .03), rgba(255, 255, 255, .85));
+	padding: 16px;
+	display: grid;
+	gap: 14px;
+}
+
+.task-form-section {
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--bg-panel);
+	padding: 14px;
+}
+
+.task-form-section-title {
+	font-size: .78rem;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	font-weight: 700;
+	color: var(--text-soft);
+	margin-bottom: 10px;
+}
+
+.task-checkbox-panel {
+	border: 1px dashed var(--line);
+	border-radius: 10px;
+	padding: 10px 12px;
+	background: rgba(19, 99, 223, .03);
+}
+
+.task-attachments-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.task-attachment-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	border-radius: 999px;
+	border: 1px solid var(--line);
+	background: var(--bg-panel);
+	font-size: .82rem;
+	text-decoration: none;
+	color: var(--text-main);
+}
+
+.task-attachment-chip:hover {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+.task-response-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+	gap: 14px;
+}
+
+.task-response-actions {
+	display: grid;
+	gap: 12px;
+	align-content: start;
+}
+
+.material-task-layout {
+	display: grid;
+	grid-template-columns: minmax(240px, 1fr) minmax(0, 2fr);
+	gap: 14px;
+	align-items: start;
+}
+
+.material-task-aside {
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: rgba(19, 99, 223, .03);
+	padding: 14px;
+	display: grid;
+	gap: 10px;
+}
+
+.material-task-meta {
+	display: grid;
+	gap: 4px;
+}
+
+.material-task-label {
+	font-size: .74rem;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	font-weight: 700;
+	color: var(--text-soft);
+}
+
+.material-task-content {
+	display: grid;
+	gap: 12px;
 }
 
 .task-material-panel {
@@ -497,6 +605,11 @@ body.app-body {
 
 	.task-modal-body {
 		max-height: calc(100vh - 120px);
+	}
+
+	.task-response-layout,
+	.material-task-layout {
+		grid-template-columns: 1fr;
 	}
 }
 

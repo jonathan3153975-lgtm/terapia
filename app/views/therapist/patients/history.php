@@ -207,8 +207,9 @@
 
           <div class="row g-3">
             <div class="col-lg-7 d-grid gap-3">
-              <div class="card border-0 bg-light-subtle">
-                <div class="card-body p-3">
+              <div class="task-form-shell">
+                <div class="task-form-section">
+                  <div class="task-form-section-title">Detalhes da tarefa</div>
                   <div class="row g-3">
                     <div class="col-md-6">
                       <label class="form-label">Data</label>
@@ -244,10 +245,9 @@
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div class="card border-0 bg-light-subtle">
-                <div class="card-body p-3">
+                <div class="task-form-section">
+                  <div class="task-form-section-title">Entrega e notificações</div>
                   <div class="row g-3">
                     <div class="col-12">
                       <label class="form-label">Anexos (PDF e imagens)</label>
@@ -258,14 +258,16 @@
                       <input class="form-control" type="url" name="attachment_link" placeholder="https://...">
                     </div>
                     <div class="col-12">
-                      <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="send_to_patient" id="send_to_patient" value="1">
-                        <label class="form-check-label" for="send_to_patient">Encaminhar para o paciente</label>
+                      <div class="task-checkbox-panel">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="send_to_patient" id="send_to_patient" value="1">
+                          <label class="form-check-label" for="send_to_patient">Encaminhar para o paciente</label>
+                        </div>
                       </div>
                     </div>
                     <div class="col-12">
                       <label class="form-label d-block mb-2">Alertar paciente por</label>
-                      <div class="d-flex gap-3 flex-wrap">
+                      <div class="task-checkbox-panel d-flex gap-3 flex-wrap">
                         <div class="form-check">
                           <input class="form-check-input" type="checkbox" name="notify_channels[]" id="task_notify_email" value="email" checked>
                           <label class="form-check-label" for="task_notify_email">E-mail</label>
