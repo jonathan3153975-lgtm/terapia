@@ -87,6 +87,40 @@ class Appointment extends Model
         return $stmt->fetchAll();
     }
 
+    public function countCompletedByPatient(int $patientId): int
+    {
+        $stmt = $this->query(
+            'SELECT COUNT(*) AS total
+             FROM appointments
+             WHERE patient_id = ?
+               AND session_date <= NOW()',
+            [$patientId]
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    public function findNextByPatient(int $patientId): ?array
+    {
+        $stmt = $this->query(
+            'SELECT *
+             FROM appointments
+             WHERE patient_id = ?
+               AND session_date >= NOW()
+             ORDER BY session_date ASC
+             LIMIT 1',
+            [$patientId]
+        );
+        if (!$stmt) {
+            return null;
+        }
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function findByTherapistPatientAndId(int $therapistId, int $patientId, int $appointmentId): ?array
     {
         $stmt = $this->query(

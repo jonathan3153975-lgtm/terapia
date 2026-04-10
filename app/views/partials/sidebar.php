@@ -25,6 +25,7 @@ $role = (string) Auth::role();
     <?php elseif ($role === 'patient'): ?>
       <a class="sidebar-link <?php echo $currentAction === 'dashboard' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=dashboard"><i class="fa-solid fa-gauge"></i><span>Dashboard</span></a>
       <a class="sidebar-link <?php echo $currentAction === 'tasks' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=tasks"><i class="fa-solid fa-list-check"></i><span>Minhas tarefas</span></a>
+      <a class="sidebar-link <?php echo $currentAction === 'materials' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=materials"><i class="fa-solid fa-book"></i><span>Meus materiais</span></a>
     <?php endif; ?>
   </nav>
 

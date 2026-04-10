@@ -8,6 +8,11 @@ class Task extends Model
 {
     protected string $table = 'tasks';
 
+    private function normalizedDeliveryKind(string $deliveryKind): string
+    {
+        return $deliveryKind === 'material' ? 'material' : 'task';
+    }
+
     public function countByTherapist(int $therapistId): int
     {
         return $this->count('therapist_id = ?', [$therapistId]);
@@ -37,6 +42,90 @@ class Task extends Model
     public function countDoneByPatient(int $patientId): int
     {
         return $this->count("patient_id = ? AND status = 'done'", [$patientId]);
+    }
+
+    public function countInboxByPatientAndKind(int $patientId, string $deliveryKind): int
+    {
+        $kind = $this->normalizedDeliveryKind($deliveryKind);
+
+        $stmt = $this->query(
+            'SELECT COUNT(*) AS total
+             FROM tasks
+             WHERE patient_id = ?
+               AND send_to_patient = 1
+               AND COALESCE(delivery_kind, "task") = ?',
+            [$patientId, $kind]
+        );
+
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    public function countPendingInboxTasksByPatient(int $patientId): int
+    {
+        $stmt = $this->query(
+            'SELECT COUNT(*) AS total
+             FROM tasks
+             WHERE patient_id = ?
+               AND send_to_patient = 1
+               AND status = "pending"
+               AND COALESCE(delivery_kind, "task") = "task"',
+            [$patientId]
+        );
+
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    public function listInboxByPatientAndKind(int $patientId, string $deliveryKind): array
+    {
+        $kind = $this->normalizedDeliveryKind($deliveryKind);
+
+        $stmt = $this->query(
+            'SELECT t.*, m.title AS material_title, m.type AS material_type
+             FROM tasks t
+             LEFT JOIN materials m ON m.id = t.material_id
+             WHERE t.patient_id = ?
+               AND t.send_to_patient = 1
+               AND COALESCE(t.delivery_kind, "task") = ?
+             ORDER BY t.due_date DESC, t.id DESC',
+            [$patientId, $kind]
+        );
+        if (!$stmt) {
+            return [];
+        }
+        return $stmt->fetchAll();
+    }
+
+    public function findInboxTaskByPatientAndId(int $patientId, int $taskId, string $deliveryKind = 'task'): ?array
+    {
+        $kind = $this->normalizedDeliveryKind($deliveryKind);
+
+        $stmt = $this->query(
+            'SELECT t.*, m.title AS material_title, m.type AS material_type
+             FROM tasks t
+             LEFT JOIN materials m ON m.id = t.material_id
+             WHERE t.id = ?
+               AND t.patient_id = ?
+               AND t.send_to_patient = 1
+               AND COALESCE(t.delivery_kind, "task") = ?
+             LIMIT 1',
+            [$taskId, $patientId, $kind]
+        );
+        if (!$stmt) {
+            return null;
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
     }
 
     public function findByTherapistPatientAndId(int $therapistId, int $patientId, int $taskId): ?array

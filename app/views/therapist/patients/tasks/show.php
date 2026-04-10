@@ -23,12 +23,24 @@
         <div class="col-md-3"><strong>Data:</strong> <?php echo htmlspecialchars((string) date('d/m/Y', strtotime((string) ($task['due_date'] ?? 'now')))); ?></div>
         <div class="col-md-6"><strong>Título:</strong> <?php echo htmlspecialchars((string) ($task['title'] ?? '-')); ?></div>
         <div class="col-md-3"><strong>Status:</strong> <span class="badge <?php echo $taskStatusClass; ?>"><?php echo $taskStatusLabel; ?></span></div>
+        <div class="col-md-3"><strong>Tipo de envio:</strong> <?php echo (($task['delivery_kind'] ?? 'task') === 'material') ? 'Material' : 'Tarefa'; ?></div>
         <div class="col-12">
           <strong>Descrição:</strong>
           <div class="mt-2 border rounded p-3 bg-light-subtle" style="max-height: 52vh; overflow: auto;">
             <?php echo (string) ($task['description'] ?? ''); ?>
           </div>
         </div>
+        <?php if (!empty($task['patient_response_html'])): ?>
+        <div class="col-12">
+          <strong>Resposta do paciente:</strong>
+          <?php if (!empty($task['responded_at'])): ?>
+            <div class="text-muted small mb-2">Recebida em <?php echo htmlspecialchars((string) date('d/m/Y H:i', strtotime((string) $task['responded_at']))); ?></div>
+          <?php endif; ?>
+          <div class="mt-2 border rounded p-3 bg-light-subtle" style="max-height: 38vh; overflow: auto;">
+            <?php echo (string) $task['patient_response_html']; ?>
+          </div>
+        </div>
+        <?php endif; ?>
         <?php if (!empty($linkedMaterials)): ?>
         <div class="col-12">
           <strong>Materiais vinculados:</strong>
@@ -70,9 +82,31 @@
         <?php endif; ?>
         <?php if (!empty($files)): ?>
         <div class="col-12">
-          <strong>Anexos:</strong>
+          <strong>Anexos enviados pelo terapeuta:</strong>
           <div class="mt-2 d-flex flex-wrap gap-2">
             <?php foreach ($files as $fi): ?>
+              <?php if (($fi['file_type'] ?? '') === 'link'): ?>
+                <a href="<?php echo htmlspecialchars((string) $fi['file_path']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-info btn-sm">
+                  <i class="fa-solid fa-link me-1"></i><?php echo htmlspecialchars((string) $fi['file_name']); ?>
+                </a>
+              <?php elseif (($fi['file_type'] ?? '') === 'pdf'): ?>
+                <a href="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $fi['file_path']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-danger btn-sm">
+                  <i class="fa-solid fa-file-pdf me-1"></i><?php echo htmlspecialchars((string) $fi['file_name']); ?>
+                </a>
+              <?php else: ?>
+                <a href="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $fi['file_path']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm">
+                  <i class="fa-solid fa-image me-1"></i><?php echo htmlspecialchars((string) $fi['file_name']); ?>
+                </a>
+              <?php endif; ?>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+        <?php if (!empty($patientResponseFiles)): ?>
+        <div class="col-12">
+          <strong>Anexos devolvidos pelo paciente:</strong>
+          <div class="mt-2 d-flex flex-wrap gap-2">
+            <?php foreach ($patientResponseFiles as $fi): ?>
               <?php if (($fi['file_type'] ?? '') === 'link'): ?>
                 <a href="<?php echo htmlspecialchars((string) $fi['file_path']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-info btn-sm">
                   <i class="fa-solid fa-link me-1"></i><?php echo htmlspecialchars((string) $fi['file_name']); ?>

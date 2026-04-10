@@ -1,14 +1,56 @@
 <?php $title = 'Portal do Paciente'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
 <div class="container page-wrap">
-  <h3 class="mb-4">Portal do Paciente</h3>
-  <div class="row g-3">
-    <div class="col-md-2"><div class="card card-kpi"><div class="card-body"><small>Sessoes</small><h2><?php echo (int)$sessions; ?></h2></div></div></div>
-    <div class="col-md-2"><div class="card card-kpi"><div class="card-body"><small>Tarefas</small><h2><?php echo (int)$tasks; ?></h2></div></div></div>
-    <div class="col-md-2"><div class="card card-kpi"><div class="card-body"><small>Pendentes</small><h2><?php echo (int)$pending; ?></h2></div></div></div>
-    <div class="col-md-2"><div class="card card-kpi"><div class="card-body"><small>Concluidas</small><h2><?php echo (int)$done; ?></h2></div></div></div>
-    <div class="col-md-2"><div class="card card-kpi"><div class="card-body"><small>Materiais</small><h2>0</h2></div></div></div>
-    <div class="col-md-2"><div class="card card-kpi"><div class="card-body"><small>Mensagem diaria</small><h2>...</h2></div></div></div>
+  <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
+
+  <?php
+  $nextLabel = 'Sem sessão agendada';
+  if (!empty($nextAppointment['session_date'])) {
+    $nextLabel = date('d/m/Y H:i', strtotime((string) $nextAppointment['session_date']));
+  }
+  ?>
+
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h3 class="mb-0">Meu dashboard</h3>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=tasks"><i class="fa-solid fa-list-check me-1"></i>Minhas tarefas</a>
+      <a class="btn btn-primary" href="<?php echo $appUrl; ?>/patient.php?action=materials"><i class="fa-solid fa-book me-1"></i>Meus materiais</a>
+    </div>
   </div>
-  <a class="btn btn-primary mt-4" href="<?php echo $appUrl; ?>/patient.php?action=tasks">Minhas tarefas</a>
+
+  <div class="row g-3">
+    <div class="col-md-6 col-xl-3">
+      <div class="card card-kpi h-100">
+        <div class="card-body">
+          <small class="text-muted">Dias desde o cadastro</small>
+          <h2><?php echo (int) $daysSinceRegister; ?></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card card-kpi h-100">
+        <div class="card-body">
+          <small class="text-muted">Sessões realizadas</small>
+          <h2><?php echo (int) $sessionsDone; ?></h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card card-kpi h-100">
+        <div class="card-body">
+          <small class="text-muted">Lembrete de sessão</small>
+          <div class="fw-semibold mt-2"><?php echo htmlspecialchars($nextLabel); ?></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card card-kpi h-100">
+        <div class="card-body">
+          <small class="text-muted">Tarefas recebidas</small>
+          <h2><?php echo (int) $receivedTasks; ?></h2>
+          <small class="text-muted">Materiais recebidos: <?php echo (int) $receivedMaterials; ?></small>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 <?php include __DIR__ . '/../partials/footer.php'; ?>

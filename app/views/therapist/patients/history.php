@@ -122,7 +122,7 @@
           <?php else: ?>
             <div class="table-responsive">
               <table class="table align-middle mb-0">
-                <thead><tr><th>Data</th><th>Título</th><th>Status</th><th>Anexos</th><th>Material</th><th>Ações</th></tr></thead>
+                <thead><tr><th>Data</th><th>Título</th><th>Tipo</th><th>Status</th><th>Anexos</th><th>Material</th><th>Ações</th></tr></thead>
                 <tbody>
                 <?php foreach ($tasks as $task): ?>
                   <?php [$taskStatusLabel, $taskStatusClass] = $taskStatusInfo($task); ?>
@@ -131,6 +131,13 @@
                   <tr>
                     <td><?php echo $formatDateBr($task['due_date'] ?? null); ?></td>
                     <td><?php echo htmlspecialchars((string) ($task['title'] ?? '-')); ?></td>
+                    <td>
+                      <?php if (($task['delivery_kind'] ?? 'task') === 'material'): ?>
+                        <span class="badge text-bg-secondary">Envio de material</span>
+                      <?php else: ?>
+                        <span class="badge text-bg-primary">Envio de tarefa</span>
+                      <?php endif; ?>
+                    </td>
                     <td><span class="badge <?php echo $taskStatusClass; ?>"><?php echo $taskStatusLabel; ?></span></td>
                     <td>
                       <?php if (!empty($taskAttachments)): ?>
@@ -203,20 +210,33 @@
               <div class="card border-0 bg-light-subtle">
                 <div class="card-body p-3">
                   <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                       <label class="form-label">Data</label>
                       <input class="form-control" type="date" name="due_date" required>
                     </div>
-                    <div class="col-md-8">
-                      <label class="form-label">Título</label>
-                      <input class="form-control" name="title" required>
-                    </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                       <label class="form-label">Status</label>
                       <select class="form-select" name="status">
                         <option value="pending" selected>Pendente</option>
                         <option value="done">Finalizado</option>
                       </select>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Título</label>
+                      <input class="form-control" name="title" required>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label d-block mb-2">Tipo de envio</label>
+                      <div class="d-flex gap-3 flex-wrap">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="delivery_kind" id="delivery_kind_task" value="task" checked>
+                          <label class="form-check-label" for="delivery_kind_task">Envio de tarefa (com devolutiva)</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="delivery_kind" id="delivery_kind_material" value="material">
+                          <label class="form-check-label" for="delivery_kind_material">Envio de material (consulta do paciente)</label>
+                        </div>
+                      </div>
                     </div>
                     <div class="col-12">
                       <label class="form-label">Descrição</label>
@@ -229,18 +249,31 @@
               <div class="card border-0 bg-light-subtle">
                 <div class="card-body p-3">
                   <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-12">
                       <label class="form-label">Anexos (PDF e imagens)</label>
                       <input class="form-control" type="file" name="task_attachments[]" accept=".pdf,image/*" multiple>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12">
                       <label class="form-label">Link adicional</label>
                       <input class="form-control" type="url" name="attachment_link" placeholder="https://...">
                     </div>
                     <div class="col-12">
                       <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="send_to_patient" id="send_to_patient" value="1">
-                        <label class="form-check-label" for="send_to_patient">Enviar para o paciente</label>
+                        <label class="form-check-label" for="send_to_patient">Encaminhar para o paciente</label>
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label d-block mb-2">Alertar paciente por</label>
+                      <div class="d-flex gap-3 flex-wrap">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="notify_channels[]" id="task_notify_email" value="email" checked>
+                          <label class="form-check-label" for="task_notify_email">E-mail</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="notify_channels[]" id="task_notify_whatsapp" value="whatsapp" checked>
+                          <label class="form-check-label" for="task_notify_whatsapp">WhatsApp</label>
+                        </div>
                       </div>
                     </div>
                   </div>

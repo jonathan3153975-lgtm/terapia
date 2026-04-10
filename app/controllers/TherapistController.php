@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\Task;
 use Classes\Controller;
 use Config\Config;
+use Helpers\AlertDispatcher;
 use Helpers\Auth;
 use Helpers\Utils;
 use Helpers\Validator;
@@ -1587,8 +1588,9 @@ class TherapistController extends Controller
         $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Atendimento excluído com sucesso.'));
     }
 
-    private function storeTaskAttachments(int $therapistId, int $patientId, int $taskId): void
+    private function storeTaskAttachments(int $therapistId, int $patientId, int $taskId, string $sourceRole = 'therapist'): void
     {
+        $sourceRole = $sourceRole === 'patient' ? 'patient' : 'therapist';
         $uploadBase = dirname(__DIR__, 2) . '/uploads/tasks';
         if (!is_dir($uploadBase)) {
             @mkdir($uploadBase, 0775, true);
@@ -1600,6 +1602,7 @@ class TherapistController extends Controller
                 'therapist_id' => $therapistId,
                 'patient_id' => $patientId,
                 'task_id' => $taskId,
+                'source_role' => $sourceRole,
                 'file_name' => $link,
                 'file_path' => $link,
                 'file_type' => 'link',
@@ -1645,6 +1648,7 @@ class TherapistController extends Controller
                 'therapist_id' => $therapistId,
                 'patient_id' => $patientId,
                 'task_id' => $taskId,
+                'source_role' => $sourceRole,
                 'file_name' => (string) $originalName,
                 'file_path' => $relativePath,
                 'file_type' => $fileType,
@@ -1652,6 +1656,31 @@ class TherapistController extends Controller
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
         }
+    }
+
+    private function normalizeDeliveryKind(string $kind): string
+    {
+        return $kind === 'material' ? 'material' : 'task';
+    }
+
+    private function dispatchTaskDeliveryAlert(array $patient, array $task, string $deliveryKind, array $channels): string
+    {
+        if (empty($task['send_to_patient'])) {
+            return 'envio interno';
+        }
+
+        $label = $deliveryKind === 'material' ? 'material' : 'tarefa';
+        $message = 'Você recebeu um novo ' . $label . ': "' . (string) ($task['title'] ?? 'Sem título') . '".';
+
+        $report = AlertDispatcher::dispatch(
+            $channels,
+            (string) ($patient['email'] ?? ''),
+            (string) ($patient['phone'] ?? ''),
+            'Novo conteúdo disponível no portal do paciente',
+            $message
+        );
+
+        return AlertDispatcher::summarize($report);
     }
 
     public function storePatientTask(): void
@@ -1677,6 +1706,11 @@ class TherapistController extends Controller
         $title = Utils::sanitize($_POST['title'] ?? '');
         $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
         $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
+        $deliveryKind = $this->normalizeDeliveryKind((string) ($_POST['delivery_kind'] ?? 'task'));
+        $notifyChannels = $_POST['notify_channels'] ?? ['email', 'whatsapp'];
+        if (!is_array($notifyChannels)) {
+            $notifyChannels = ['email', 'whatsapp'];
+        }
         $materialIds = $_POST['material_ids'] ?? [];
         if (!is_array($materialIds)) {
             $materialIds = [];
@@ -1705,6 +1739,13 @@ class TherapistController extends Controller
             $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Data, título e descrição são obrigatórios.'));
         }
 
+        if ($deliveryKind === 'material' && empty($validatedMaterialIds)) {
+            if ($isAjax) {
+                $this->error('Selecione ao menos um material para envio de material');
+            }
+            $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Selecione ao menos um material para envio de material.'));
+        }
+
         $taskId = $this->taskModel->insert([
             'therapist_id' => $therapistId,
             'patient_id' => $patientId,
@@ -1713,6 +1754,7 @@ class TherapistController extends Controller
             'title' => $title,
             'description' => $description,
             'send_to_patient' => $sendToPatient,
+            'delivery_kind' => $deliveryKind,
             'status' => $status,
             'created_at' => date('Y-m-d H:i:s'),
         ]);
@@ -1727,11 +1769,17 @@ class TherapistController extends Controller
         $this->taskModel->syncLinkedMaterials((int) $taskId, $validatedMaterialIds);
         $this->storeTaskAttachments($therapistId, $patientId, (int) $taskId);
 
+        $taskPayload = [
+            'send_to_patient' => $sendToPatient,
+            'title' => $title,
+        ];
+        $alertSummary = $this->dispatchTaskDeliveryAlert($patient, $taskPayload, $deliveryKind, $notifyChannels);
+
         if ($isAjax) {
             $this->success('Tarefa cadastrada', ['redirect' => $redirectHistoryBase]);
         }
 
-        $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Tarefa cadastrada com sucesso.'));
+        $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Tarefa cadastrada com sucesso. Alertas: ' . $alertSummary . '.'));
     }
 
     public function showPatientTask(): void
@@ -1750,7 +1798,8 @@ class TherapistController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients-history&id=' . $patientId . '&status=error&msg=' . urlencode('Tarefa não encontrada.'));
         }
 
-        $files = $this->fileModel->listByTask($taskId);
+        $files = $this->fileModel->listByTaskAndSourceRole($taskId, 'therapist');
+        $patientResponseFiles = $this->fileModel->listByTaskAndSourceRole($taskId, 'patient');
         $linkedMaterials = $this->taskModel->listLinkedMaterials($taskId);
         $linkedMaterialAssets = [];
         foreach ($linkedMaterials as $linkedMaterial) {
@@ -1762,6 +1811,7 @@ class TherapistController extends Controller
             'patient' => $patient,
             'task' => $task,
             'files' => $files,
+            'patientResponseFiles' => $patientResponseFiles,
             'linkedMaterials' => $linkedMaterials,
             'linkedMaterialAssets' => $linkedMaterialAssets,
         ]);
@@ -1822,6 +1872,11 @@ class TherapistController extends Controller
         $title = Utils::sanitize($_POST['title'] ?? '');
         $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
         $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
+        $deliveryKind = $this->normalizeDeliveryKind((string) ($_POST['delivery_kind'] ?? ($task['delivery_kind'] ?? 'task')));
+        $notifyChannels = $_POST['notify_channels'] ?? ['email', 'whatsapp'];
+        if (!is_array($notifyChannels)) {
+            $notifyChannels = ['email', 'whatsapp'];
+        }
         $materialIds = $_POST['material_ids'] ?? [];
         if (!is_array($materialIds)) {
             $materialIds = [];
@@ -1850,12 +1905,20 @@ class TherapistController extends Controller
             $this->redirect($redirectWithStatus($redirectEditBase, 'error', 'Data, título e descrição são obrigatórios.'));
         }
 
+        if ($deliveryKind === 'material' && empty($validatedMaterialIds)) {
+            if ($isAjax) {
+                $this->error('Selecione ao menos um material para envio de material');
+            }
+            $this->redirect($redirectWithStatus($redirectEditBase, 'error', 'Selecione ao menos um material para envio de material.'));
+        }
+
         $updated = $this->taskModel->updateById($taskId, [
             'due_date' => $dueDate,
             'title' => $title,
             'description' => $description,
             'material_id' => !empty($validatedMaterialIds) ? (int) reset($validatedMaterialIds) : null,
             'send_to_patient' => $sendToPatient,
+            'delivery_kind' => $deliveryKind,
             'status' => $status,
         ]);
 
@@ -1869,11 +1932,17 @@ class TherapistController extends Controller
         $this->taskModel->syncLinkedMaterials($taskId, $validatedMaterialIds);
         $this->storeTaskAttachments($therapistId, $patientId, $taskId);
 
+        $taskPayload = [
+            'send_to_patient' => $sendToPatient,
+            'title' => $title,
+        ];
+        $alertSummary = $this->dispatchTaskDeliveryAlert($patient, $taskPayload, $deliveryKind, $notifyChannels);
+
         if ($isAjax) {
             $this->success('Tarefa atualizada', ['redirect' => $redirectHistoryBase]);
         }
 
-        $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Tarefa atualizada com sucesso.'));
+        $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Tarefa atualizada com sucesso. Alertas: ' . $alertSummary . '.'));
     }
 
     public function deletePatientTask(): void

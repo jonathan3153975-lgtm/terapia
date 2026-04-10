@@ -42,6 +42,19 @@ class FileStorage extends Model
         return $stmt->fetchAll();
     }
 
+    public function listByTaskAndSourceRole(int $taskId, string $sourceRole): array
+    {
+        $role = $sourceRole === 'patient' ? 'patient' : 'therapist';
+        $stmt = $this->query(
+            'SELECT * FROM files WHERE task_id = ? AND COALESCE(source_role, "therapist") = ? ORDER BY created_at ASC',
+            [$taskId, $role]
+        );
+        if (!$stmt) {
+            return [];
+        }
+        return $stmt->fetchAll();
+    }
+
     public function listByPatientGroupedByTask(int $patientId): array
     {
         $stmt = $this->query('SELECT * FROM files WHERE patient_id = ? ORDER BY task_id, created_at ASC', [$patientId]);

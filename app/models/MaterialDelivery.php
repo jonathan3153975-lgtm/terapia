@@ -54,4 +54,28 @@ class MaterialDelivery extends Model
 
         return $stmt->fetchAll();
     }
+
+    public function listByPatient(int $patientId): array
+    {
+        $stmt = $this->query(
+            'SELECT md.*, m.title AS material_title, m.type AS material_type, u.name AS therapist_name
+             FROM material_deliveries md
+             INNER JOIN materials m ON m.id = md.material_id
+             INNER JOIN users u ON u.id = md.therapist_id
+             WHERE md.patient_id = ?
+             ORDER BY md.sent_at DESC, md.id DESC',
+            [$patientId]
+        );
+
+        if (!$stmt) {
+            return [];
+        }
+
+        return $stmt->fetchAll();
+    }
+
+    public function countByPatient(int $patientId): int
+    {
+        return $this->count('patient_id = ?', [$patientId]);
+    }
 }

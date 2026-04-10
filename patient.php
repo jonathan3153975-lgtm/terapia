@@ -15,6 +15,9 @@ $portal = new PatientPortalController();
 match ($action) {
     'dashboard' => $portal->dashboard(),
     'tasks' => $portal->tasks(),
+    'materials' => $portal->materials(),
     'task-material' => $portal->showTaskMaterial(),
+    'task-respond' => $portal->respondTask(),
+    'task-respond-submit' => $portal->submitTaskResponse(),
     default => $portal->dashboard(),
 };
