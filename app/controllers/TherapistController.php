@@ -1802,6 +1802,55 @@ class TherapistController extends Controller
         return AlertDispatcher::summarize($report);
     }
 
+    private function insertTaskWithFallback(array $data): int|false
+    {
+        $inserted = $this->taskModel->insert($data);
+        if ($inserted !== false) {
+            return $inserted;
+        }
+
+        if (array_key_exists('delivery_kind', $data)) {
+            unset($data['delivery_kind']);
+            return $this->taskModel->insert($data);
+        }
+
+        return false;
+    }
+
+    private function updateTaskWithFallback(int $taskId, array $data): bool
+    {
+        $updated = $this->taskModel->updateById($taskId, $data);
+        if ($updated) {
+            return true;
+        }
+
+        if (array_key_exists('delivery_kind', $data)) {
+            unset($data['delivery_kind']);
+            return $this->taskModel->updateById($taskId, $data);
+        }
+
+        return false;
+    }
+
+    private function storeTaskAttachmentsSafely(int $therapistId, int $patientId, int $taskId, string $sourceRole = 'therapist'): void
+    {
+        try {
+            $this->storeTaskAttachments($therapistId, $patientId, $taskId, $sourceRole);
+        } catch (\Throwable $e) {
+            error_log('[task-attachments] ' . $e->getMessage());
+        }
+    }
+
+    private function dispatchTaskDeliveryAlertSafely(array $patient, array $task, string $deliveryKind, array $channels): string
+    {
+        try {
+            return $this->dispatchTaskDeliveryAlert($patient, $task, $deliveryKind, $channels);
+        } catch (\Throwable $e) {
+            error_log('[task-alert] ' . $e->getMessage());
+            return 'alertas indisponíveis';
+        }
+    }
+
     public function storePatientTask(): void
     {
         $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
@@ -1865,7 +1914,7 @@ class TherapistController extends Controller
             $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Selecione ao menos um material para envio de material.'));
         }
 
-        $taskId = $this->taskModel->insert([
+        $taskId = $this->insertTaskWithFallback([
             'therapist_id' => $therapistId,
             'patient_id' => $patientId,
             'material_id' => !empty($validatedMaterialIds) ? (int) reset($validatedMaterialIds) : null,
@@ -1886,13 +1935,13 @@ class TherapistController extends Controller
         }
 
         $this->taskModel->syncLinkedMaterials((int) $taskId, $validatedMaterialIds);
-        $this->storeTaskAttachments($therapistId, $patientId, (int) $taskId);
+        $this->storeTaskAttachmentsSafely($therapistId, $patientId, (int) $taskId);
 
         $taskPayload = [
             'send_to_patient' => $sendToPatient,
             'title' => $title,
         ];
-        $alertSummary = $this->dispatchTaskDeliveryAlert($patient, $taskPayload, $deliveryKind, $notifyChannels);
+        $alertSummary = $this->dispatchTaskDeliveryAlertSafely($patient, $taskPayload, $deliveryKind, $notifyChannels);
 
         if ($isAjax) {
             $this->success('Tarefa cadastrada', ['redirect' => $redirectHistoryBase]);
@@ -2031,7 +2080,7 @@ class TherapistController extends Controller
             $this->redirect($redirectWithStatus($redirectEditBase, 'error', 'Selecione ao menos um material para envio de material.'));
         }
 
-        $updated = $this->taskModel->updateById($taskId, [
+        $updated = $this->updateTaskWithFallback($taskId, [
             'due_date' => $dueDate,
             'title' => $title,
             'description' => $description,
@@ -2049,13 +2098,13 @@ class TherapistController extends Controller
         }
 
         $this->taskModel->syncLinkedMaterials($taskId, $validatedMaterialIds);
-        $this->storeTaskAttachments($therapistId, $patientId, $taskId);
+        $this->storeTaskAttachmentsSafely($therapistId, $patientId, $taskId);
 
         $taskPayload = [
             'send_to_patient' => $sendToPatient,
             'title' => $title,
         ];
-        $alertSummary = $this->dispatchTaskDeliveryAlert($patient, $taskPayload, $deliveryKind, $notifyChannels);
+        $alertSummary = $this->dispatchTaskDeliveryAlertSafely($patient, $taskPayload, $deliveryKind, $notifyChannels);
 
         if ($isAjax) {
             $this->success('Tarefa atualizada', ['redirect' => $redirectHistoryBase]);
