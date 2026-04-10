@@ -62,13 +62,14 @@ class AlertDispatcher
             return ['status' => 'missing'];
         }
 
-        $headers = [
-            'MIME-Version: 1.0',
-            'Content-type: text/plain; charset=UTF-8',
-        ];
-
-        $sent = @mail($email, $subject, $message, implode("\r\n", $headers));
-        return ['status' => $sent ? 'sent' : 'failed'];
+        try {
+            $mailService = new MailService();
+            $sent = $mailService->send($email, 'Usuário', $subject, $message);
+            return ['status' => $sent ? 'sent' : 'failed'];
+        } catch (\Throwable $e) {
+            error_log('AlertDispatcher email send error: ' . $e->getMessage());
+            return ['status' => 'failed'];
+        }
     }
 
     private static function buildWhatsappAlert(?string $phone, string $message): array

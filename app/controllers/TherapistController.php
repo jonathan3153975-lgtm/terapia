@@ -14,6 +14,8 @@ use Classes\Controller;
 use Config\Config;
 use Helpers\AlertDispatcher;
 use Helpers\Auth;
+use Helpers\EmailTemplate;
+use Helpers\MailService;
 use Helpers\Utils;
 use Helpers\Validator;
 
@@ -1788,16 +1790,42 @@ class TherapistController extends Controller
             return 'envio interno';
         }
 
-        $label = $deliveryKind === 'material' ? 'material' : 'tarefa';
-        $message = 'Você recebeu um novo ' . $label . ': "' . (string) ($task['title'] ?? 'Sem título') . '".';
+        $report = [];
+        $patientEmail = (string) ($patient['email'] ?? '');
+        $patientPhone = (string) ($patient['phone'] ?? '');
+        $patientName = (string) ($patient['name'] ?? 'Paciente');
+        $taskTitle = (string) ($task['title'] ?? 'Sem título');
 
-        $report = AlertDispatcher::dispatch(
-            $channels,
-            (string) ($patient['email'] ?? ''),
-            (string) ($patient['phone'] ?? ''),
-            'Novo conteúdo disponível no portal do paciente',
-            $message
-        );
+        // Sending email with HTML template
+        if (in_array('email', $channels, true) && filter_var($patientEmail, FILTER_VALIDATE_EMAIL)) {
+            try {
+                $mailService = new MailService();
+                if ($deliveryKind === 'material') {
+                    $taskDescription = (string) ($task['description'] ?? 'Material de apoio compartilhado');
+                    $html = EmailTemplate::materialAssigned($patientName, $taskTitle, $taskDescription);
+                    $subject = 'Novo Material Disponível';
+                } else {
+                    $taskDescription = (string) ($task['description'] ?? 'Tarefa pendente');
+                    $dueDate = (string) ($task['due_date'] ?? 'Sem data definida');
+                    $html = EmailTemplate::taskAssigned($patientName, $taskTitle, $taskDescription, $dueDate);
+                    $subject = 'Nova Tarefa Recebida';
+                }
+
+                $sent = $mailService->send($patientEmail, $patientName, $subject, $html);
+                $report['email'] = ['status' => $sent ? 'sent' : 'failed'];
+            } catch (\Throwable $e) {
+                error_log('[task-email-dispatch] ' . $e->getMessage());
+                $report['email'] = ['status' => 'failed'];
+            }
+        }
+
+        // Sending WhatsApp notification via AlertDispatcher
+        if (in_array('whatsapp', $channels, true)) {
+            $label = $deliveryKind === 'material' ? 'material' : 'tarefa';
+            $message = 'Você recebeu um novo ' . $label . ': "' . $taskTitle . '". Acesse o portal do paciente para mais detalhes.';
+            $whatsappReport = AlertDispatcher::dispatch(['whatsapp'], '', $patientPhone, '', $message);
+            $report['whatsapp'] = $whatsappReport['whatsapp'] ?? ['status' => 'skipped'];
+        }
 
         return AlertDispatcher::summarize($report);
     }

@@ -13,6 +13,8 @@ use Classes\Controller;
 use Config\Config;
 use Helpers\AlertDispatcher;
 use Helpers\Auth;
+use Helpers\EmailTemplate;
+use Helpers\MailService;
 
 class PatientPortalController extends Controller
 {
@@ -176,14 +178,33 @@ class PatientPortalController extends Controller
     private function dispatchTaskAlertSafely(array $therapist, string $taskTitle, array $channels): string
     {
         try {
-            $message = 'Nova devolutiva de tarefa recebida: "' . $taskTitle . '".';
-            $report = AlertDispatcher::dispatch(
-                $channels,
-                (string) ($therapist['email'] ?? ''),
-                (string) ($therapist['phone'] ?? ''),
-                'Devolutiva de tarefa recebida',
-                $message
-            );
+            $therapistEmail = (string) ($therapist['email'] ?? '');
+            $therapistPhone = (string) ($therapist['phone'] ?? '');
+            $therapistName = (string) ($therapist['name'] ?? 'Terapeuta');
+            $patientName = Auth::user()['name'] ?? 'Paciente';
+
+            $report = [];
+
+            // Sending email with HTML template
+            if (in_array('email', $channels, true) && filter_var($therapistEmail, FILTER_VALIDATE_EMAIL)) {
+                try {
+                    $mailService = new MailService();
+                    $html = EmailTemplate::taskResponseReceived($therapistName, $patientName, $taskTitle);
+                    $sent = $mailService->send($therapistEmail, $therapistName, 'Devolutiva de Tarefa Recebida', $html);
+                    $report['email'] = ['status' => $sent ? 'sent' : 'failed'];
+                } catch (\Throwable $e) {
+                    error_log('[task-response-email] ' . $e->getMessage());
+                    $report['email'] = ['status' => 'failed'];
+                }
+            }
+
+            // Sending WhatsApp notification
+            if (in_array('whatsapp', $channels, true)) {
+                $message = 'Nova devolutiva de tarefa recebida: "' . $taskTitle . '". Acesse o painel para revisar.';
+                $whatsappReport = AlertDispatcher::dispatch(['whatsapp'], '', $therapistPhone, '', $message);
+                $report['whatsapp'] = $whatsappReport['whatsapp'] ?? ['status' => 'skipped'];
+            }
+
             return AlertDispatcher::summarize($report);
         } catch (\Throwable $e) {
             error_log('Error dispatching task alert: ' . $e->getMessage());
