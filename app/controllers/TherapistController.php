@@ -9,6 +9,7 @@ use App\Models\MaterialDelivery;
 use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\Task;
+use App\Models\User;
 use Classes\Controller;
 use Config\Config;
 use Helpers\AlertDispatcher;
@@ -25,6 +26,7 @@ class TherapistController extends Controller
     private Payment $paymentModel;
     private Task $taskModel;
     private FileStorage $fileModel;
+    private User $userModel;
 
     public function __construct()
     {
@@ -36,6 +38,7 @@ class TherapistController extends Controller
         $this->paymentModel = new Payment();
         $this->taskModel = new Task();
         $this->fileModel = new FileStorage();
+        $this->userModel = new User();
     }
 
     public function dashboard(): void
