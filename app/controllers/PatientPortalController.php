@@ -367,17 +367,21 @@ class PatientPortalController extends Controller
             $cycleDrawnIds[] = $messageId;
         }
 
-        $this->success('Mensagem sorteada', [
-            'message' => [
-                'id' => $messageId,
-                'category' => (string) ($message['category'] ?? ''),
-                'text' => (string) ($message['message_text'] ?? ''),
-            ],
-            'cycle' => [
-                'drawnCount' => min(count(array_unique($cycleDrawnIds)), count($allMessageIds)),
-                'totalCount' => count($allMessageIds),
-                'remainingCount' => max(count($allMessageIds) - count(array_unique($cycleDrawnIds)), 0),
-                'restarted' => $cycleRestarted,
+        $this->json([
+            'success' => true,
+            'message' => 'Mensagem sorteada',
+            'data' => [
+                'message' => [
+                    'id' => $messageId,
+                    'category' => (string) ($message['category'] ?? ''),
+                    'text' => (string) ($message['message_text'] ?? ''),
+                ],
+                'cycle' => [
+                    'drawnCount' => min(count(array_unique($cycleDrawnIds)), count($allMessageIds)),
+                    'totalCount' => count($allMessageIds),
+                    'remainingCount' => max(count($allMessageIds) - count(array_unique($cycleDrawnIds)), 0),
+                    'restarted' => $cycleRestarted,
+                ],
             ],
         ]);
     }
