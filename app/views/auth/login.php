@@ -1,39 +1,64 @@
 <?php $title = 'Login - Tera-Tech'; include __DIR__ . '/../partials/header.php'; ?>
 <div class="login-shell">
   <div class="login-backdrop"></div>
+  <div class="login-orb login-orb-a"></div>
+  <div class="login-orb login-orb-b"></div>
   <div class="login-card-wrap">
     <div class="login-brand-panel">
-      <h1>Tera-Tech - Seu ambiente de terapia diária.</h1>
-      <p>Para seu ambiente de conhecimento e autoajuda que te levará ao extraordinário!</p>
-      <ul>
-        <li><i class="fa-solid fa-check"></i> Agenda e histórico integrados</li>
-        <li><i class="fa-solid fa-check"></i> Portal com assinatura e conteúdos</li>
-        <li><i class="fa-solid fa-check"></i> Gestão completa de tarefas e materiais</li>
-      </ul>
+      <h1>Tera-Tech</h1>
+      <p>Seu ambiente de terapia e autoconhecimento diário</p>
     </div>
-    <div class="card shadow-sm login-card">
+    <div class="card shadow-sm login-card login-glass-card">
       <div class="card-body p-4 p-md-5">
-        <div class="mb-3">
-          <h4 class="mb-0">Acessar plataforma</h4>
+        <div class="mb-4">
+          <h4 class="mb-1">Acessar plataforma</h4>
+          <small class="text-muted">Entre com seu e-mail e senha</small>
         </div>
-        <?php if (isset($_GET['error'])): ?>
+        <?php if (isset($_GET['status']) && isset($_GET['msg'])): ?>
+          <div class="alert <?php echo (string) $_GET['status'] === 'success' ? 'alert-success' : 'alert-danger'; ?>">
+            <?php echo htmlspecialchars((string) $_GET['msg']); ?>
+          </div>
+        <?php elseif (isset($_GET['error'])): ?>
           <div class="alert alert-danger">Credenciais inválidas ou acesso ainda não liberado.</div>
         <?php endif; ?>
         <form id="loginForm" method="POST" action="<?php echo $appUrl; ?>/index.php?action=process-login">
-          <div class="mb-3">
+          <div class="mb-3 login-input-wrap">
             <label class="form-label">E-mail</label>
             <input class="form-control" name="email" type="email" required>
           </div>
-          <div class="mb-3">
+          <div class="mb-2 login-input-wrap">
             <label class="form-label">Senha</label>
             <input class="form-control" name="password" type="password" required>
           </div>
-          <button class="btn btn-primary w-100" type="submit">Entrar</button>
+          <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-link p-0 login-link" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Esqueci minha senha</button>
+          </div>
+          <button class="btn btn-primary w-100 login-btn" type="submit">Entrar</button>
         </form>
       </div>
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title">Redefinir senha</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">Informe seu e-mail de acesso para receber uma nova senha.</p>
+        <form id="forgotPasswordForm" action="<?php echo $appUrl; ?>/index.php?action=forgot-password" method="POST">
+          <label class="form-label">E-mail</label>
+          <input class="form-control" type="email" name="email" required>
+          <button class="btn btn-primary w-100 mt-3" type="submit">Enviar nova senha</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 window.addEventListener('load', function() {
   $('#loginForm').on('submit', function(e){
@@ -58,6 +83,36 @@ window.addEventListener('load', function() {
       error: function(xhr){
         window.FormSubmitGuard.unlock(form);
         const msg = xhr.responseJSON?.message || 'Falha no login';
+        Swal.fire('Erro', msg, 'error');
+      }
+    });
+  });
+
+  $('#forgotPasswordForm').on('submit', function(e){
+    e.preventDefault();
+    const form = this;
+    if (!window.FormSubmitGuard.lock(form, 'Enviando...')) {
+      return;
+    }
+
+    $.ajax({
+      url: form.action,
+      method: 'POST',
+      data: $(form).serialize(),
+      headers: {'X-Requested-With':'XMLHttpRequest'},
+      success: function(res){
+        window.FormSubmitGuard.unlock(form);
+        const modalEl = document.getElementById('forgotPasswordModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) {
+          modal.hide();
+        }
+        Swal.fire('Pronto', res.message || 'Verifique seu e-mail.', 'success');
+        form.reset();
+      },
+      error: function(xhr){
+        window.FormSubmitGuard.unlock(form);
+        const msg = xhr.responseJSON?.message || 'Falha ao enviar nova senha';
         Swal.fire('Erro', msg, 'error');
       }
     });

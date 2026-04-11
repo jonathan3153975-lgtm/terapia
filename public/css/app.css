@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap');
+
 :root {
 	--bg-main: #f5f9ff;
 	--bg-panel: #ffffff;
@@ -1523,74 +1525,143 @@ body.app-body {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 30px 16px;
+	padding: 40px 16px;
 	overflow: hidden;
+	font-family: 'Manrope', 'Segoe UI', sans-serif;
 }
 
 .login-backdrop {
 	position: absolute;
 	inset: 0;
 	background:
-		radial-gradient(1100px 520px at 15% 8%, rgba(255,255,255,.18), transparent 62%),
-		linear-gradient(135deg, #082b63 0%, #0d6efd 46%, #a6d3ff 100%);
+		radial-gradient(1200px 620px at 0% -15%, rgba(255,255,255,.28), transparent 62%),
+		linear-gradient(140deg, #031d4a 0%, #0b4da1 52%, #64b8ff 100%);
 }
 
 .login-backdrop::before {
 	content: '';
 	position: absolute;
 	inset: 0;
-	background: url('../../app/images/logo.png') center center / min(58vw, 640px) no-repeat;
-	opacity: .12;
-	filter: blur(1px) saturate(.85);
+	background: url('../../app/images/logo.png') center center / min(62vw, 740px) no-repeat;
+	opacity: .1;
+	filter: blur(2px) saturate(.8);
 }
 
 .login-backdrop::after {
 	content: '';
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(180deg, rgba(8, 31, 69, .35), rgba(8, 31, 69, .52));
+	background: linear-gradient(180deg, rgba(2, 15, 40, .2), rgba(2, 15, 40, .58));
+}
+
+.login-orb {
+	position: absolute;
+	border-radius: 999px;
+	filter: blur(2px);
+	z-index: 1;
+}
+
+.login-orb-a {
+	width: 300px;
+	height: 300px;
+	left: -70px;
+	top: 10%;
+	background: radial-gradient(circle, rgba(125, 211, 252, .48), rgba(125, 211, 252, .04) 72%);
+	animation: float-y 7s ease-in-out infinite;
+}
+
+.login-orb-b {
+	width: 260px;
+	height: 260px;
+	right: -50px;
+	bottom: 8%;
+	background: radial-gradient(circle, rgba(255, 255, 255, .34), rgba(255, 255, 255, .02) 70%);
+	animation: float-y 8s ease-in-out infinite reverse;
 }
 
 .login-card-wrap {
-	width: min(1020px, 100%);
+	width: min(1060px, 100%);
 	display: grid;
-	grid-template-columns: 1.1fr .9fr;
-	gap: 16px;
+	grid-template-columns: 1.15fr .85fr;
+	gap: 20px;
 	position: relative;
 	z-index: 2;
 }
 
 .login-brand-panel {
 	color: #f5f9ff;
-	padding: 30px;
-	border-radius: 18px;
-	border: 1px solid rgba(255, 255, 255, .3);
-	backdrop-filter: blur(2px);
-	background: rgba(3, 22, 52, .25);
-	animation: float-in .8s ease;
+	padding: 36px;
+	border-radius: 24px;
+	border: 1px solid rgba(255, 255, 255, .26);
+	backdrop-filter: blur(6px);
+	background: linear-gradient(165deg, rgba(2, 23, 58, .46), rgba(2, 23, 58, .2));
+	animation: float-in .75s ease;
 }
 
 .login-brand-panel h1 {
-	font-size: 2.1rem;
-	margin-bottom: 10px;
+	font-size: clamp(2rem, 3.8vw, 3.1rem);
+	line-height: 1.08;
+	margin-bottom: 12px;
+	font-weight: 800;
+	letter-spacing: -.02em;
 }
 
 .login-brand-panel p {
-	color: #d7e8ff;
-	margin-bottom: 14px;
-}
-
-.login-brand-panel ul {
-	margin: 0;
-	padding: 0;
-	list-style: none;
-	display: grid;
-	gap: 8px;
+	color: rgba(223, 238, 255, .96);
+	font-size: 1.05rem;
+	max-width: 34ch;
+	margin-bottom: 24px;
 }
 
 .login-card {
-	border: 1px solid rgba(255,255,255,.6);
+	border: 1px solid rgba(255,255,255,.7);
 	animation: float-in .95s ease;
+}
+
+.login-glass-card {
+	background: rgba(255,255,255,.92);
+	backdrop-filter: blur(12px);
+	border-radius: 22px;
+	box-shadow: 0 24px 50px rgba(2, 18, 46, .28);
+}
+
+.login-input-wrap .form-control {
+	border-radius: 12px;
+	padding: 12px 14px;
+	border-color: #d8e2f1;
+}
+
+.login-input-wrap .form-control:focus {
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 .22rem rgba(59, 130, 246, .18);
+}
+
+.login-link {
+	text-decoration: none;
+	font-weight: 600;
+	color: #0b4da1;
+}
+
+.login-link:hover {
+	color: #083a7a;
+}
+
+.login-btn {
+	border-radius: 12px;
+	padding: 11px 14px;
+	font-weight: 700;
+	letter-spacing: .01em;
+	background: linear-gradient(130deg, #1d4ed8, #0ea5e9);
+	border: none;
+}
+
+.login-btn:hover {
+	background: linear-gradient(130deg, #1e40af, #0284c7);
+}
+
+@keyframes float-y {
+	0%, 100% { transform: translateY(0); }
+	50% { transform: translateY(-14px); }
 }
 
 .schedule-card,
@@ -1877,6 +1948,26 @@ body.app-body {
 
 	.login-card-wrap {
 		grid-template-columns: 1fr;
+		max-width: 620px;
+		gap: 14px;
+	}
+
+	.login-brand-panel {
+		padding: 24px;
+		border-radius: 18px;
+	}
+
+	.login-brand-panel h1 {
+		font-size: 2rem;
+	}
+
+	.login-brand-panel p {
+		font-size: .98rem;
+		margin-bottom: 16px;
+	}
+
+	.login-orb {
+		display: none;
 	}
 
 	.schedule-grid-head,

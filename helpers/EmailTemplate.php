@@ -6,6 +6,42 @@ use Config\Config;
 
 class EmailTemplate
 {
+    public static function passwordResetCredentials(string $userName, string $loginEmail, string $newPassword, string $loginUrl): string
+    {
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f5f7fb; margin: 0; }
+        .container { max-width: 620px; margin: 24px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 24px rgba(15,23,42,.08); }
+        .header { background: linear-gradient(135deg, #0f172a, #1e293b); color: #fff; padding: 26px; }
+        .content { padding: 26px; color: #334155; line-height: 1.6; }
+        .box { background: #f8fafc; border: 1px solid #dbeafe; border-radius: 10px; padding: 14px; }
+        .btn { display: inline-block; padding: 12px 18px; border-radius: 8px; text-decoration: none; background: #2563eb; color: #fff; font-weight: 600; margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><h2 style="margin:0;">Nova senha de acesso</h2></div>
+        <div class="content">
+            <p>Olá, <strong>{$userName}</strong>.</p>
+            <p>Recebemos sua solicitação de redefinição de senha.</p>
+            <div class="box">
+                <div><strong>Login:</strong> {$loginEmail}</div>
+                <div><strong>Nova senha:</strong> {$newPassword}</div>
+            </div>
+            <p>Por segurança, recomendamos alterar essa senha após entrar no sistema.</p>
+            <a class="btn" href="{$loginUrl}">Acessar login</a>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    }
+
     public static function patientSignupInvite(string $therapistName, string $signupLink): string
     {
         return <<<HTML

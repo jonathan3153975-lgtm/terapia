@@ -52,6 +52,7 @@ $publicSignup = new PublicPatientSignupController();
 match ($action) {
     'login' => $auth->login(),
     'process-login' => $auth->processLogin(),
+    'forgot-password' => $auth->forgotPassword(),
     'logout' => $auth->logout(),
     'patient-signup' => $publicSignup->showForm(),
     'patient-signup-submit' => $publicSignup->submitForm(),

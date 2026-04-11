@@ -6,6 +6,8 @@ use App\Models\User;
 use Classes\Controller;
 use Config\Config;
 use Helpers\Auth;
+use Helpers\EmailTemplate;
+use Helpers\MailService;
 use Helpers\Utils;
 
 class AuthController extends Controller
@@ -75,5 +77,69 @@ class AuthController extends Controller
     {
         Auth::logout();
         $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login');
+    }
+
+    public function forgotPassword(): void
+    {
+        $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+        $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+
+        if ($email === '' || !Utils::isValidEmail($email)) {
+            if ($isAjax) {
+                $this->error('Informe um e-mail válido.');
+            }
+            $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&status=error&msg=' . urlencode('Informe um e-mail válido.'));
+        }
+
+        $genericSuccess = 'Se o e-mail existir, você receberá uma nova senha em instantes.';
+        $user = $this->userModel->findByEmail($email);
+        if (!$user) {
+            if ($isAjax) {
+                $this->success($genericSuccess);
+            }
+            $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&status=success&msg=' . urlencode($genericSuccess));
+        }
+
+        $newPassword = substr(bin2hex(random_bytes(8)), 0, 10);
+        $updated = $this->userModel->updateById((int) $user['id'], [
+            'password' => Utils::hashPassword($newPassword),
+        ]);
+
+        if (!$updated) {
+            if ($isAjax) {
+                $this->error('Não foi possível redefinir a senha agora. Tente novamente.');
+            }
+            $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&status=error&msg=' . urlencode('Não foi possível redefinir a senha agora.'));
+        }
+
+        $sent = false;
+        try {
+            $mail = new MailService();
+            $sent = $mail->send(
+                (string) ($user['email'] ?? ''),
+                (string) ($user['name'] ?? 'Usuário'),
+                'Redefinição de senha - Tera-Tech',
+                EmailTemplate::passwordResetCredentials(
+                    (string) ($user['name'] ?? 'Usuário'),
+                    (string) ($user['email'] ?? $email),
+                    $newPassword,
+                    Config::get('APP_URL', '') . '/index.php?action=login'
+                )
+            );
+        } catch (\Throwable $e) {
+            error_log('[forgot-password] ' . $e->getMessage());
+        }
+
+        if (!$sent) {
+            if ($isAjax) {
+                $this->error('Senha redefinida, mas falhou o envio do e-mail. Contate o suporte.');
+            }
+            $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&status=error&msg=' . urlencode('Senha redefinida, mas falhou o envio do e-mail.'));
+        }
+
+        if ($isAjax) {
+            $this->success($genericSuccess);
+        }
+        $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&status=success&msg=' . urlencode($genericSuccess));
     }
 }
