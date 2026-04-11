@@ -29,11 +29,25 @@ class PublicPatientSignupController extends Controller
     {
         $token = trim((string) ($_GET['token'] ?? ''));
         $link = $this->signupLinkModel->findActiveByToken($token);
+        $appUrl = Config::get('APP_URL', '');
+        $faviconUrl = '';
+
+        if ($link) {
+            $therapistId = (int) ($link['therapist_id'] ?? 0);
+            if ($therapistId > 0) {
+                $therapist = $this->userModel->findTherapistById($therapistId);
+                $logoPath = trim((string) ($therapist['company_logo_path'] ?? ''));
+                if ($logoPath !== '') {
+                    $faviconUrl = rtrim($appUrl, '/') . '/' . ltrim($logoPath, '/');
+                }
+            }
+        }
 
         $this->view('public/patient-signup', [
-            'appUrl' => Config::get('APP_URL', ''),
+            'appUrl' => $appUrl,
             'token' => $token,
             'linkData' => $link,
+            'faviconUrl' => $faviconUrl,
         ]);
     }
 
@@ -182,13 +196,30 @@ class PublicPatientSignupController extends Controller
             error_log('[public-signup-email] ' . $e->getMessage());
         }
 
-        $this->redirect(Config::get('APP_URL', '') . '/index.php?action=patient-signup-success&status=success&msg=' . urlencode('Cadastro enviado com sucesso. Seu terapeuta irá revisar os dados para liberar o acesso.'));
+        $this->redirect(Config::get('APP_URL', '') . '/index.php?action=patient-signup-success&token=' . urlencode($token) . '&status=success&msg=' . urlencode('Cadastro enviado com sucesso. Seu terapeuta irá revisar os dados para liberar o acesso.'));
     }
 
     public function successPage(): void
     {
+        $token = trim((string) ($_GET['token'] ?? ''));
+        $link = $this->signupLinkModel->findActiveByToken($token);
+        $appUrl = Config::get('APP_URL', '');
+        $faviconUrl = '';
+
+        if ($link) {
+            $therapistId = (int) ($link['therapist_id'] ?? 0);
+            if ($therapistId > 0) {
+                $therapist = $this->userModel->findTherapistById($therapistId);
+                $logoPath = trim((string) ($therapist['company_logo_path'] ?? ''));
+                if ($logoPath !== '') {
+                    $faviconUrl = rtrim($appUrl, '/') . '/' . ltrim($logoPath, '/');
+                }
+            }
+        }
+
         $this->view('public/patient-signup-success', [
-            'appUrl' => Config::get('APP_URL', ''),
+            'appUrl' => $appUrl,
+            'faviconUrl' => $faviconUrl,
         ]);
     }
 }
