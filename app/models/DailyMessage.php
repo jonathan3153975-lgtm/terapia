@@ -56,4 +56,27 @@ class DailyMessage extends Model
         $row = $stmt->fetch();
         return $row ?: null;
     }
+
+    public function findByTherapistAndId(int $therapistId, int $id): ?array
+    {
+        $stmt = $this->query(
+            'SELECT * FROM daily_messages WHERE therapist_id = ? AND id = ? LIMIT 1',
+            [$therapistId, $id]
+        );
+
+        if (!$stmt) {
+            return null;
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function deleteByTherapistAndId(int $therapistId, int $id): bool
+    {
+        return (bool) $this->query(
+            'DELETE FROM daily_messages WHERE therapist_id = ? AND id = ? LIMIT 1',
+            [$therapistId, $id]
+        );
+    }
 }

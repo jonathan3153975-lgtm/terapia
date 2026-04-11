@@ -13,7 +13,7 @@
         <div class="card-body">
           <h5 class="card-title mb-2">Nova mensagem</h5>
           <p class="text-muted small mb-3">Crie mensagens para sorteio no baú do paciente.</p>
-          <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-messages-store">
+          <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-messages-store" id="dailyMessageCreateForm">
             <div class="mb-2">
               <label class="form-label">Categoria</label>
               <select class="form-select" name="category" required>
@@ -28,7 +28,7 @@
               <label class="form-label">Mensagem</label>
               <textarea class="form-control" name="message_text" rows="5" required placeholder="Escreva uma mensagem inspiradora..."></textarea>
             </div>
-            <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Salvar mensagem</button>
+            <button class="btn btn-primary" type="submit" id="dailyMessageCreateBtn"><i class="fa-solid fa-floppy-disk me-1"></i>Salvar mensagem</button>
           </form>
         </div>
       </div>
@@ -92,12 +92,13 @@
               <th style="width: 140px;">Categoria</th>
               <th>Mensagem</th>
               <th style="width: 180px;">Criada em</th>
+              <th style="width: 140px;">Ações</th>
             </tr>
           </thead>
           <tbody>
             <?php if (empty($messages)): ?>
               <tr>
-                <td colspan="3" class="text-center text-muted py-4">Nenhuma mensagem encontrada.</td>
+                <td colspan="4" class="text-center text-muted py-4">Nenhuma mensagem encontrada.</td>
               </tr>
             <?php else: ?>
               <?php foreach ($messages as $message): ?>
@@ -117,6 +118,29 @@
                   </td>
                   <td><?php echo nl2br(htmlspecialchars((string) ($message['message_text'] ?? ''))); ?></td>
                   <td><?php echo !empty($message['created_at']) ? date('d/m/Y H:i', strtotime((string) $message['created_at'])) : '-'; ?></td>
+                  <td>
+                    <div class="d-flex align-items-center gap-1 flex-nowrap">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary js-edit-message-btn"
+                        data-id="<?php echo (int) ($message['id'] ?? 0); ?>"
+                        data-category="<?php echo htmlspecialchars((string) ($message['category'] ?? 'dores')); ?>"
+                        data-text="<?php echo htmlspecialchars((string) ($message['message_text'] ?? '')); ?>"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editMessageModal"
+                        title="Editar"
+                      >
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
+
+                      <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-messages-delete" class="m-0 js-delete-message-form">
+                        <input type="hidden" name="id" value="<?php echo (int) ($message['id'] ?? 0); ?>">
+                        <button class="btn btn-sm btn-outline-danger js-delete-message-btn" type="submit" title="Excluir">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
                 </tr>
               <?php endforeach; ?>
             <?php endif; ?>
@@ -152,4 +176,110 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="editMessageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar mensagem</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-messages-update" id="editMessageForm">
+        <div class="modal-body">
+          <input type="hidden" name="id" id="editMessageId" value="">
+
+          <div class="mb-2">
+            <label class="form-label">Categoria</label>
+            <select class="form-select" name="category" id="editMessageCategory" required>
+              <option value="dores">Dores</option>
+              <option value="reflexivas">Reflexivas</option>
+              <option value="cura">Cura</option>
+              <option value="motivacionais">Motivacionais</option>
+              <option value="conflitos">Conflitos</option>
+            </select>
+          </div>
+
+          <div class="mb-0">
+            <label class="form-label">Mensagem</label>
+            <textarea class="form-control" name="message_text" id="editMessageText" rows="6" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="editMessageSaveBtn"><i class="fa-solid fa-floppy-disk me-1"></i>Salvar alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+window.addEventListener('load', function () {
+  var createForm = document.getElementById('dailyMessageCreateForm');
+  var createBtn = document.getElementById('dailyMessageCreateBtn');
+  var editForm = document.getElementById('editMessageForm');
+  var editSaveBtn = document.getElementById('editMessageSaveBtn');
+  var editIdInput = document.getElementById('editMessageId');
+  var editCategoryInput = document.getElementById('editMessageCategory');
+  var editTextInput = document.getElementById('editMessageText');
+
+  if (!createForm || !createBtn) {
+    return;
+  }
+
+  createForm.addEventListener('submit', function () {
+    if (createBtn.disabled) {
+      return false;
+    }
+
+    createBtn.disabled = true;
+    createBtn.innerHTML = '<i class="fa-solid fa-hourglass-half me-1"></i>Salvando...';
+    createForm.setAttribute('data-submitted', '1');
+    return true;
+  });
+
+  document.querySelectorAll('.js-edit-message-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (!editIdInput || !editCategoryInput || !editTextInput) {
+        return;
+      }
+
+      editIdInput.value = btn.getAttribute('data-id') || '';
+      editCategoryInput.value = btn.getAttribute('data-category') || 'dores';
+      editTextInput.value = btn.getAttribute('data-text') || '';
+
+      if (editSaveBtn) {
+        editSaveBtn.disabled = false;
+        editSaveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Salvar alterações';
+      }
+    });
+  });
+
+  if (editForm && editSaveBtn) {
+    editForm.addEventListener('submit', function () {
+      if (editSaveBtn.disabled) {
+        return false;
+      }
+
+      editSaveBtn.disabled = true;
+      editSaveBtn.innerHTML = '<i class="fa-solid fa-hourglass-half me-1"></i>Salvando...';
+      return true;
+    });
+  }
+
+  document.querySelectorAll('.js-delete-message-form').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      var ok = window.confirm('Deseja realmente excluir esta mensagem?');
+      if (!ok) {
+        event.preventDefault();
+        return;
+      }
+
+      var btn = form.querySelector('.js-delete-message-btn');
+      if (btn) {
+        btn.disabled = true;
+      }
+    });
+  });
+});
+</script>
 <?php include __DIR__ . '/../../partials/footer.php'; ?>

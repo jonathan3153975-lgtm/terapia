@@ -80,6 +80,8 @@ match ($action) {
     'therapist-messages' => (new TherapistController())->dailyMessages(),
     'therapist-messages-store' => (new TherapistController())->storeDailyMessage(),
     'therapist-messages-bulk' => (new TherapistController())->bulkDailyMessages(),
+    'therapist-messages-update' => (new TherapistController())->updateDailyMessage(),
+    'therapist-messages-delete' => (new TherapistController())->deleteDailyMessage(),
     'patients' => (new TherapistController())->patients(),
     'patients-create' => (new TherapistController())->createPatient(),
     'patients-store' => (new TherapistController())->storePatient(),
