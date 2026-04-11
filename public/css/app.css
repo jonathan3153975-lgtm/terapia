@@ -652,6 +652,31 @@ body.app-body {
 	align-content: stretch;
 }
 
+.messenger-hero-content {
+	max-width: min(700px, 78%);
+	align-self: start;
+}
+
+.messenger-hero-image-title {
+	margin: 0 0 10px;
+	color: #f8fbff;
+	font-size: clamp(1.34rem, 2.8vw, 2.08rem);
+	line-height: 1.22;
+	font-weight: 700;
+	text-shadow:
+		0 0 8px rgba(255, 255, 255, .42),
+		0 2px 12px rgba(0, 0, 0, .32);
+}
+
+.messenger-hero-image-copy {
+	margin: 0;
+	color: #ecf3ff;
+	font-size: clamp(.88rem, 1.6vw, 1rem);
+	line-height: 1.62;
+	max-width: 62ch;
+	text-shadow: 0 1px 10px rgba(0, 0, 0, .28);
+}
+
 .messenger-hero {
 	position: relative;
 	overflow: hidden;
@@ -1023,6 +1048,20 @@ body.app-body {
 
 	.messenger-hero-overlay {
 		padding: 14px;
+	}
+
+	.messenger-hero-content {
+		max-width: 100%;
+	}
+
+	.messenger-hero-image-title {
+		font-size: 1.06rem;
+		line-height: 1.35;
+	}
+
+	.messenger-hero-image-copy {
+		font-size: .82rem;
+		line-height: 1.5;
 	}
 
 	.messenger-hero-select {

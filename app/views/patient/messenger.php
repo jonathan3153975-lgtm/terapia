@@ -4,6 +4,10 @@
 
   <section class="messenger-hero-image mb-4" style="background-image: url('<?php echo $appUrl; ?>/app/images/mensageiro.png');">
     <div class="messenger-hero-overlay">
+      <div class="messenger-hero-content">
+        <h3 class="messenger-hero-image-title">Abra a mensagem que chegou para você.</h3>
+        <p class="messenger-hero-image-copy">Essa mensagem vai falar ao seu coração. Observe como seu corpo reage e escreva sua reflexão sobre o que está sentindo.</p>
+      </div>
       <button id="drawMessageBtn" class="btn btn-dark messenger-draw-btn" type="button" <?php echo ((int) ($totalMessages ?? 0) <= 0) ? 'disabled' : ''; ?>>
         <i class="fa-solid fa-box-open me-1"></i>Abrir mensagem
       </button>
