@@ -50,6 +50,34 @@ class PatientPortalController extends Controller
         return in_array($value, ['dores', 'reflexivas', 'cura', 'motivacionais', 'conflitos'], true) ? $value : 'dores';
     }
 
+    private function messengerCycleSessionKey(int $patientId): string
+    {
+        return 'messenger_drawn_ids_patient_' . $patientId;
+    }
+
+    private function getMessengerCycleDrawnIds(int $patientId): array
+    {
+        $key = $this->messengerCycleSessionKey($patientId);
+        $ids = $_SESSION[$key] ?? [];
+        if (!is_array($ids)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0));
+    }
+
+    private function setMessengerCycleDrawnIds(int $patientId, array $ids): void
+    {
+        $_SESSION[$this->messengerCycleSessionKey($patientId)] = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
+    }
+
+    private function appendMessengerCycleDrawnId(int $patientId, int $messageId): void
+    {
+        $ids = $this->getMessengerCycleDrawnIds($patientId);
+        $ids[] = $messageId;
+        $this->setMessengerCycleDrawnIds($patientId, $ids);
+    }
+
     private function sanitizeRichText(string $html): string
     {
         $value = trim($html);
@@ -288,10 +316,15 @@ class PatientPortalController extends Controller
         }
 
         $entries = $this->patientMessageEntryModel->listByPatient($patientId);
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $totalMessages = $therapistId > 0 ? $this->dailyMessageModel->countByTherapist($therapistId) : 0;
+        $cycleDrawnIds = $this->getMessengerCycleDrawnIds($patientId);
 
         $this->view('patient/messenger', [
             'appUrl' => Config::get('APP_URL', ''),
             'entries' => $entries,
+            'totalMessages' => $totalMessages,
+            'cycleDrawCount' => min(count($cycleDrawnIds), $totalMessages),
         ]);
     }
 
@@ -308,21 +341,43 @@ class PatientPortalController extends Controller
             $this->error('Terapeuta não encontrado', 404);
         }
 
-        $category = (string) ($_GET['category'] ?? '');
-        if ($category !== '' && !in_array($category, ['dores', 'reflexivas', 'cura', 'motivacionais', 'conflitos'], true)) {
-            $category = '';
+        $allMessageIds = $this->dailyMessageModel->listIdsByTherapist($therapistId);
+        if ($allMessageIds === []) {
+            $this->error('Nenhuma mensagem disponível para sorteio.', 404);
         }
 
-        $message = $this->dailyMessageModel->randomByTherapist($therapistId, $category);
+        $cycleDrawnIds = $this->getMessengerCycleDrawnIds($patientId);
+        $cycleDrawnIds = array_values(array_intersect($allMessageIds, $cycleDrawnIds));
+        $cycleRestarted = false;
+
+        if (count($cycleDrawnIds) >= count($allMessageIds)) {
+            $cycleDrawnIds = [];
+            $this->setMessengerCycleDrawnIds($patientId, []);
+            $cycleRestarted = true;
+        }
+
+        $message = $this->dailyMessageModel->randomByTherapistExcludingIds($therapistId, $cycleDrawnIds);
         if (!$message) {
-            $this->error('Nenhuma mensagem disponível para sorteio nesta categoria.', 404);
+            $this->error('Nenhuma mensagem disponível para sorteio.', 404);
+        }
+
+        $messageId = (int) ($message['id'] ?? 0);
+        if ($messageId > 0) {
+            $this->appendMessengerCycleDrawnId($patientId, $messageId);
+            $cycleDrawnIds[] = $messageId;
         }
 
         $this->success('Mensagem sorteada', [
             'message' => [
-                'id' => (int) ($message['id'] ?? 0),
+                'id' => $messageId,
                 'category' => (string) ($message['category'] ?? ''),
                 'text' => (string) ($message['message_text'] ?? ''),
+            ],
+            'cycle' => [
+                'drawnCount' => min(count(array_unique($cycleDrawnIds)), count($allMessageIds)),
+                'totalCount' => count($allMessageIds),
+                'remainingCount' => max(count($allMessageIds) - count(array_unique($cycleDrawnIds)), 0),
+                'restarted' => $cycleRestarted,
             ],
         ]);
     }

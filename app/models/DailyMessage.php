@@ -57,6 +57,44 @@ class DailyMessage extends Model
         return $row ?: null;
     }
 
+    public function listIdsByTherapist(int $therapistId): array
+    {
+        $stmt = $this->query(
+            'SELECT id FROM daily_messages WHERE therapist_id = ? ORDER BY id ASC',
+            [$therapistId]
+        );
+
+        if (!$stmt) {
+            return [];
+        }
+
+        $rows = $stmt->fetchAll();
+        return array_map(static fn (array $row): int => (int) ($row['id'] ?? 0), $rows);
+    }
+
+    public function randomByTherapistExcludingIds(int $therapistId, array $excludedIds): ?array
+    {
+        $excludedIds = array_values(array_filter(array_map('intval', $excludedIds), static fn (int $id): bool => $id > 0));
+        if ($excludedIds === []) {
+            return $this->randomByTherapist($therapistId);
+        }
+
+        $marks = implode(',', array_fill(0, count($excludedIds), '?'));
+        $params = array_merge([$therapistId], $excludedIds);
+
+        $stmt = $this->query(
+            'SELECT * FROM daily_messages WHERE therapist_id = ? AND id NOT IN (' . $marks . ') ORDER BY RAND() LIMIT 1',
+            $params
+        );
+
+        if (!$stmt) {
+            return null;
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function findByTherapistAndId(int $therapistId, int $id): ?array
     {
         $stmt = $this->query(
