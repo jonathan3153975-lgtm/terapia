@@ -7,6 +7,36 @@
     <div class="login-brand-panel">
       <h1>Tera-Tech</h1>
       <p>Seu ambiente de terapia e autoconhecimento diário</p>
+      <div class="login-system-info">
+        <article>
+          <i class="fa-solid fa-calendar-check"></i>
+          <div>
+            <h6>Agenda organizada</h6>
+            <small>Visualize suas sessões e acompanhe seus próximos atendimentos.</small>
+          </div>
+        </article>
+        <article>
+          <i class="fa-solid fa-list-check"></i>
+          <div>
+            <h6>Tarefas terapêuticas</h6>
+            <small>Receba atividades práticas e marque seu progresso de forma simples.</small>
+          </div>
+        </article>
+        <article>
+          <i class="fa-solid fa-book-open"></i>
+          <div>
+            <h6>Materiais de apoio</h6>
+            <small>Acesse conteúdos enviados pelo terapeuta para fortalecer sua jornada.</small>
+          </div>
+        </article>
+        <article>
+          <i class="fa-solid fa-shield-heart"></i>
+          <div>
+            <h6>Ambiente seguro</h6>
+            <small>Seus dados ficam protegidos para um acompanhamento com confiança.</small>
+          </div>
+        </article>
+      </div>
     </div>
     <div class="card shadow-sm login-card login-glass-card">
       <div class="card-body p-4 p-md-5">

@@ -160,7 +160,7 @@ HTML;
         </div>
         <div class="footer">
             <p>Este é um email automático. Não responda diretamente a este email.</p>
-            <p><a href="{$appUrl}">Plataforma de Terapia</a></p>
+            <p><a href="{$appUrl}">Tera-Tech</a></p>
         </div>
     </div>
 </body>
@@ -217,7 +217,7 @@ HTML;
         </div>
         <div class="footer">
             <p>Este é um email automático. Não responda diretamente a este email.</p>
-            <p><a href="{$appUrl}">Plataforma de Terapia</a></p>
+            <p><a href="{$appUrl}">Tera-Tech</a></p>
         </div>
     </div>
 </body>
@@ -274,7 +274,7 @@ HTML;
         </div>
         <div class="footer">
             <p>Este é um email automático. Não responda diretamente a este email.</p>
-            <p><a href="{$appUrl}">Plataforma de Terapia</a></p>
+            <p><a href="{$appUrl}">Tera-Tech</a></p>
         </div>
     </div>
 </body>
@@ -312,7 +312,7 @@ HTML;
             <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Olá <strong>{$patientName}</strong>,</p>
             
             <p style="color: #666; line-height: 1.6; margin-bottom: 15px;">
-                Sua conta foi criada com sucesso na Plataforma de Terapia. Você já pode acessar seu portal para visualizar tarefas, 
+                Sua conta foi criada com sucesso na Tera-Tech. Você já pode acessar seu portal para visualizar tarefas, 
                 materiais de apoio e manter contato com seu terapeuta.
             </p>
 

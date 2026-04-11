@@ -1538,15 +1538,6 @@ body.app-body {
 		linear-gradient(140deg, #031d4a 0%, #0b4da1 52%, #64b8ff 100%);
 }
 
-.login-backdrop::before {
-	content: '';
-	position: absolute;
-	inset: 0;
-	background: url('../../app/images/logo.png') center center / min(62vw, 740px) no-repeat;
-	opacity: .1;
-	filter: blur(2px) saturate(.8);
-}
-
 .login-backdrop::after {
 	content: '';
 	position: absolute;
@@ -1611,6 +1602,42 @@ body.app-body {
 	font-size: 1.05rem;
 	max-width: 34ch;
 	margin-bottom: 24px;
+}
+
+.login-system-info {
+	display: grid;
+	gap: 10px;
+}
+
+.login-system-info article {
+	display: grid;
+	grid-template-columns: 34px 1fr;
+	gap: 10px;
+	align-items: start;
+	padding: 10px 12px;
+	border-radius: 12px;
+	border: 1px solid rgba(255,255,255,.2);
+	background: rgba(255,255,255,.08);
+}
+
+.login-system-info i {
+	font-size: 1rem;
+	line-height: 1;
+	margin-top: 2px;
+	color: #e9f3ff;
+}
+
+.login-system-info h6 {
+	margin: 0 0 2px;
+	font-size: .93rem;
+	font-weight: 700;
+	color: #ffffff;
+}
+
+.login-system-info small {
+	color: rgba(223, 238, 255, .92);
+	font-size: .8rem;
+	line-height: 1.4;
 }
 
 .login-card {

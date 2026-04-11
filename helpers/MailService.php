@@ -67,7 +67,7 @@ class MailService
             $this->mailer->clearAttachments();
 
             $fromEmail = Config::get('MAIL_FROM_ADDRESS', Config::get('MAIL_USERNAME', ''));
-            $fromName = Config::get('MAIL_FROM_NAME', 'Sistema de Terapia');
+            $fromName = Config::get('MAIL_FROM_NAME', 'Tera-Tech');
 
             $this->mailer->setFrom($fromEmail, $fromName);
             $this->mailer->addAddress($toEmail, $toName);
@@ -103,7 +103,7 @@ class MailService
             return false;
         }
 
-        $fromName = Config::get('MAIL_FROM_NAME', 'Sistema de Terapia');
+        $fromName = Config::get('MAIL_FROM_NAME', 'Tera-Tech');
         $fromEmail = Config::get('MAIL_FROM_ADDRESS', Config::get('MAIL_USERNAME', 'noreply@terapia.local'));
 
         $headers = [
