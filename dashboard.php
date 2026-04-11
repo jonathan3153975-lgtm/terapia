@@ -101,6 +101,7 @@ match ($action) {
     'therapist-healing-letters-update' => (new TherapistController())->updateHealingLetter(),
     'therapist-healing-letters-delete' => (new TherapistController())->deleteHealingLetter(),
     'patients' => (new TherapistController())->patients(),
+    'patients-preview-menu' => (new TherapistController())->patientPreviewMenu(),
     'patients-signup-link-create' => (new TherapistController())->createPatientSignupLink(),
     'patients-approve-review' => (new TherapistController())->approvePatientReview(),
     'patients-preview-start' => (new TherapistController())->startPatientPreview(),

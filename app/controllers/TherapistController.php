@@ -2098,6 +2098,28 @@ class TherapistController extends Controller
         $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=success&msg=' . urlencode('Visualização do ambiente do paciente iniciada.'));
     }
 
+    public function patientPreviewMenu(): void
+    {
+        if (Auth::isPatientPreviewActive()) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard');
+        }
+
+        $therapistId = (int) Auth::id();
+        $patients = $this->patientModel->searchByTherapist($therapistId, '');
+
+        if (empty($patients)) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Nenhum paciente encontrado para visualização.'));
+        }
+
+        if (count($patients) === 1) {
+            $patient = $patients[0];
+            Auth::startPatientPreview($therapistId, (int) ($patient['id'] ?? 0), (string) ($patient['name'] ?? 'Paciente'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=success&msg=' . urlencode('Visualização do ambiente do paciente iniciada.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=success&msg=' . urlencode('Selecione um paciente e clique no ícone Entrar como paciente.'));
+    }
+
     public function stopPatientPreview(): void
     {
         Auth::stopPatientPreview();
