@@ -342,6 +342,92 @@ class TherapistController extends Controller
         $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=success&msg=' . urlencode('Palavra cadastrada com sucesso.'));
     }
 
+    public function bulkFaithWords(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Método não permitido para importação.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        if (!isset($_FILES['words_json']) || (int) ($_FILES['words_json']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Envie um arquivo JSON válido.'));
+        }
+
+        $tmpFile = (string) ($_FILES['words_json']['tmp_name'] ?? '');
+        if ($tmpFile === '' || !is_uploaded_file($tmpFile)) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Falha ao ler o arquivo enviado.'));
+        }
+
+        $raw = file_get_contents($tmpFile);
+        if ($raw === false || trim($raw) === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Arquivo JSON vazio.'));
+        }
+
+        $raw = preg_replace('/^\xEF\xBB\xBF/', '', (string) $raw) ?? (string) $raw;
+
+        $payload = json_decode($raw, true);
+        if (!is_array($payload) && function_exists('mb_convert_encoding')) {
+            $rawUtf8 = @mb_convert_encoding((string) $raw, 'UTF-8', 'UTF-8, ISO-8859-1, Windows-1252');
+            if (is_string($rawUtf8)) {
+                $payload = json_decode($rawUtf8, true);
+            }
+        }
+
+        if (!is_array($payload)) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('JSON inválido: ' . json_last_error_msg()));
+        }
+
+        $items = isset($payload['words']) && is_array($payload['words']) ? $payload['words'] : $payload;
+        if (!is_array($items) || $items === []) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('JSON sem itens para importar.'));
+        }
+
+        $inserted = 0;
+        $invalidItem = 0;
+        $missingField = 0;
+        $dbFailed = 0;
+
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                $invalidItem++;
+                continue;
+            }
+
+            $referenceText = trim((string) ($item['reference'] ?? $item['reference_text'] ?? ''));
+            $verseText = trim((string) ($item['text'] ?? $item['verse'] ?? $item['verse_text'] ?? ''));
+
+            if ($referenceText === '' || $verseText === '') {
+                $missingField++;
+                continue;
+            }
+
+            $saved = $this->faithWordModel->insert([
+                'therapist_id' => $therapistId,
+                'reference_text' => $referenceText,
+                'verse_text' => $verseText,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            if ($saved) {
+                $inserted++;
+            } else {
+                $dbFailed++;
+            }
+        }
+
+        if ($inserted <= 0) {
+            $this->redirect(
+                Config::get('APP_URL', '')
+                . '/dashboard.php?action=therapist-faith-words&status=error&msg='
+                . urlencode('Nenhuma palavra inserida. Itens inválidos: ' . $invalidItem . ', campos ausentes: ' . $missingField . ', falha de banco: ' . $dbFailed . '.')
+            );
+        }
+
+        $summary = $inserted . ' inseridas | itens inválidos: ' . $invalidItem . ' | campos ausentes: ' . $missingField . ' | falha de banco: ' . $dbFailed;
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=success&msg=' . urlencode('Importação concluída: ' . $summary));
+    }
+
     public function updateFaithWord(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

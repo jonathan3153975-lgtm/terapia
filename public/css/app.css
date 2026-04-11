@@ -857,6 +857,39 @@ body.app-body {
 	gap: 18px;
 }
 
+.father-word-hero-image {
+	position: relative;
+	min-height: 340px;
+	border-radius: 20px;
+	overflow: hidden;
+	background-size: cover;
+	background-position: center;
+	border: 1px solid rgba(255, 255, 255, .32);
+	box-shadow: 0 20px 34px rgba(15, 23, 42, .16);
+}
+
+.father-word-hero-overlay {
+	position: absolute;
+	inset: 0;
+	padding: 22px;
+	background: linear-gradient(135deg, rgba(6, 22, 38, .52), rgba(6, 22, 38, .18) 56%, rgba(6, 22, 38, .46));
+	display: grid;
+	align-content: stretch;
+}
+
+.father-word-hero-content {
+	max-width: min(700px, 82%);
+}
+
+.father-word-hero-quote {
+	margin: 0;
+	color: #f8fbff;
+	font-size: clamp(1.2rem, 2.7vw, 2rem);
+	line-height: 1.32;
+	font-weight: 700;
+	text-shadow: 0 2px 14px rgba(0, 0, 0, .26);
+}
+
 .father-word-hero {
 	border: 1px solid rgba(15, 118, 110, .18);
 	border-radius: 18px;
@@ -899,6 +932,8 @@ body.app-body {
 	font-weight: 700;
 	letter-spacing: .02em;
 	box-shadow: 0 12px 20px rgba(15, 23, 42, .14);
+	justify-self: end;
+	align-self: end;
 }
 
 .father-word-result {
@@ -964,6 +999,24 @@ body.app-body {
 
 	.messenger-draw-btn {
 		width: 100%;
+	}
+
+	.father-word-hero-image {
+		min-height: 310px;
+	}
+
+	.father-word-hero-overlay {
+		padding: 14px;
+	}
+
+	.father-word-hero-content {
+		max-width: 100%;
+	}
+
+	.father-word-draw-btn {
+		min-width: 0;
+		width: 100%;
+		justify-self: stretch;
 	}
 }
 

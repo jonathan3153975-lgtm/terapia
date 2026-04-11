@@ -22,6 +22,23 @@
             </div>
             <button class="btn btn-primary" type="submit" id="faithWordCreateBtn"><i class="fa-solid fa-floppy-disk me-1"></i>Salvar palavra</button>
           </form>
+
+          <hr class="my-4">
+
+          <h6 class="mb-2">Inserção em massa (JSON)</h6>
+          <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-faith-words-bulk" enctype="multipart/form-data" id="faithWordBulkForm">
+            <div class="mb-2">
+              <label class="form-label">Arquivo JSON</label>
+              <input class="form-control" type="file" name="words_json" accept="application/json,.json" required>
+            </div>
+            <button class="btn btn-outline-primary" type="submit" id="faithWordBulkBtn"><i class="fa-solid fa-file-import me-1"></i>Importar palavras</button>
+          </form>
+
+          <div class="small text-muted mt-3 mb-1">Exemplo de JSON:</div>
+          <pre class="messenger-json-example mb-0">[
+  {"reference":"João 3:16","text":"Porque Deus amou o mundo de tal maneira..."},
+  {"reference":"Salmos 23:1","text":"O Senhor é o meu pastor; nada me faltará."}
+]</pre>
         </div>
       </div>
     </div>
@@ -151,6 +168,8 @@
 window.addEventListener('load', function () {
   var createForm = document.getElementById('faithWordCreateForm');
   var createBtn = document.getElementById('faithWordCreateBtn');
+  var bulkForm = document.getElementById('faithWordBulkForm');
+  var bulkBtn = document.getElementById('faithWordBulkBtn');
   var editForm = document.getElementById('editFaithWordForm');
   var editSaveBtn = document.getElementById('editFaithWordSaveBtn');
   var editIdInput = document.getElementById('editFaithWordId');
@@ -164,6 +183,17 @@ window.addEventListener('load', function () {
       }
       createBtn.disabled = true;
       createBtn.innerHTML = '<i class="fa-solid fa-hourglass-half me-1"></i>Salvando...';
+      return true;
+    });
+  }
+
+  if (bulkForm && bulkBtn) {
+    bulkForm.addEventListener('submit', function () {
+      if (bulkBtn.disabled) {
+        return false;
+      }
+      bulkBtn.disabled = true;
+      bulkBtn.innerHTML = '<i class="fa-solid fa-hourglass-half me-1"></i>Importando...';
       return true;
     });
   }

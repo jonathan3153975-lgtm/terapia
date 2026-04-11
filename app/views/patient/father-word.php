@@ -2,16 +2,12 @@
 <div class="container page-wrap father-word-page">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
-  <section class="father-word-hero card mb-4">
-    <div class="card-body p-4 p-lg-5">
-      <span class="father-word-kicker">Pai, fala comigo</span>
-      <h3 class="father-word-title mb-2">Um momento de palavra e reflexão</h3>
-      <p class="father-word-copy mb-0">Toque no botão abaixo e receba sua palavra. Leia com calma e depois salve sua reflexão.</p>
-    </div>
-  </section>
+  <section class="father-word-hero-image mb-4" style="background-image: url('<?php echo $appUrl; ?>/app/images/fala-comigo.png');">
+    <div class="father-word-hero-overlay">
+      <div class="father-word-hero-content">
+        <h3 class="father-word-hero-quote">Não importa o que você está vivendo, Deus sempre tem uma palavra para o seu coração.</h3>
+      </div>
 
-  <section class="father-word-action card mb-4" id="fatherWordActionCard">
-    <div class="card-body p-4 d-flex justify-content-center">
       <button id="fatherWordDrawBtn" class="btn btn-dark father-word-draw-btn" type="button">
         <i class="fa-solid fa-hands-praying me-2"></i>Pai, fala comigo
       </button>
@@ -83,7 +79,6 @@
 <script>
 window.addEventListener('load', function () {
   var drawBtn = document.getElementById('fatherWordDrawBtn');
-  var actionCard = document.getElementById('fatherWordActionCard');
   var resultCard = document.getElementById('fatherWordResultCard');
   var referenceEl = document.getElementById('fatherWordReference');
   var textEl = document.getElementById('fatherWordText');
@@ -143,8 +138,8 @@ window.addEventListener('load', function () {
           throw new Error('Resposta inválida ao receber palavra.');
         }
 
-        if (actionCard) {
-          actionCard.classList.add('d-none');
+        if (drawBtn) {
+          drawBtn.classList.add('d-none');
         }
 
         if (referenceEl) {
@@ -187,6 +182,7 @@ window.addEventListener('load', function () {
         window.alert(error.message || 'Erro ao receber palavra.');
         drawBtn.disabled = false;
         drawBtn.innerHTML = '<i class="fa-solid fa-hands-praying me-2"></i>Pai, fala comigo';
+        drawBtn.classList.remove('d-none');
       });
   });
 });
