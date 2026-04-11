@@ -1157,158 +1157,201 @@ body.app-body {
 .guided-deck-grid {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 12px;
-	perspective: 1200px;
+	gap: 16px;
+	perspective: 1600px;
 	position: relative;
 	overflow: visible;
 }
 
 .guided-card-slot {
 	position: relative;
-	min-height: 170px;
+	min-height: 220px;
 	width: 100%;
 	border: none;
-	border-radius: 16px;
+	border-radius: 24px;
 	cursor: pointer;
 	padding: 0;
 	background: transparent;
 	overflow: visible;
 	transform-style: preserve-3d;
-	transition: transform .45s ease, opacity .45s ease, filter .45s ease, box-shadow .45s ease;
+	transform-origin: center center;
+	transition: transform .52s cubic-bezier(.22, 1, .36, 1), opacity .45s ease, filter .45s ease, box-shadow .52s ease;
 }
 
 .guided-card-inner {
 	position: absolute;
 	inset: 0;
-	border-radius: 16px;
+	border-radius: 24px;
 	width: 100%;
 	height: 100%;
 	display: block;
 	transform-style: preserve-3d;
 	will-change: transform;
-	transition: transform .85s cubic-bezier(.34, 1.56, .64, 1);
+	transition: transform .96s cubic-bezier(.2, .8, .2, 1);
 }
 
 .guided-card-face {
 	position: absolute;
 	inset: 0;
-	border-radius: 16px;
+	border-radius: 24px;
 	width: 100%;
 	height: 100%;
 	display: flex;
 	flex-direction: column;
+	align-items: center;
 	justify-content: center;
 	backface-visibility: hidden;
-	padding: 14px;
+	padding: 18px;
 }
 
 .guided-card-front {
-	border: 1px solid rgba(200, 210, 220, .55);
-	box-shadow: 0 12px 22px rgba(15, 23, 42, .14);
+	border: 1px solid rgba(226, 232, 240, .96);
+	box-shadow: 0 16px 30px rgba(15, 23, 42, .12);
 	background:
-		repeating-linear-gradient(45deg, rgba(255,255,255,.22) 0 8px, rgba(255,255,255,.08) 8px 16px),
-		linear-gradient(135deg, #e5e7eb 0%, #d1d5db 50%, #9ca3af 100%);
+		radial-gradient(circle at top, rgba(255,255,255,.95), rgba(255,255,255,.42) 28%, transparent 58%),
+		linear-gradient(160deg, #f8fafc 0%, #e5e7eb 54%, #cbd5e1 100%);
+}
+
+.guided-card-front-shell {
+	width: 100%;
+	height: 100%;
+	border-radius: 20px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 14px;
+	padding: 18px;
+	background: linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,.18));
+	box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
 }
 
 .guided-card-logo-mark {
-	width: 72%;
-	height: 72%;
-	border-radius: 14px;
+	width: min(118px, 70%);
+	height: min(118px, 70%);
+	min-width: 96px;
+	min-height: 96px;
+	border-radius: 22px;
 	display: grid;
 	place-items: center;
 	text-align: center;
-	font-size: .78rem;
+	padding: 12px;
+	font-size: .8rem;
 	font-weight: 700;
 	letter-spacing: .02em;
-	color: rgba(50, 60, 80, .72);
-	border: 2px dashed rgba(100, 120, 150, .45);
+	line-height: 1.35;
+	color: #475569;
+	border: 1px solid rgba(148, 163, 184, .26);
 	background:
-		linear-gradient(180deg, rgba(255,255,255,.24), rgba(200,210,220,.12)),
-		var(--therapist-logo-bg, transparent);
-	background-repeat: no-repeat;
-	background-size: cover;
-	background-position: center;
-	background-blend-mode: overlay;
-}
-
-.guided-deck-card.has-therapist-logo .guided-card-logo-mark.has-logo {
-	color: transparent;
-	text-indent: -9999px;
-	overflow: hidden;
-	background:
-		radial-gradient(circle at top, rgba(255,255,255,.28), rgba(255,255,255,0) 62%),
+		linear-gradient(180deg, rgba(255,255,255,.98), rgba(241,245,249,.98)),
 		var(--therapist-logo-bg, transparent);
 	background-repeat: no-repeat;
 	background-size: 100% 100%, contain;
 	background-position: center, center;
-	background-color: rgba(255, 255, 255, .92);
-	border-style: solid;
-	border-color: rgba(148, 163, 184, .38);
-	box-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 10px 24px rgba(71, 85, 105, .16);
+	background-color: rgba(255, 255, 255, .96);
+	box-shadow: 0 16px 28px rgba(100, 116, 139, .14), inset 0 1px 0 rgba(255,255,255,.94);
+}
+
+.guided-deck-card.has-therapist-logo .guided-card-logo-mark.has-logo {
+	color: transparent;
+	font-size: 0;
+	line-height: 0;
+	overflow: hidden;
+	text-indent: -9999px;
+}
+
+.guided-card-front-label {
+	font-size: .94rem;
+	font-weight: 800;
+	letter-spacing: .14em;
+	text-transform: uppercase;
+	color: #334155;
+	text-align: center;
+}
+
+.guided-card-front-copy {
+	max-width: 18ch;
+	font-size: .88rem;
+	line-height: 1.5;
+	text-align: center;
+	color: #64748b;
 }
 
 .guided-card-back {
 	transform: rotateY(180deg);
-	align-content: center;
-	gap: 8px;
-	border: 1px solid rgba(15, 23, 42, .08);
-	box-shadow: 0 16px 26px rgba(15, 23, 42, .14);
-	background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(240, 247, 255, .96));
+	border: 1px solid rgba(203, 213, 225, .9);
+	box-shadow: 0 20px 36px rgba(15, 23, 42, .16);
+	background: linear-gradient(180deg, #ffffff 0%, #f8fafc 52%, #eef2f7 100%);
+}
+
+.guided-card-back-shell {
+	width: 100%;
+	height: 100%;
+	border-radius: 20px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 18px;
+	background: radial-gradient(circle at top, rgba(255,255,255,.95), rgba(255,255,255,.72) 40%, rgba(226,232,240,.9) 100%);
+	box-shadow: inset 0 1px 0 rgba(255,255,255,.96);
 }
 
 .guided-card-back-category {
-	font-size: .74rem;
+	font-size: .72rem;
 	font-weight: 800;
 	text-transform: uppercase;
-	letter-spacing: .08em;
-	color: #1d4ed8;
+	letter-spacing: .16em;
+	color: #475569;
 	text-align: center;
+	padding: 6px 10px;
+	border-radius: 999px;
+	background: rgba(226, 232, 240, .92);
 }
 
 .guided-card-back-text {
-	font-size: clamp(.86rem, 1.35vw, 1rem);
-	line-height: 1.55;
+	font-size: clamp(.96rem, 1.4vw, 1.08rem);
+	font-weight: 600;
+	line-height: 1.62;
 	text-align: center;
-	color: #1f2937;
-	max-width: 24ch;
+	color: #0f172a;
+	max-width: 20ch;
+	text-wrap: balance;
 }
 
 .guided-card-slot:hover {
-	transform: translateY(-4px) rotateX(6deg);
+	transform: translateY(-6px);
 }
 
 .guided-card-slot.is-faded {
-	opacity: .2;
-	filter: blur(2.2px) saturate(.7);
-	transform: scale(.94);
-	box-shadow: 0 8px 18px rgba(15, 23, 42, .08);
+	opacity: .16;
+	filter: blur(3px) saturate(.6);
+	transform: scale(.92);
+	box-shadow: 0 10px 20px rgba(15, 23, 42, .06);
 	pointer-events: none;
 }
 
 .guided-card-slot.is-picked {
-	transform: scale(1.06);
-	z-index: 3;
+	transform: translateY(-8px) scale(1.04);
+	z-index: 8;
 }
 
-.guided-card-slot.is-spotlight {
-	transform: translateY(-10px) scale(1.08);
-	z-index: 12;
-	box-shadow: 0 18px 32px rgba(15, 23, 42, .22);
+.guided-card-slot.is-revealing {
+	transform: translateY(-20px) scale(1.13);
+	z-index: 18;
+	box-shadow: 0 30px 54px rgba(15, 23, 42, .20);
 }
 
-.guided-card-slot.is-spotlight + .guided-card-slot,
-.guided-card-slot.is-flipped + .guided-card-slot {
-	filter: blur(2.4px);
-}
-
-.guided-card-slot.is-spotlight .guided-card-inner {
-	animation: guided-card-grow .38s ease both;
+.guided-card-slot.is-revealing .guided-card-front,
+.guided-card-slot.is-flipped .guided-card-front {
+	box-shadow: 0 28px 54px rgba(15, 23, 42, .18);
 }
 
 .guided-card-slot.is-flipped {
-	transform: translateY(-16px) scale(1.14);
+	transform: translateY(-26px) scale(1.18);
 	z-index: 24;
-	box-shadow: 0 28px 48px rgba(15, 23, 42, .32);
+	box-shadow: 0 36px 68px rgba(15, 23, 42, .22);
 }
 
 .guided-card-slot.is-flipped .guided-card-inner {
@@ -1444,15 +1487,22 @@ body.app-body {
 	}
 
 	.guided-card-slot {
-		min-height: 138px;
+		min-height: 180px;
 	}
 
-	.guided-card-slot.is-spotlight {
-		transform: translateY(-8px) scale(1.04);
+	.guided-card-logo-mark {
+		width: min(94px, 72%);
+		height: min(94px, 72%);
+		min-width: 82px;
+		min-height: 82px;
+	}
+
+	.guided-card-slot.is-revealing {
+		transform: translateY(-12px) scale(1.06);
 	}
 
 	.guided-card-slot.is-flipped {
-		transform: translateY(-10px) scale(1.07);
+		transform: translateY(-14px) scale(1.08);
 	}
 
 	.father-word-hero-image {

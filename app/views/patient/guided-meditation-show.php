@@ -43,11 +43,17 @@ include __DIR__ . '/../partials/nav.php';
           <button type="button" class="guided-card-slot" aria-label="Carta <?php echo $i; ?>">
             <span class="guided-card-inner">
               <span class="guided-card-face guided-card-front">
-                <span class="guided-card-logo-mark<?php echo $hasTherapistLogo ? ' has-logo' : ''; ?>"<?php echo $hasTherapistLogo ? ' aria-label="Logotipo do terapeuta"' : ''; ?>><?php echo $hasTherapistLogo ? '' : 'Logo do terapeuta'; ?></span>
+                <span class="guided-card-front-shell">
+                  <span class="guided-card-logo-mark<?php echo $hasTherapistLogo ? ' has-logo' : ''; ?>"<?php echo $hasTherapistLogo ? ' aria-label="Logotipo do terapeuta"' : ''; ?>><?php echo $hasTherapistLogo ? '' : 'Logo do terapeuta'; ?></span>
+                  <span class="guided-card-front-label">Carta de cura</span>
+                  <span class="guided-card-front-copy">Toque para revelar a sua mensagem</span>
+                </span>
               </span>
               <span class="guided-card-face guided-card-back">
-                <small class="guided-card-back-category"></small>
-                <strong class="guided-card-back-text"></strong>
+                <span class="guided-card-back-shell">
+                  <small class="guided-card-back-category"></small>
+                  <strong class="guided-card-back-text"></strong>
+                </span>
               </span>
             </span>
           </button>
@@ -240,7 +246,8 @@ window.addEventListener('load', function () {
           letterRevealed = true;
           drawInFlight = false;
           if (slot) {
-            slot.classList.add('is-spotlight');
+            slot.classList.remove('is-picked');
+            slot.classList.add('is-revealing');
           }
           if (deckHint) {
             deckHint.textContent = 'Carta revelada. Respire fundo e escreva sua reflexão.';
@@ -284,16 +291,17 @@ window.addEventListener('load', function () {
             }
 
             if (slot) {
+              slot.classList.remove('is-revealing');
               slot.classList.add('is-flipped');
             }
 
             window.setTimeout(finishReveal, 980);
-          }, 280);
+          }, 220);
         })
         .catch(function (error) {
           drawInFlight = false;
           slot.classList.remove('is-picked');
-          slot.classList.remove('is-spotlight');
+          slot.classList.remove('is-revealing');
           slot.classList.remove('is-flipped');
           slots.forEach(function (el) {
             el.classList.remove('is-faded');
