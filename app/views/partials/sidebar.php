@@ -22,6 +22,8 @@ $role = (string) Auth::role();
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-materials') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-materials"><i class="fa-solid fa-book-open"></i><span>Materiais</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-messages') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-messages"><i class="fa-solid fa-envelope-open-text"></i><span>Mensagens diárias</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-faith-words') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-faith-words"><i class="fa-solid fa-cross"></i><span>Pai, fala comigo</span></a>
+      <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-guided-meditations') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-guided-meditations"><i class="fa-solid fa-headphones"></i><span>Meditação guiada</span></a>
+      <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-healing-letters') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-healing-letters"><i class="fa-solid fa-clover"></i><span>Cartas de cura</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-financial') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial"><i class="fa-solid fa-wallet"></i><span>Financeiro</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'patients') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=patients"><i class="fa-solid fa-users"></i><span>Pacientes</span></a>
     <?php elseif ($role === 'patient'): ?>
@@ -30,6 +32,7 @@ $role = (string) Auth::role();
       <a class="sidebar-link <?php echo $currentAction === 'materials' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=materials"><i class="fa-solid fa-book"></i><span>Meus materiais</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'messenger') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=messenger"><i class="fa-solid fa-box-open"></i><span>Mensageiro</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'father-word') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=father-word"><i class="fa-solid fa-book-bible"></i><span>Pai, fala comigo</span></a>
+      <a class="sidebar-link <?php echo str_starts_with($currentAction, 'guided-meditation') || $currentAction === 'guided-meditations' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=guided-meditations"><i class="fa-solid fa-compact-disc"></i><span>Meditação guiada</span></a>
     <?php endif; ?>
   </nav>
 

@@ -6,10 +6,13 @@ use App\Models\Appointment;
 use App\Models\DailyMessage;
 use App\Models\FaithWord;
 use App\Models\FileStorage;
+use App\Models\GuidedMeditation;
+use App\Models\HealingLetter;
 use App\Models\Material;
 use App\Models\MaterialDelivery;
 use App\Models\Patient;
 use App\Models\PatientFaithEntry;
+use App\Models\PatientGuidedMeditationEntry;
 use App\Models\PatientMessageEntry;
 use App\Models\Task;
 use App\Models\User;
@@ -33,6 +36,9 @@ class PatientPortalController extends Controller
     private PatientMessageEntry $patientMessageEntryModel;
     private FaithWord $faithWordModel;
     private PatientFaithEntry $patientFaithEntryModel;
+    private GuidedMeditation $guidedMeditationModel;
+    private HealingLetter $healingLetterModel;
+    private PatientGuidedMeditationEntry $patientGuidedMeditationEntryModel;
 
     public function __construct()
     {
@@ -48,6 +54,9 @@ class PatientPortalController extends Controller
         $this->patientMessageEntryModel = new PatientMessageEntry();
         $this->faithWordModel = new FaithWord();
         $this->patientFaithEntryModel = new PatientFaithEntry();
+        $this->guidedMeditationModel = new GuidedMeditation();
+        $this->healingLetterModel = new HealingLetter();
+        $this->patientGuidedMeditationEntryModel = new PatientGuidedMeditationEntry();
     }
 
     private function normalizeDailyMessageCategory(string $value): string
@@ -110,6 +119,34 @@ class PatientPortalController extends Controller
         $ids = $this->getFatherWordCycleDrawnIds($patientId);
         $ids[] = $wordId;
         $this->setFatherWordCycleDrawnIds($patientId, $ids);
+    }
+
+    private function healingLettersCycleSessionKey(int $patientId): string
+    {
+        return 'healing_letters_drawn_ids_patient_' . $patientId;
+    }
+
+    private function getHealingLettersCycleDrawnIds(int $patientId): array
+    {
+        $key = $this->healingLettersCycleSessionKey($patientId);
+        $ids = $_SESSION[$key] ?? [];
+        if (!is_array($ids)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0));
+    }
+
+    private function setHealingLettersCycleDrawnIds(int $patientId, array $ids): void
+    {
+        $_SESSION[$this->healingLettersCycleSessionKey($patientId)] = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
+    }
+
+    private function appendHealingLettersCycleDrawnId(int $patientId, int $letterId): void
+    {
+        $ids = $this->getHealingLettersCycleDrawnIds($patientId);
+        $ids[] = $letterId;
+        $this->setHealingLettersCycleDrawnIds($patientId, $ids);
     }
 
     private function sanitizeRichText(string $html): string
@@ -504,6 +541,193 @@ class PatientPortalController extends Controller
             'appUrl' => Config::get('APP_URL', ''),
             'entries' => $entries,
         ]);
+    }
+
+    public function guidedMeditations(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $meditations = $therapistId > 0 ? $this->guidedMeditationModel->listByTherapist($therapistId) : [];
+
+        $this->view('patient/guided-meditations', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'meditations' => $meditations,
+        ]);
+    }
+
+    public function guidedMeditationShow(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $meditationId = (int) ($_GET['id'] ?? 0);
+        if ($therapistId <= 0 || $meditationId <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Meditação inválida.'));
+        }
+
+        $meditation = $this->guidedMeditationModel->findByTherapistAndId($therapistId, $meditationId);
+        if (!$meditation) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Meditação não encontrada.'));
+        }
+
+        $entries = $this->patientGuidedMeditationEntryModel->listByPatient($patientId, $meditationId);
+
+        $this->view('patient/guided-meditation-show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'meditation' => $meditation,
+            'entries' => $entries,
+        ]);
+    }
+
+    public function drawGuidedMeditationLetter(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->error('Paciente não encontrado', 404);
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        if ($therapistId <= 0) {
+            $this->error('Terapeuta não encontrado', 404);
+        }
+
+        $meditationId = (int) ($_GET['meditation_id'] ?? 0);
+        if ($meditationId <= 0) {
+            $this->error('Meditação inválida', 422);
+        }
+
+        $meditation = $this->guidedMeditationModel->findByTherapistAndId($therapistId, $meditationId);
+        if (!$meditation) {
+            $this->error('Meditação não encontrada', 404);
+        }
+
+        $allLetterIds = $this->healingLetterModel->listIdsByTherapist($therapistId);
+        if ($allLetterIds === []) {
+            $this->error('Nenhuma carta de cura disponível para sorteio.', 404);
+        }
+
+        $cycleDrawnIds = $this->getHealingLettersCycleDrawnIds($patientId);
+        $cycleDrawnIds = array_values(array_intersect($allLetterIds, $cycleDrawnIds));
+        $cycleRestarted = false;
+
+        if (count($cycleDrawnIds) >= count($allLetterIds)) {
+            $cycleDrawnIds = [];
+            $this->setHealingLettersCycleDrawnIds($patientId, []);
+            $cycleRestarted = true;
+        }
+
+        $letter = $this->healingLetterModel->randomByTherapistExcludingIds($therapistId, $cycleDrawnIds);
+        if (!$letter) {
+            $this->error('Nenhuma carta de cura disponível para sorteio.', 404);
+        }
+
+        $letterId = (int) ($letter['id'] ?? 0);
+        if ($letterId > 0) {
+            $this->appendHealingLettersCycleDrawnId($patientId, $letterId);
+            $cycleDrawnIds[] = $letterId;
+        }
+
+        $this->json([
+            'success' => true,
+            'message' => 'Carta sorteada',
+            'data' => [
+                'letter' => [
+                    'id' => $letterId,
+                    'category' => (string) ($letter['category'] ?? ''),
+                    'text' => (string) ($letter['message_text'] ?? ''),
+                ],
+                'cycle' => [
+                    'restarted' => $cycleRestarted,
+                ],
+            ],
+        ]);
+    }
+
+    public function saveGuidedMeditationEntry(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        if ($therapistId <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Terapeuta não vinculado.'));
+        }
+
+        $meditationId = (int) ($_POST['meditation_id'] ?? 0);
+        $meditation = $this->guidedMeditationModel->findByTherapistAndId($therapistId, $meditationId);
+        if (!$meditation) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Meditação não encontrada.'));
+        }
+
+        $letterId = (int) ($_POST['letter_id'] ?? 0);
+        $letterCategory = $this->normalizeDailyMessageCategory((string) ($_POST['letter_category'] ?? 'dores'));
+        $letterText = trim((string) ($_POST['letter_text'] ?? ''));
+        $patientNote = trim((string) ($_POST['patient_note'] ?? ''));
+        $shareWithTherapist = isset($_POST['share_with_therapist']) ? 1 : 0;
+
+        if ($letterText === '' || $patientNote === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditation-show&id=' . $meditationId . '&status=error&msg=' . urlencode('Carta e reflexão são obrigatórias.'));
+        }
+
+        $saved = $this->patientGuidedMeditationEntryModel->insert([
+            'therapist_id' => $therapistId,
+            'patient_id' => $patientId,
+            'meditation_id' => $meditationId,
+            'letter_id' => $letterId > 0 ? $letterId : null,
+            'letter_category' => $letterCategory,
+            'letter_text' => $letterText,
+            'patient_note' => $patientNote,
+            'share_with_therapist' => $shareWithTherapist,
+            'listened_at' => date('Y-m-d H:i:s'),
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditation-show&id=' . $meditationId . '&status=error&msg=' . urlencode('Falha ao salvar reflexão.'));
+        }
+
+        if ($shareWithTherapist === 1) {
+            $this->taskModel->insert([
+                'therapist_id' => $therapistId,
+                'patient_id' => $patientId,
+                'due_date' => date('Y-m-d'),
+                'title' => 'Reflexão Meditação Guiada',
+                'description' => (string) ($meditation['title'] ?? 'Meditação') . "\n\n" . $letterText,
+                'patient_response_html' => $patientNote,
+                'responded_at' => date('Y-m-d H:i:s'),
+                'send_to_patient' => 0,
+                'delivery_kind' => 'task',
+                'status' => 'done',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $therapist = $this->userModel->findById($therapistId);
+            if ($therapist) {
+                $subject = 'Nova reflexão em Meditação Guiada';
+                $message = 'Seu paciente compartilhou uma nova reflexão no módulo de Meditação Guiada. Acesse o painel para visualizar.';
+                AlertDispatcher::dispatch(['email'], (string) ($therapist['email'] ?? ''), null, $subject, $message);
+            }
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditation-show&id=' . $meditationId . '&status=success&msg=' . urlencode('Reflexão salva com sucesso.'));
     }
 
     public function drawFatherWord(): void

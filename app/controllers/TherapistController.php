@@ -6,10 +6,13 @@ use App\Models\Appointment;
 use App\Models\DailyMessage;
 use App\Models\FaithWord;
 use App\Models\FileStorage;
+use App\Models\GuidedMeditation;
+use App\Models\HealingLetter;
 use App\Models\Material;
 use App\Models\MaterialDelivery;
 use App\Models\Patient;
 use App\Models\PatientFaithEntry;
+use App\Models\PatientGuidedMeditationEntry;
 use App\Models\PatientMessageEntry;
 use App\Models\Payment;
 use App\Models\Task;
@@ -37,6 +40,9 @@ class TherapistController extends Controller
     private PatientMessageEntry $patientMessageEntryModel;
     private FaithWord $faithWordModel;
     private PatientFaithEntry $patientFaithEntryModel;
+    private GuidedMeditation $guidedMeditationModel;
+    private HealingLetter $healingLetterModel;
+    private PatientGuidedMeditationEntry $patientGuidedMeditationEntryModel;
 
     public function __construct()
     {
@@ -53,6 +59,9 @@ class TherapistController extends Controller
         $this->patientMessageEntryModel = new PatientMessageEntry();
         $this->faithWordModel = new FaithWord();
         $this->patientFaithEntryModel = new PatientFaithEntry();
+        $this->guidedMeditationModel = new GuidedMeditation();
+        $this->healingLetterModel = new HealingLetter();
+        $this->patientGuidedMeditationEntryModel = new PatientGuidedMeditationEntry();
     }
 
     public function dashboard(): void
@@ -488,6 +497,403 @@ class TherapistController extends Controller
         }
 
         $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=success&msg=' . urlencode('Palavra excluída com sucesso.'));
+    }
+
+    private function guidedMeditationUploadBasePath(string $kind): string
+    {
+        $suffix = $kind === 'audio' ? 'audios' : 'images';
+        $uploadBase = dirname(__DIR__, 2) . '/uploads/meditations/' . $suffix;
+        if (!is_dir($uploadBase)) {
+            @mkdir($uploadBase, 0775, true);
+        }
+
+        return $uploadBase;
+    }
+
+    private function storeGuidedMeditationImageFromRequest(): array
+    {
+        if (!isset($_FILES['reference_image']) || (int) ($_FILES['reference_image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return [
+                'name' => null,
+                'path' => null,
+            ];
+        }
+
+        $tmpName = (string) ($_FILES['reference_image']['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            return [
+                'name' => null,
+                'path' => null,
+            ];
+        }
+
+        $originalName = trim((string) ($_FILES['reference_image']['name'] ?? ''));
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+            return [
+                'name' => null,
+                'path' => null,
+            ];
+        }
+
+        $safeFile = uniqid('meditation_img_', true) . '.' . $ext;
+        $target = $this->guidedMeditationUploadBasePath('image') . '/' . $safeFile;
+        if (!@move_uploaded_file($tmpName, $target)) {
+            return [
+                'name' => null,
+                'path' => null,
+            ];
+        }
+
+        return [
+            'name' => $originalName,
+            'path' => 'uploads/meditations/images/' . $safeFile,
+        ];
+    }
+
+    private function storeGuidedMeditationAudioFromRequest(): array
+    {
+        if (!isset($_FILES['audio_file']) || (int) ($_FILES['audio_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return [
+                'name' => '',
+                'path' => '',
+            ];
+        }
+
+        $tmpName = (string) ($_FILES['audio_file']['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            return [
+                'name' => '',
+                'path' => '',
+            ];
+        }
+
+        $originalName = trim((string) ($_FILES['audio_file']['name'] ?? ''));
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['mp3', 'wav', 'ogg', 'm4a'], true)) {
+            return [
+                'name' => '',
+                'path' => '',
+            ];
+        }
+
+        $safeFile = uniqid('meditation_audio_', true) . '.' . $ext;
+        $target = $this->guidedMeditationUploadBasePath('audio') . '/' . $safeFile;
+        if (!@move_uploaded_file($tmpName, $target)) {
+            return [
+                'name' => '',
+                'path' => '',
+            ];
+        }
+
+        return [
+            'name' => $originalName,
+            'path' => 'uploads/meditations/audios/' . $safeFile,
+        ];
+    }
+
+    private function deleteGuidedMeditationFileIfExists(string $relativePath): void
+    {
+        $relativePath = trim($relativePath);
+        if ($relativePath === '') {
+            return;
+        }
+
+        $absolute = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        if (is_file($absolute)) {
+            @unlink($absolute);
+        }
+    }
+
+    public function guidedMeditations(): void
+    {
+        $therapistId = (int) Auth::id();
+        $search = trim((string) ($_GET['q'] ?? ''));
+
+        $meditations = $this->guidedMeditationModel->listByTherapist($therapistId, $search);
+        $sharedEntries = $this->patientGuidedMeditationEntryModel->listSharedByTherapist($therapistId, 100);
+
+        $this->view('therapist/guided-meditations/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'meditations' => $meditations,
+            'sharedEntries' => $sharedEntries,
+            'filters' => [
+                'q' => $search,
+            ],
+        ]);
+    }
+
+    public function storeGuidedMeditation(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $title = trim((string) ($_POST['title'] ?? ''));
+
+        if ($title === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Título é obrigatório.'));
+        }
+
+        $audio = $this->storeGuidedMeditationAudioFromRequest();
+        if ($audio['path'] === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Anexe um arquivo de áudio válido (.mp3, .wav, .ogg, .m4a).'));
+        }
+
+        $image = $this->storeGuidedMeditationImageFromRequest();
+
+        $saved = $this->guidedMeditationModel->insert([
+            'therapist_id' => $therapistId,
+            'title' => $title,
+            'reference_image_name' => $image['name'],
+            'reference_image_path' => $image['path'],
+            'audio_name' => $audio['name'],
+            'audio_path' => $audio['path'],
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->deleteGuidedMeditationFileIfExists((string) $audio['path']);
+            $this->deleteGuidedMeditationFileIfExists((string) ($image['path'] ?? ''));
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Falha ao cadastrar meditação guiada.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=success&msg=' . urlencode('Meditação guiada cadastrada com sucesso.'));
+    }
+
+    public function deleteGuidedMeditation(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Registro inválido.'));
+        }
+
+        $current = $this->guidedMeditationModel->findByTherapistAndId($therapistId, $id);
+        if (!$current) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Meditação não encontrada.'));
+        }
+
+        $deleted = $this->guidedMeditationModel->deleteByTherapistAndId($therapistId, $id);
+        if (!$deleted) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Falha ao excluir meditação.'));
+        }
+
+        $this->deleteGuidedMeditationFileIfExists((string) ($current['reference_image_path'] ?? ''));
+        $this->deleteGuidedMeditationFileIfExists((string) ($current['audio_path'] ?? ''));
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=success&msg=' . urlencode('Meditação excluída com sucesso.'));
+    }
+
+    public function healingLetters(): void
+    {
+        $therapistId = (int) Auth::id();
+        $category = (string) ($_GET['category'] ?? '');
+        $search = trim((string) ($_GET['q'] ?? ''));
+
+        if ($category !== '' && !in_array($category, ['dores', 'reflexivas', 'cura', 'motivacionais', 'conflitos'], true)) {
+            $category = '';
+        }
+
+        $letters = $this->healingLetterModel->listByTherapist($therapistId, $category, $search);
+        $sharedEntries = $this->patientGuidedMeditationEntryModel->listSharedByTherapist($therapistId, 100);
+
+        $this->view('therapist/healing-letters/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'letters' => $letters,
+            'sharedEntries' => $sharedEntries,
+            'filters' => [
+                'category' => $category,
+                'q' => $search,
+            ],
+        ]);
+    }
+
+    public function storeHealingLetter(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $category = $this->normalizeDailyMessageCategory((string) ($_POST['category'] ?? 'dores'));
+        $messageText = trim((string) ($_POST['message_text'] ?? ''));
+
+        if ($messageText === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('A carta de cura é obrigatória.'));
+        }
+
+        $saved = $this->healingLetterModel->insert([
+            'therapist_id' => $therapistId,
+            'category' => $category,
+            'message_text' => $messageText,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Falha ao cadastrar carta de cura.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=success&msg=' . urlencode('Carta de cura cadastrada com sucesso.'));
+    }
+
+    public function bulkHealingLetters(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Método não permitido para importação.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        if (!isset($_FILES['letters_json']) || (int) ($_FILES['letters_json']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Envie um arquivo JSON válido.'));
+        }
+
+        $tmpFile = (string) ($_FILES['letters_json']['tmp_name'] ?? '');
+        if ($tmpFile === '' || !is_uploaded_file($tmpFile)) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Falha ao ler o arquivo enviado.'));
+        }
+
+        $raw = file_get_contents($tmpFile);
+        if ($raw === false || trim($raw) === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Arquivo JSON vazio.'));
+        }
+
+        $raw = preg_replace('/^\xEF\xBB\xBF/', '', (string) $raw) ?? (string) $raw;
+
+        $payload = json_decode($raw, true);
+        if (!is_array($payload) && function_exists('mb_convert_encoding')) {
+            $rawUtf8 = @mb_convert_encoding((string) $raw, 'UTF-8', 'UTF-8, ISO-8859-1, Windows-1252');
+            if (is_string($rawUtf8)) {
+                $payload = json_decode($rawUtf8, true);
+            }
+        }
+
+        if (!is_array($payload)) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('JSON inválido: ' . json_last_error_msg()));
+        }
+
+        $items = isset($payload['letters']) && is_array($payload['letters']) ? $payload['letters'] : $payload;
+        if (!is_array($items) || $items === []) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('JSON sem itens para importar.'));
+        }
+
+        $inserted = 0;
+        $invalidCategory = 0;
+        $emptyText = 0;
+        $dbFailed = 0;
+        $invalidItem = 0;
+
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                $invalidItem++;
+                continue;
+            }
+
+            $category = $this->parseDailyMessageCategory((string) ($item['category'] ?? ''));
+            if ($category === null) {
+                $invalidCategory++;
+                continue;
+            }
+
+            $messageText = trim((string) ($item['text'] ?? $item['message_text'] ?? ''));
+            if ($messageText === '') {
+                $emptyText++;
+                continue;
+            }
+
+            $saved = $this->healingLetterModel->insert([
+                'therapist_id' => $therapistId,
+                'category' => $category,
+                'message_text' => $messageText,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            if ($saved) {
+                $inserted++;
+            } else {
+                $dbFailed++;
+            }
+        }
+
+        if ($inserted <= 0) {
+            $this->redirect(
+                Config::get('APP_URL', '')
+                . '/dashboard.php?action=therapist-healing-letters&status=error&msg='
+                . urlencode('Nenhuma carta inserida. Itens inválidos: ' . $invalidItem . ', categoria inválida: ' . $invalidCategory . ', texto vazio: ' . $emptyText . ', falha de banco: ' . $dbFailed . '.')
+            );
+        }
+
+        $summary = $inserted . ' inseridas | itens inválidos: ' . $invalidItem . ' | categoria inválida: ' . $invalidCategory . ' | texto vazio: ' . $emptyText . ' | falha de banco: ' . $dbFailed;
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=success&msg=' . urlencode('Importação concluída: ' . $summary));
+    }
+
+    public function updateHealingLetter(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Método não permitido para edição.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Registro inválido para edição.'));
+        }
+
+        $current = $this->healingLetterModel->findByTherapistAndId($therapistId, $id);
+        if (!$current) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Carta não encontrada.'));
+        }
+
+        $category = $this->normalizeDailyMessageCategory((string) ($_POST['category'] ?? 'dores'));
+        $messageText = trim((string) ($_POST['message_text'] ?? ''));
+        if ($messageText === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('A carta é obrigatória para edição.'));
+        }
+
+        $updated = $this->healingLetterModel->updateById($id, [
+            'category' => $category,
+            'message_text' => $messageText,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Falha ao atualizar carta.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=success&msg=' . urlencode('Carta atualizada com sucesso.'));
+    }
+
+    public function deleteHealingLetter(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Método não permitido para exclusão.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Registro inválido para exclusão.'));
+        }
+
+        $current = $this->healingLetterModel->findByTherapistAndId($therapistId, $id);
+        if (!$current) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Carta não encontrada.'));
+        }
+
+        $deleted = $this->healingLetterModel->deleteByTherapistAndId($therapistId, $id);
+        if (!$deleted) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=error&msg=' . urlencode('Falha ao excluir carta.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=success&msg=' . urlencode('Carta excluída com sucesso.'));
     }
 
     private function financialRedirectBase(int $month, int $year): string
