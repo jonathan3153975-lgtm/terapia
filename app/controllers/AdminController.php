@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\FileStorage;
 use App\Models\Patient;
+use App\Models\Plan;
 use App\Models\User;
 use Classes\Controller;
 use Config\Config;
@@ -16,6 +17,7 @@ class AdminController extends Controller
     private User $userModel;
     private Patient $patientModel;
     private FileStorage $fileModel;
+    private Plan $planModel;
 
     public function __construct()
     {
@@ -23,6 +25,7 @@ class AdminController extends Controller
         $this->userModel = new User();
         $this->patientModel = new Patient();
         $this->fileModel = new FileStorage();
+        $this->planModel = new Plan();
     }
 
     private function therapistLogoUploadBasePath(): string
@@ -117,6 +120,78 @@ class AdminController extends Controller
             'appUrl' => Config::get('APP_URL', ''),
             'therapists' => $this->userModel->listTherapists(),
         ]);
+    }
+
+    public function patientPackages(): void
+    {
+        $this->view('admin/packages/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'therapists' => $this->userModel->listTherapists(),
+            'packages' => $this->planModel->listPatientPlansForAdmin(),
+        ]);
+    }
+
+    public function storePatientPackage(): void
+    {
+        $name = Utils::sanitize($_POST['name'] ?? '');
+        $description = trim((string) ($_POST['description_text'] ?? ''));
+        $billingCycle = Utils::sanitize($_POST['billing_cycle'] ?? 'mensal');
+        $price = (float) str_replace(',', '.', (string) ($_POST['price'] ?? '0'));
+        $therapistId = (int) ($_POST['therapist_id'] ?? 0);
+
+        if ($name === '' || $therapistId <= 0 || $price <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=error&msg=' . urlencode('Preencha nome, terapeuta e valor do pacote.'));
+        }
+
+        if (!in_array($billingCycle, ['mensal', 'semestral', 'anual'], true)) {
+            $billingCycle = 'mensal';
+        }
+
+        $therapist = $this->userModel->findTherapistById($therapistId);
+        if (!$therapist) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=error&msg=' . urlencode('Terapeuta inválido para vincular o pacote.'));
+        }
+
+        $created = $this->planModel->insert([
+            'target' => 'patient',
+            'therapist_id' => $therapistId,
+            'name' => $name,
+            'description_text' => $description !== '' ? $description : null,
+            'billing_cycle' => $billingCycle,
+            'price' => number_format($price, 2, '.', ''),
+            'is_active' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$created) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=error&msg=' . urlencode('Falha ao cadastrar pacote.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=success&msg=' . urlencode('Pacote cadastrado com sucesso.'));
+    }
+
+    public function togglePatientPackageStatus(): void
+    {
+        $packageId = (int) ($_POST['id'] ?? 0);
+        $package = $this->planModel->findPatientPlanById($packageId);
+
+        if (!$package) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=error&msg=' . urlencode('Pacote não encontrado.'));
+        }
+
+        $nextStatus = (int) ($package['is_active'] ?? 1) === 1 ? 0 : 1;
+        $updated = $this->planModel->updateById($packageId, [
+            'is_active' => $nextStatus,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=error&msg=' . urlencode('Não foi possível atualizar o status do pacote.'));
+        }
+
+        $msg = $nextStatus === 1 ? 'Pacote ativado com sucesso.' : 'Pacote desativado com sucesso.';
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=success&msg=' . urlencode($msg));
     }
 
     public function createTherapist(): void

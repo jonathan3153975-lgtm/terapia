@@ -14,6 +14,9 @@ use App\Models\Patient;
 use App\Models\PatientFaithEntry;
 use App\Models\PatientGuidedMeditationEntry;
 use App\Models\PatientMessageEntry;
+use App\Models\PatientSubscription;
+use App\Models\Payment;
+use App\Models\Plan;
 use App\Models\Task;
 use App\Models\User;
 use Classes\Controller;
@@ -22,6 +25,8 @@ use Helpers\AlertDispatcher;
 use Helpers\Auth;
 use Helpers\EmailTemplate;
 use Helpers\MailService;
+use Helpers\MercadoPagoGateway;
+use Helpers\PatientSubscriptionPaymentSync;
 
 class PatientPortalController extends Controller
 {
@@ -39,6 +44,10 @@ class PatientPortalController extends Controller
     private GuidedMeditation $guidedMeditationModel;
     private HealingLetter $healingLetterModel;
     private PatientGuidedMeditationEntry $patientGuidedMeditationEntryModel;
+    private Plan $planModel;
+    private Payment $paymentModel;
+    private PatientSubscription $patientSubscriptionModel;
+    private MercadoPagoGateway $mercadoPagoGateway;
 
     public function __construct()
     {
@@ -57,6 +66,41 @@ class PatientPortalController extends Controller
         $this->guidedMeditationModel = new GuidedMeditation();
         $this->healingLetterModel = new HealingLetter();
         $this->patientGuidedMeditationEntryModel = new PatientGuidedMeditationEntry();
+        $this->planModel = new Plan();
+        $this->paymentModel = new Payment();
+        $this->patientSubscriptionModel = new PatientSubscription();
+        $this->mercadoPagoGateway = new MercadoPagoGateway();
+
+        $this->enforceActiveSubscription();
+    }
+
+    private function enforceActiveSubscription(): void
+    {
+        $publicSubscriptionActions = [
+            'subscription-plans',
+            'subscription-checkout',
+            'subscription-return',
+        ];
+
+        $action = (string) ($_GET['action'] ?? 'dashboard');
+        $patientId = (int) Auth::patientId();
+        if ($patientId <= 0) {
+            return;
+        }
+
+        $this->patientSubscriptionModel->markExpiredSubscriptions();
+        $activeSubscription = $this->patientSubscriptionModel->findActiveByPatient($patientId);
+
+        if ($activeSubscription) {
+            if (in_array($action, $publicSubscriptionActions, true)) {
+                $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=success&msg=' . urlencode('Sua assinatura está ativa.'));
+            }
+            return;
+        }
+
+        if (!in_array($action, $publicSubscriptionActions, true)) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Para acessar o conteúdo, você precisa de uma assinatura ativa.'));
+        }
     }
 
     private function normalizeDailyMessageCategory(string $value): string
@@ -321,6 +365,180 @@ class PatientPortalController extends Controller
             error_log('Error dispatching task alert: ' . $e->getMessage());
             return 'alert-error';
         }
+    }
+
+    public function subscriptionPlans(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/index.php?action=logout');
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $plans = $therapistId > 0 ? $this->planModel->listPatientPlansByTherapist($therapistId) : [];
+        $latestSubscription = $this->patientSubscriptionModel->findLatestByPatient($patientId);
+
+        $this->view('patient/subscription-plans', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'patient' => $patient,
+            'plans' => $plans,
+            'latestSubscription' => $latestSubscription,
+            'mercadoPagoConfigured' => $this->mercadoPagoGateway->isConfigured(),
+        ]);
+    }
+
+    public function startSubscriptionCheckout(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/index.php?action=logout');
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $planId = (int) ($_POST['plan_id'] ?? 0);
+        $plan = $this->planModel->findPatientPlanById($planId);
+
+        if (!$plan || (int) ($plan['is_active'] ?? 0) !== 1 || (int) ($plan['therapist_id'] ?? 0) !== $therapistId) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Plano inválido para este paciente.'));
+        }
+
+        if (!$this->mercadoPagoGateway->isConfigured()) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Pagamento indisponível no momento. Contate o suporte.'));
+        }
+
+        $providerReference = 'PATSUB-' . $patientId . '-' . time() . '-' . strtoupper(bin2hex(random_bytes(3)));
+        $amount = (float) ($plan['price'] ?? 0);
+
+        $paymentId = $this->paymentModel->createPatientPlanPayment(
+            $therapistId,
+            $patientId,
+            (int) $plan['id'],
+            $amount,
+            $providerReference
+        );
+
+        if (!$paymentId) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Não foi possível iniciar o pagamento.'));
+        }
+
+        $subscriptionId = $this->patientSubscriptionModel->insert([
+            'patient_id' => $patientId,
+            'therapist_id' => $therapistId,
+            'plan_id' => (int) $plan['id'],
+            'payment_id' => (int) $paymentId,
+            'status' => 'pending',
+            'billing_cycle' => (string) $plan['billing_cycle'],
+            'amount' => number_format($amount, 2, '.', ''),
+            'provider' => 'mercado_pago',
+            'provider_reference' => $providerReference,
+            'checkout_url' => null,
+            'starts_at' => null,
+            'ends_at' => null,
+            'paid_at' => null,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$subscriptionId) {
+            $this->paymentModel->markStatusById((int) $paymentId, 'failed');
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Falha ao criar assinatura pendente.'));
+        }
+
+        $appUrl = Config::get('APP_URL', '');
+        $notificationUrl = (string) Config::get('MP_WEBHOOK_URL', $appUrl . '/webhook.php?action=mercado-pago');
+        $webhookSecret = trim((string) Config::get('MP_WEBHOOK_SECRET', ''));
+        if ($webhookSecret !== '' && !str_contains($notificationUrl, 'token=')) {
+            $notificationUrl .= (str_contains($notificationUrl, '?') ? '&' : '?') . 'token=' . urlencode($webhookSecret);
+        }
+
+        $payerEmail = (string) ($patient['email'] ?? '');
+        if (!filter_var($payerEmail, FILTER_VALIDATE_EMAIL)) {
+            $user = $this->userModel->findById((int) Auth::id());
+            $payerEmail = (string) ($user['email'] ?? '');
+        }
+
+        $payload = [
+            'items' => [[
+                'id' => (string) $plan['id'],
+                'title' => (string) $plan['name'],
+                'description' => (string) ($plan['description_text'] ?? 'Assinatura de acesso ao conteúdo terapêutico'),
+                'quantity' => 1,
+                'currency_id' => (string) Config::get('MP_CURRENCY_ID', 'BRL'),
+                'unit_price' => (float) $amount,
+            ]],
+            'external_reference' => $providerReference,
+            'notification_url' => $notificationUrl,
+            'back_urls' => [
+                'success' => $appUrl . '/patient.php?action=subscription-return',
+                'failure' => $appUrl . '/patient.php?action=subscription-return',
+                'pending' => $appUrl . '/patient.php?action=subscription-return',
+            ],
+            'auto_return' => 'approved',
+            'statement_descriptor' => substr((string) Config::get('MP_STATEMENT_DESCRIPTOR', 'TERAPIA'), 0, 13),
+            'metadata' => [
+                'patient_id' => $patientId,
+                'therapist_id' => $therapistId,
+                'plan_id' => (int) $plan['id'],
+                'subscription_id' => (int) $subscriptionId,
+            ],
+        ];
+
+        if (filter_var($payerEmail, FILTER_VALIDATE_EMAIL)) {
+            $payload['payer'] = ['email' => $payerEmail];
+        }
+
+        $preferenceResult = $this->mercadoPagoGateway->createPreference($payload);
+        if (($preferenceResult['ok'] ?? false) !== true) {
+            $this->paymentModel->markStatusById((int) $paymentId, 'failed');
+            $this->patientSubscriptionModel->markStatusById((int) $subscriptionId, 'failed');
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode((string) ($preferenceResult['message'] ?? 'Erro ao criar checkout no Mercado Pago.')));
+        }
+
+        $responseData = (array) ($preferenceResult['data'] ?? []);
+        $checkoutUrl = (string) ($responseData['init_point'] ?? '');
+        $preferSandbox = filter_var((string) Config::get('MP_USE_SANDBOX', 'true'), FILTER_VALIDATE_BOOLEAN);
+        if ($preferSandbox && !empty($responseData['sandbox_init_point'])) {
+            $checkoutUrl = (string) $responseData['sandbox_init_point'];
+        }
+
+        if ($checkoutUrl === '') {
+            $this->paymentModel->markStatusById((int) $paymentId, 'failed');
+            $this->patientSubscriptionModel->markStatusById((int) $subscriptionId, 'failed');
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Checkout do Mercado Pago indisponível.'));
+        }
+
+        $this->patientSubscriptionModel->updateById((int) $subscriptionId, [
+            'checkout_url' => $checkoutUrl,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->redirect($checkoutUrl);
+    }
+
+    public function subscriptionReturn(): void
+    {
+        $paymentId = (int) ($_GET['payment_id'] ?? 0);
+        if ($paymentId > 0) {
+            (new PatientSubscriptionPaymentSync())->syncByPaymentId($paymentId);
+        }
+
+        $patientId = (int) Auth::patientId();
+        $active = $this->patientSubscriptionModel->findActiveByPatient($patientId);
+
+        if ($active) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=success&msg=' . urlencode('Assinatura ativada com sucesso.'));
+        }
+
+        $status = strtolower((string) ($_GET['status'] ?? 'pending'));
+        $message = match ($status) {
+            'approved' => 'Pagamento recebido. Estamos finalizando a ativação da assinatura.',
+            'failure' => 'Pagamento não concluído. Tente novamente.',
+            default => 'Pagamento pendente. Assim que confirmado, sua assinatura será ativada.',
+        };
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=' . ($status === 'failure' ? 'error' : 'success') . '&msg=' . urlencode($message));
     }
 
     public function dashboard(): void

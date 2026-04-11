@@ -23,9 +23,16 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS plans (
   id INT AUTO_INCREMENT PRIMARY KEY,
   target ENUM('therapist','patient') NOT NULL,
+  therapist_id INT NULL,
   name VARCHAR(100) NOT NULL,
-  billing_cycle ENUM('mensal','anual') NOT NULL,
+  description_text TEXT NULL,
+  billing_cycle ENUM('mensal','semestral','anual') NOT NULL,
   price DECIMAL(10,2) NOT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_plans_target(target),
+  INDEX idx_plans_therapist(therapist_id),
+  FOREIGN KEY (therapist_id) REFERENCES users(id) ON DELETE SET NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -150,6 +157,33 @@ CREATE TABLE IF NOT EXISTS payments (
   FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
   FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS patient_subscriptions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  patient_id INT NOT NULL,
+  therapist_id INT NOT NULL,
+  plan_id INT NOT NULL,
+  payment_id INT NULL,
+  status ENUM('pending','active','expired','canceled','failed') NOT NULL DEFAULT 'pending',
+  billing_cycle ENUM('mensal','semestral','anual') NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  provider VARCHAR(50) NOT NULL DEFAULT 'mercado_pago',
+  provider_reference VARCHAR(120) NULL,
+  checkout_url VARCHAR(500) NULL,
+  starts_at DATETIME NULL,
+  ends_at DATETIME NULL,
+  paid_at DATETIME NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_ps_patient(patient_id),
+  INDEX idx_ps_plan(plan_id),
+  INDEX idx_ps_status(status),
+  INDEX idx_ps_provider_reference(provider_reference),
+  FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+  FOREIGN KEY (therapist_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE CASCADE,
+  FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS commissions (

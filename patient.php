@@ -48,6 +48,9 @@ $action = $_GET['action'] ?? 'dashboard';
 $portal = new PatientPortalController();
 
 match ($action) {
+    'subscription-plans' => $portal->subscriptionPlans(),
+    'subscription-checkout' => $portal->startSubscriptionCheckout(),
+    'subscription-return' => $portal->subscriptionReturn(),
     'dashboard' => $portal->dashboard(),
     'tasks' => $portal->tasks(),
     'materials' => $portal->materials(),

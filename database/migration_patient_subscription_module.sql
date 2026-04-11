@@ -1,0 +1,36 @@
+ALTER TABLE plans
+  ADD COLUMN therapist_id INT NULL AFTER target,
+  ADD COLUMN description_text TEXT NULL AFTER name,
+  MODIFY COLUMN billing_cycle ENUM('mensal','semestral','anual') NOT NULL,
+  ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER price,
+  ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at,
+  ADD INDEX idx_plans_target (target),
+  ADD INDEX idx_plans_therapist (therapist_id),
+  ADD CONSTRAINT fk_plans_therapist FOREIGN KEY (therapist_id) REFERENCES users(id) ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS patient_subscriptions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  patient_id INT NOT NULL,
+  therapist_id INT NOT NULL,
+  plan_id INT NOT NULL,
+  payment_id INT NULL,
+  status ENUM('pending','active','expired','canceled','failed') NOT NULL DEFAULT 'pending',
+  billing_cycle ENUM('mensal','semestral','anual') NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  provider VARCHAR(50) NOT NULL DEFAULT 'mercado_pago',
+  provider_reference VARCHAR(120) NULL,
+  checkout_url VARCHAR(500) NULL,
+  starts_at DATETIME NULL,
+  ends_at DATETIME NULL,
+  paid_at DATETIME NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_ps_patient(patient_id),
+  INDEX idx_ps_plan(plan_id),
+  INDEX idx_ps_status(status),
+  INDEX idx_ps_provider_reference(provider_reference),
+  CONSTRAINT fk_ps_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ps_therapist FOREIGN KEY (therapist_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ps_plan FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ps_payment FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE SET NULL
+);

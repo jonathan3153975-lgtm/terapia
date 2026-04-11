@@ -50,6 +50,9 @@ $action = $_GET['action'] ?? 'therapist-dashboard';
 match ($action) {
     'admin-dashboard' => (new AdminController())->dashboard(),
     'therapists' => (new AdminController())->therapists(),
+    'patient-packages' => (new AdminController())->patientPackages(),
+    'patient-packages-store' => (new AdminController())->storePatientPackage(),
+    'patient-packages-toggle-status' => (new AdminController())->togglePatientPackageStatus(),
     'therapists-create' => (new AdminController())->createTherapist(),
     'therapists-store' => (new AdminController())->storeTherapist(),
     'therapists-show' => (new AdminController())->showTherapist(),

@@ -8,6 +8,17 @@ class Payment extends Model
 {
     protected string $table = 'payments';
 
+    public function findByProviderReference(string $providerReference): ?array
+    {
+        $stmt = $this->query('SELECT * FROM payments WHERE provider_reference = ? LIMIT 1', [$providerReference]);
+        if (!$stmt) {
+            return null;
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function findByAppointmentId(int $appointmentId): ?array
     {
         $stmt = $this->query('SELECT * FROM payments WHERE appointment_id = ? LIMIT 1', [$appointmentId]);
@@ -105,5 +116,34 @@ class Payment extends Model
     public function countByTherapist(int $therapistId): int
     {
         return $this->count('therapist_id = ?', [$therapistId]);
+    }
+
+    public function createPatientPlanPayment(int $therapistId, int $patientId, int $planId, float $amount, string $providerReference): int|false
+    {
+        return $this->insert([
+            'therapist_id' => $therapistId,
+            'appointment_id' => null,
+            'patient_id' => $patientId,
+            'plan_id' => $planId,
+            'amount' => $amount,
+            'provider' => 'mercado_pago',
+            'provider_reference' => $providerReference,
+            'status' => 'pending',
+            'paid_at' => null,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    public function markStatusById(int $paymentId, string $status, ?string $paidAt = null): bool
+    {
+        $data = [
+            'status' => $status,
+        ];
+
+        if ($status === 'paid') {
+            $data['paid_at'] = $paidAt ?: date('Y-m-d H:i:s');
+        }
+
+        return $this->updateById($paymentId, $data);
     }
 }
