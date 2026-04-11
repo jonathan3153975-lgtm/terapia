@@ -37,6 +37,39 @@ class PublicPatientSignupController extends Controller
         ]);
     }
 
+    private function boolPost(string $key): int
+    {
+        return isset($_POST[$key]) ? 1 : 0;
+    }
+
+    private function buildMedicalTreatmentText(): string
+    {
+        if (!$this->boolPost('has_medical_treatment')) {
+            return '';
+        }
+
+        $description = Utils::sanitize($_POST['medical_treatment_description'] ?? '');
+        $treatmentMedication = Utils::sanitize($_POST['medical_treatment_medication'] ?? '');
+        $depressionMedication = Utils::sanitize($_POST['depression_medication'] ?? '');
+        $anxietyMedication = Utils::sanitize($_POST['anxiety_medication'] ?? '');
+
+        $parts = [];
+        if ($description !== '') {
+            $parts[] = 'Tratamento médico: ' . $description;
+        }
+        if ($treatmentMedication !== '') {
+            $parts[] = 'Medicação tratamento: ' . $treatmentMedication;
+        }
+        if ($depressionMedication !== '') {
+            $parts[] = 'Medicação depressão: ' . $depressionMedication;
+        }
+        if ($anxietyMedication !== '') {
+            $parts[] = 'Medicação ansiedade: ' . $anxietyMedication;
+        }
+
+        return implode("\n", $parts);
+    }
+
     public function submitForm(): void
     {
         $token = trim((string) ($_POST['token'] ?? ''));
@@ -50,6 +83,17 @@ class PublicPatientSignupController extends Controller
         $cpf = Validator::onlyDigits($_POST['cpf'] ?? '');
         $phone = Validator::onlyDigits($_POST['phone'] ?? '');
         $email = Utils::sanitize($_POST['email'] ?? '');
+        $medicalTreatment = $this->buildMedicalTreatmentText();
+        $addictions = $_POST['addictions'] ?? [];
+        if (!is_array($addictions)) {
+            $addictions = [];
+        }
+        $addictions = array_values(array_map(static fn ($item) => Utils::sanitize((string) $item), $addictions));
+        $comorbidities = $_POST['comorbidities'] ?? [];
+        if (!is_array($comorbidities)) {
+            $comorbidities = [];
+        }
+        $comorbidities = array_values(array_map(static fn ($item) => Utils::sanitize((string) $item), $comorbidities));
 
         if ($name === '' || $cpf === '' || $phone === '' || $email === '') {
             $this->redirect(Config::get('APP_URL', '') . '/index.php?action=patient-signup&token=' . urlencode($token) . '&status=error&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
@@ -72,6 +116,24 @@ class PublicPatientSignupController extends Controller
             'email' => $email,
             'marital_status' => Utils::sanitize($_POST['marital_status'] ?? ''),
             'children' => Utils::sanitize($_POST['children'] ?? ''),
+            'father' => Utils::sanitize($_POST['father'] ?? ''),
+            'mother' => Utils::sanitize($_POST['mother'] ?? ''),
+            'first_word' => Utils::sanitize($_POST['first_word'] ?? ''),
+            'cep' => Validator::onlyDigits($_POST['cep'] ?? ''),
+            'address' => Utils::sanitize($_POST['address'] ?? ''),
+            'neighborhood' => Utils::sanitize($_POST['neighborhood'] ?? ''),
+            'city' => Utils::sanitize($_POST['city'] ?? ''),
+            'state' => Utils::sanitize($_POST['state'] ?? ''),
+            'depression' => $this->boolPost('depression'),
+            'anxiety' => $this->boolPost('anxiety'),
+            'medical_treatment' => $medicalTreatment,
+            'comorbidities_json' => empty($comorbidities) ? null : json_encode($comorbidities, JSON_UNESCAPED_UNICODE),
+            'addictions_json' => empty($addictions) ? null : json_encode($addictions, JSON_UNESCAPED_UNICODE),
+            'had_therapy' => $this->boolPost('had_therapy'),
+            'therapy_description' => Utils::sanitize($_POST['therapy_description'] ?? ''),
+            'treatment_start_date' => trim((string) ($_POST['treatment_start_date'] ?? '')) !== '' ? $_POST['treatment_start_date'] : null,
+            'menstruation' => Utils::sanitize($_POST['menstruation'] ?? ''),
+            'bowel' => Utils::sanitize($_POST['bowel'] ?? ''),
             'main_complaint' => Utils::sanitize($_POST['main_complaint'] ?? ''),
             'review_status' => 'pending_review',
             'approved_at' => null,
