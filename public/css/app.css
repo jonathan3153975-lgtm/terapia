@@ -859,7 +859,7 @@ body.app-body {
 
 .father-word-hero-image {
 	position: relative;
-	min-height: 340px;
+	min-height: 420px;
 	border-radius: 20px;
 	overflow: hidden;
 	background-size: cover;
@@ -887,7 +887,10 @@ body.app-body {
 	font-size: clamp(1.2rem, 2.7vw, 2rem);
 	line-height: 1.32;
 	font-weight: 700;
-	text-shadow: 0 2px 14px rgba(0, 0, 0, .26);
+	text-shadow:
+		0 0 8px rgba(255, 255, 255, .72),
+		0 0 18px rgba(255, 255, 255, .44),
+		0 2px 14px rgba(0, 0, 0, .22);
 }
 
 .father-word-hero {
@@ -1017,6 +1020,12 @@ body.app-body {
 		min-width: 0;
 		width: 100%;
 		justify-self: stretch;
+	}
+}
+
+@media (min-width: 1200px) {
+	.father-word-hero-image {
+		min-height: 520px;
 	}
 }
 

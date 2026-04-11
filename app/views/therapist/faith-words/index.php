@@ -22,23 +22,6 @@
             </div>
             <button class="btn btn-primary" type="submit" id="faithWordCreateBtn"><i class="fa-solid fa-floppy-disk me-1"></i>Salvar palavra</button>
           </form>
-
-          <hr class="my-4">
-
-          <h6 class="mb-2">Inserção em massa (JSON)</h6>
-          <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-faith-words-bulk" enctype="multipart/form-data" id="faithWordBulkForm">
-            <div class="mb-2">
-              <label class="form-label">Arquivo JSON</label>
-              <input class="form-control" type="file" name="words_json" accept="application/json,.json" required>
-            </div>
-            <button class="btn btn-outline-primary" type="submit" id="faithWordBulkBtn"><i class="fa-solid fa-file-import me-1"></i>Importar palavras</button>
-          </form>
-
-          <div class="small text-muted mt-3 mb-1">Exemplo de JSON:</div>
-          <pre class="messenger-json-example mb-0">[
-  {"reference":"João 3:16","text":"Porque Deus amou o mundo de tal maneira..."},
-  {"reference":"Salmos 23:1","text":"O Senhor é o meu pastor; nada me faltará."}
-]</pre>
         </div>
       </div>
     </div>
@@ -46,65 +29,86 @@
     <div class="col-12 col-xl-7">
       <div class="card h-100">
         <div class="card-body">
-          <h5 class="card-title mb-2">Palavras cadastradas</h5>
-          <form method="GET" action="<?php echo $appUrl; ?>/dashboard.php" class="row g-2 align-items-end mb-2">
-            <input type="hidden" name="action" value="therapist-faith-words">
-            <div class="col-12 col-md-9">
-              <label class="form-label mb-1">Buscar</label>
-              <input class="form-control" type="search" name="q" value="<?php echo htmlspecialchars((string) ($filters['q'] ?? '')); ?>" placeholder="Referência ou trecho do versículo...">
+          <h5 class="card-title mb-2">Importação em massa (JSON)</h5>
+          <p class="text-muted small mb-3">Envie um arquivo JSON com uma lista de palavras. Formatos aceitos: array direto ou objeto com chave <code>words</code>.</p>
+          <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-faith-words-bulk" enctype="multipart/form-data" id="faithWordBulkForm" class="mb-3">
+            <div class="mb-3">
+              <label class="form-label">Arquivo JSON</label>
+              <input class="form-control" type="file" name="words_json" accept="application/json,.json" required>
             </div>
-            <div class="col-12 col-md-3 d-grid">
-              <button class="btn btn-dark" type="submit"><i class="fa-solid fa-filter me-1"></i>Filtrar</button>
-            </div>
+            <button class="btn btn-outline-primary" type="submit" id="faithWordBulkBtn"><i class="fa-solid fa-file-import me-1"></i>Importar palavras</button>
           </form>
 
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead>
-                <tr>
-                  <th style="width:170px;">Referência</th>
-                  <th>Texto</th>
-                  <th style="width:120px;">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php if (empty($words)): ?>
-                  <tr><td colspan="3" class="text-center text-muted py-4">Nenhuma palavra cadastrada.</td></tr>
-                <?php else: ?>
-                  <?php foreach ($words as $word): ?>
-                    <tr>
-                      <td><strong><?php echo htmlspecialchars((string) ($word['reference_text'] ?? '')); ?></strong></td>
-                      <td><?php echo nl2br(htmlspecialchars((string) ($word['verse_text'] ?? ''))); ?></td>
-                      <td>
-                        <div class="d-flex align-items-center gap-1 flex-nowrap">
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-secondary js-edit-faith-word-btn"
-                            data-id="<?php echo (int) ($word['id'] ?? 0); ?>"
-                            data-reference="<?php echo htmlspecialchars((string) ($word['reference_text'] ?? '')); ?>"
-                            data-text="<?php echo htmlspecialchars((string) ($word['verse_text'] ?? '')); ?>"
-                            data-bs-toggle="modal"
-                            data-bs-target="#editFaithWordModal"
-                            title="Editar"
-                          >
-                            <i class="fa-solid fa-pen"></i>
-                          </button>
-
-                          <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-faith-words-delete" class="m-0 js-delete-faith-word-form">
-                            <input type="hidden" name="id" value="<?php echo (int) ($word['id'] ?? 0); ?>">
-                            <button class="btn btn-sm btn-outline-danger js-delete-faith-word-btn" type="submit" title="Excluir">
-                              <i class="fa-solid fa-trash"></i>
-                            </button>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </tbody>
-            </table>
-          </div>
+          <div class="small text-muted mb-1">Exemplo de JSON:</div>
+          <pre class="messenger-json-example mb-0">[
+  {"reference":"João 3:16","text":"Porque Deus amou o mundo de tal maneira..."},
+  {"reference":"Salmos 23:1","text":"O Senhor é o meu pastor; nada me faltará."}
+]</pre>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body pb-0">
+      <form method="GET" action="<?php echo $appUrl; ?>/dashboard.php" class="row g-2 align-items-end">
+        <input type="hidden" name="action" value="therapist-faith-words">
+        <div class="col-12 col-md-10">
+          <label class="form-label mb-1">Buscar</label>
+          <input class="form-control" type="search" name="q" value="<?php echo htmlspecialchars((string) ($filters['q'] ?? '')); ?>" placeholder="Referência ou trecho do versículo...">
+        </div>
+        <div class="col-12 col-md-2 d-grid">
+          <button class="btn btn-dark" type="submit"><i class="fa-solid fa-filter me-1"></i>Filtrar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th style="width:170px;">Referência</th>
+              <th>Texto</th>
+              <th style="width:120px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php if (empty($words)): ?>
+              <tr><td colspan="3" class="text-center text-muted py-4">Nenhuma palavra cadastrada.</td></tr>
+            <?php else: ?>
+              <?php foreach ($words as $word): ?>
+                <tr>
+                  <td><strong><?php echo htmlspecialchars((string) ($word['reference_text'] ?? '')); ?></strong></td>
+                  <td><?php echo nl2br(htmlspecialchars((string) ($word['verse_text'] ?? ''))); ?></td>
+                  <td>
+                    <div class="d-flex align-items-center gap-1 flex-nowrap">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary js-edit-faith-word-btn"
+                        data-id="<?php echo (int) ($word['id'] ?? 0); ?>"
+                        data-reference="<?php echo htmlspecialchars((string) ($word['reference_text'] ?? '')); ?>"
+                        data-text="<?php echo htmlspecialchars((string) ($word['verse_text'] ?? '')); ?>"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editFaithWordModal"
+                        title="Editar"
+                      >
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
+
+                      <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-faith-words-delete" class="m-0 js-delete-faith-word-form">
+                        <input type="hidden" name="id" value="<?php echo (int) ($word['id'] ?? 0); ?>">
+                        <button class="btn btn-sm btn-outline-danger js-delete-faith-word-btn" type="submit" title="Excluir">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
