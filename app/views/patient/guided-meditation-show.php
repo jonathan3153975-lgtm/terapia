@@ -1,6 +1,5 @@
 <?php
 $title = 'Meditação guiada';
-$hasTherapistLogo = !empty($therapist['company_logo_path']);
 include __DIR__ . '/../partials/header.php';
 include __DIR__ . '/../partials/nav.php';
 ?>
@@ -31,7 +30,7 @@ include __DIR__ . '/../partials/nav.php';
     </div>
   </section>
 
-  <section id="guidedDeckSection" class="card guided-deck-card d-none<?php echo $hasTherapistLogo ? ' has-therapist-logo' : ''; ?>" style="<?php echo $hasTherapistLogo ? ('--therapist-logo-bg: url(' . htmlspecialchars($appUrl . '/' . ltrim((string) $therapist['company_logo_path'], '/')) . ');') : ''; ?>">
+  <section id="guidedDeckSection" class="card guided-deck-card d-none">
     <div class="card-body p-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <h5 class="mb-0">Escolha uma carta de cura</h5>
@@ -44,14 +43,12 @@ include __DIR__ . '/../partials/nav.php';
             <span class="guided-card-inner">
               <span class="guided-card-face guided-card-front">
                 <span class="guided-card-front-shell">
-                  <span class="guided-card-logo-mark<?php echo $hasTherapistLogo ? ' has-logo' : ''; ?>"<?php echo $hasTherapistLogo ? ' aria-label="Logotipo do terapeuta"' : ''; ?>><?php echo $hasTherapistLogo ? '' : 'Logo do terapeuta'; ?></span>
                   <span class="guided-card-front-label">Carta de cura</span>
                   <span class="guided-card-front-copy">Toque para revelar a sua mensagem</span>
                 </span>
               </span>
               <span class="guided-card-face guided-card-back">
                 <span class="guided-card-back-shell">
-                  <small class="guided-card-back-category"></small>
                   <strong class="guided-card-back-text"></strong>
                 </span>
               </span>
@@ -143,15 +140,7 @@ window.addEventListener('load', function () {
     }
     if (noteInput) {
       noteInput.value = '';
-      noteInput.focus();
     }
-
-    window.setTimeout(function () {
-      if (reflectionSection) {
-        var y = reflectionSection.getBoundingClientRect().top + window.scrollY - 16;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-      }
-    }, 160);
   };
 
   var formatCategory = function (raw) {
@@ -253,11 +242,7 @@ window.addEventListener('load', function () {
             deckHint.textContent = 'Carta revelada. Respire fundo e escreva sua reflexão.';
           }
 
-          var slotCategoryEl = slot ? slot.querySelector('.guided-card-back-category') : null;
           var slotTextEl = slot ? slot.querySelector('.guided-card-back-text') : null;
-          if (slotCategoryEl) {
-            slotCategoryEl.textContent = formatCategory(letter.category);
-          }
           if (slotTextEl) {
             slotTextEl.textContent = letter.text || '';
           }
