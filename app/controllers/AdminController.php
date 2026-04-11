@@ -25,6 +25,80 @@ class AdminController extends Controller
         $this->fileModel = new FileStorage();
     }
 
+    private function therapistLogoUploadBasePath(): string
+    {
+        $uploadBase = dirname(__DIR__, 2) . '/uploads/therapist-logos';
+        if (!is_dir($uploadBase)) {
+            @mkdir($uploadBase, 0775, true);
+        }
+
+        return $uploadBase;
+    }
+
+    private function storeTherapistLogoFromRequest(string $fieldName = 'company_logo'): array
+    {
+        if (!isset($_FILES[$fieldName]) || (int) ($_FILES[$fieldName]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return [
+                'name' => null,
+                'path' => null,
+                'uploaded' => false,
+                'invalid' => false,
+            ];
+        }
+
+        $tmpName = (string) ($_FILES[$fieldName]['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            return [
+                'name' => null,
+                'path' => null,
+                'uploaded' => false,
+                'invalid' => true,
+            ];
+        }
+
+        $originalName = trim((string) ($_FILES[$fieldName]['name'] ?? ''));
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'], true)) {
+            return [
+                'name' => null,
+                'path' => null,
+                'uploaded' => false,
+                'invalid' => true,
+            ];
+        }
+
+        $safeFile = uniqid('therapist_logo_', true) . '.' . $ext;
+        $target = $this->therapistLogoUploadBasePath() . '/' . $safeFile;
+        if (!@move_uploaded_file($tmpName, $target)) {
+            return [
+                'name' => null,
+                'path' => null,
+                'uploaded' => false,
+                'invalid' => true,
+            ];
+        }
+
+        return [
+            'name' => $originalName,
+            'path' => 'uploads/therapist-logos/' . $safeFile,
+            'uploaded' => true,
+            'invalid' => false,
+        ];
+    }
+
+    private function deleteTherapistLogoIfExists(string $relativePath): void
+    {
+        $relativePath = trim($relativePath);
+        if ($relativePath === '') {
+            return;
+        }
+
+        $absolute = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        if (is_file($absolute)) {
+            @unlink($absolute);
+        }
+    }
+
     public function dashboard(): void
     {
         $this->view('admin/dashboard', [
@@ -123,6 +197,14 @@ class AdminController extends Controller
             $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'Email ja cadastrado.'));
         }
 
+        $logo = $this->storeTherapistLogoFromRequest('company_logo');
+        if ($logo['invalid'] === true) {
+            if ($isAjax) {
+                $this->error('Logo invalido. Use jpg, png, webp, gif ou svg.');
+            }
+            $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'Logo invalido. Use jpg, png, webp, gif ou svg.'));
+        }
+
         $inserted = $this->userModel->insert([
             'name' => $name,
             'cpf' => $cpf,
@@ -132,10 +214,15 @@ class AdminController extends Controller
             'role' => 'therapist',
             'status' => 'active',
             'plan_type' => 'mensal',
+            'company_logo_name' => $logo['name'],
+            'company_logo_path' => $logo['path'],
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
         if (!$inserted) {
+            if ($logo['uploaded'] === true) {
+                $this->deleteTherapistLogoIfExists((string) ($logo['path'] ?? ''));
+            }
             if ($isAjax) {
                 $this->error('Falha ao cadastrar terapeuta');
             }
@@ -211,6 +298,21 @@ class AdminController extends Controller
             $status = 'active';
         }
 
+        $logo = $this->storeTherapistLogoFromRequest('company_logo');
+        if ($logo['invalid'] === true) {
+            if ($isAjax) {
+                $this->error('Logo inválido. Use jpg, png, webp, gif ou svg.');
+            }
+            $this->redirect($redirectWithStatus($redirectEditBase, 'error', 'Logo inválido. Use jpg, png, webp, gif ou svg.'));
+        }
+
+        $newLogoName = (string) ($therapist['company_logo_name'] ?? '');
+        $newLogoPath = (string) ($therapist['company_logo_path'] ?? '');
+        if ($logo['uploaded'] === true) {
+            $newLogoName = (string) ($logo['name'] ?? '');
+            $newLogoPath = (string) ($logo['path'] ?? '');
+        }
+
         $updated = $this->userModel->updateById($therapistId, [
             'name' => $name,
             'cpf' => $cpf,
@@ -218,13 +320,22 @@ class AdminController extends Controller
             'email' => $email,
             'plan_type' => $planType,
             'status' => $status,
+            'company_logo_name' => $newLogoName !== '' ? $newLogoName : null,
+            'company_logo_path' => $newLogoPath !== '' ? $newLogoPath : null,
         ]);
 
         if (!$updated) {
+            if ($logo['uploaded'] === true) {
+                $this->deleteTherapistLogoIfExists((string) ($logo['path'] ?? ''));
+            }
             if ($isAjax) {
                 $this->error('Falha ao atualizar terapeuta');
             }
             $this->redirect($redirectWithStatus($redirectEditBase, 'error', 'Falha ao atualizar terapeuta.'));
+        }
+
+        if ($logo['uploaded'] === true) {
+            $this->deleteTherapistLogoIfExists((string) ($therapist['company_logo_path'] ?? ''));
         }
 
         if ($isAjax) {

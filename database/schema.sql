@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
   therapist_id INT NULL,
   patient_id INT NULL,
   plan_type VARCHAR(30) NULL,
+  company_logo_name VARCHAR(255) NULL,
+  company_logo_path VARCHAR(500) NULL,
   status ENUM('active','inactive') DEFAULT 'active',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

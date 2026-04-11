@@ -89,6 +89,7 @@ match ($action) {
     'therapist-faith-words-delete' => (new TherapistController())->deleteFaithWord(),
     'therapist-guided-meditations' => (new TherapistController())->guidedMeditations(),
     'therapist-guided-meditations-store' => (new TherapistController())->storeGuidedMeditation(),
+    'therapist-guided-meditations-update' => (new TherapistController())->updateGuidedMeditation(),
     'therapist-guided-meditations-delete' => (new TherapistController())->deleteGuidedMeditation(),
     'therapist-healing-letters' => (new TherapistController())->healingLetters(),
     'therapist-healing-letters-store' => (new TherapistController())->storeHealingLetter(),

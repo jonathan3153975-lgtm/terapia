@@ -663,6 +663,91 @@ class TherapistController extends Controller
         $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=success&msg=' . urlencode('Meditação guiada cadastrada com sucesso.'));
     }
 
+    public function updateGuidedMeditation(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_POST['id'] ?? 0);
+        $title = trim((string) ($_POST['title'] ?? ''));
+
+        if ($id <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Registro inválido para edição.'));
+        }
+
+        if ($title === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Título é obrigatório.'));
+        }
+
+        $current = $this->guidedMeditationModel->findByTherapistAndId($therapistId, $id);
+        if (!$current) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Meditação não encontrada.'));
+        }
+
+        $newImageName = (string) ($current['reference_image_name'] ?? '');
+        $newImagePath = (string) ($current['reference_image_path'] ?? '');
+        $newAudioName = (string) ($current['audio_name'] ?? '');
+        $newAudioPath = (string) ($current['audio_path'] ?? '');
+
+        $hasImageUpload = isset($_FILES['reference_image']) && (int) ($_FILES['reference_image']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK;
+        $hasAudioUpload = isset($_FILES['audio_file']) && (int) ($_FILES['audio_file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK;
+
+        $newImage = null;
+        if ($hasImageUpload) {
+            $newImage = $this->storeGuidedMeditationImageFromRequest();
+            if (!empty($newImage['path'])) {
+                $newImageName = (string) ($newImage['name'] ?? '');
+                $newImagePath = (string) ($newImage['path'] ?? '');
+            }
+        }
+
+        $newAudio = null;
+        if ($hasAudioUpload) {
+            $newAudio = $this->storeGuidedMeditationAudioFromRequest();
+            if (empty($newAudio['path'])) {
+                if ($newImage !== null && !empty($newImage['path'])) {
+                    $this->deleteGuidedMeditationFileIfExists((string) $newImage['path']);
+                }
+
+                $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Anexe um arquivo de áudio válido (.mp3, .wav, .ogg, .m4a).'));
+            }
+
+            $newAudioName = (string) ($newAudio['name'] ?? '');
+            $newAudioPath = (string) ($newAudio['path'] ?? '');
+        }
+
+        $updated = $this->guidedMeditationModel->updateById($id, [
+            'title' => $title,
+            'reference_image_name' => $newImageName !== '' ? $newImageName : null,
+            'reference_image_path' => $newImagePath !== '' ? $newImagePath : null,
+            'audio_name' => $newAudioName,
+            'audio_path' => $newAudioPath,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            if ($newImage !== null && !empty($newImage['path'])) {
+                $this->deleteGuidedMeditationFileIfExists((string) $newImage['path']);
+            }
+            if ($newAudio !== null && !empty($newAudio['path'])) {
+                $this->deleteGuidedMeditationFileIfExists((string) $newAudio['path']);
+            }
+
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=error&msg=' . urlencode('Falha ao atualizar meditação.'));
+        }
+
+        if ($newImage !== null && !empty($newImage['path'])) {
+            $this->deleteGuidedMeditationFileIfExists((string) ($current['reference_image_path'] ?? ''));
+        }
+        if ($newAudio !== null && !empty($newAudio['path'])) {
+            $this->deleteGuidedMeditationFileIfExists((string) ($current['audio_path'] ?? ''));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=success&msg=' . urlencode('Meditação atualizada com sucesso.'));
+    }
+
     public function deleteGuidedMeditation(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

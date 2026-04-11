@@ -8,6 +8,16 @@
   <div class="card">
     <div class="card-body">
       <div class="row g-3">
+        <div class="col-md-12">
+          <strong>Logo da empresa:</strong>
+          <?php if (!empty($therapist['company_logo_path'])): ?>
+            <div class="mt-2">
+              <img src="<?php echo $appUrl . '/' . ltrim((string) $therapist['company_logo_path'], '/'); ?>" alt="Logo da empresa" class="guided-table-thumb" style="width: 120px; height: 120px; border-radius: 14px;">
+            </div>
+          <?php else: ?>
+            <span class="text-muted">Não informado</span>
+          <?php endif; ?>
+        </div>
         <div class="col-md-6"><strong>Nome:</strong> <?php echo htmlspecialchars((string) $therapist['name']); ?></div>
         <div class="col-md-3"><strong>CPF:</strong> <?php echo htmlspecialchars((string) ($therapist['cpf'] ?? '-')); ?></div>
         <div class="col-md-3"><strong>Telefone:</strong> <?php echo htmlspecialchars((string) ($therapist['phone'] ?? '-')); ?></div>

@@ -7,12 +7,23 @@
           <?php include __DIR__ . '/../../partials/flash-alert.php'; ?>
 
           <h4 class="mb-3">Cadastrar terapeuta</h4>
-          <form id="therapistForm" action="<?php echo $appUrl; ?>/dashboard.php?action=therapists-store" method="POST">
+          <form id="therapistForm" action="<?php echo $appUrl; ?>/dashboard.php?action=therapists-store" method="POST" enctype="multipart/form-data">
             <div class="row g-3">
               <div class="col-md-6"><label class="form-label">Nome</label><input class="form-control" name="name" required></div>
               <div class="col-md-6"><label class="form-label">CPF</label><input class="form-control mask-cpf" name="cpf" required></div>
               <div class="col-md-6"><label class="form-label">Telefone</label><input class="form-control mask-phone" name="phone" required></div>
               <div class="col-md-6"><label class="form-label">E-mail</label><input class="form-control" type="email" name="email" required></div>
+              <div class="col-md-12">
+                <label class="form-label">Logo da empresa (opcional)</label>
+                <input class="form-control" type="file" name="company_logo" id="companyLogoInput" accept="image/*,.svg">
+                <div class="form-text">Formatos aceitos: jpg, png, webp, gif e svg.</div>
+              </div>
+              <div class="col-md-12">
+                <div class="guided-image-preview" id="companyLogoPreviewBox">
+                  <img id="companyLogoPreview" alt="Pré-visualização do logo">
+                  <span id="companyLogoPreviewHint">Pré-visualização do logo</span>
+                </div>
+              </div>
               <div class="col-md-12">
                 <label class="form-label">Senha</label>
                 <div class="input-group">
@@ -34,6 +45,34 @@
 <script>
 window.addEventListener('load', function() {
   $('#btnPwd').on('click', function(){ $('#pwd').val(generatePassword()); });
+
+  const logoInput = document.getElementById('companyLogoInput');
+  const logoPreview = document.getElementById('companyLogoPreview');
+  const logoPreviewHint = document.getElementById('companyLogoPreviewHint');
+  const logoPreviewBox = document.getElementById('companyLogoPreviewBox');
+
+  if (logoInput && logoPreview && logoPreviewHint && logoPreviewBox) {
+    logoInput.addEventListener('change', function() {
+      const file = logoInput.files && logoInput.files[0] ? logoInput.files[0] : null;
+      if (!file) {
+        logoPreview.removeAttribute('src');
+        logoPreview.classList.remove('is-visible');
+        logoPreviewHint.classList.remove('d-none');
+        logoPreviewBox.classList.remove('has-image');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        logoPreview.setAttribute('src', String((event.target && event.target.result) || ''));
+        logoPreview.classList.add('is-visible');
+        logoPreviewHint.classList.add('d-none');
+        logoPreviewBox.classList.add('has-image');
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   $('#therapistForm').on('submit', function(e){
     e.preventDefault();
     const form = this;
@@ -43,7 +82,9 @@ window.addEventListener('load', function() {
     $.ajax({
       url: form.action,
       method: 'POST',
-      data: $(form).serialize(),
+      data: new FormData(form),
+      processData: false,
+      contentType: false,
       headers: {'X-Requested-With':'XMLHttpRequest'},
       success: function(res){
         if (res.success) { window.location.href = res.redirect; return; }

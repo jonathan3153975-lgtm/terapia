@@ -37,7 +37,7 @@
     <div class="col-12 col-xl-7">
       <div class="card h-100">
         <div class="card-body">
-          <h5 class="card-title mb-2">Importacao em massa (JSON)</h5>
+          <h5 class="card-title mb-2">Importação em massa (JSON)</h5>
           <p class="text-muted small mb-3">Envie um arquivo JSON com array de cartas ou objeto com chave <code>letters</code>.</p>
           <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-healing-letters-bulk" enctype="multipart/form-data" class="mb-3">
             <div class="mb-3">
@@ -89,7 +89,7 @@
               <th style="width: 140px;">Categoria</th>
               <th>Carta</th>
               <th style="width: 180px;">Criada em</th>
-              <th style="width: 140px;">Acoes</th>
+              <th style="width: 140px;">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -149,7 +149,7 @@
 
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title mb-3">Reflexoes compartilhadas no baralho</h5>
+      <h5 class="card-title mb-3">Reflexões compartilhadas no baralho</h5>
       <?php if (empty($sharedEntries)): ?>
         <p class="text-muted mb-0">Nenhuma reflexão compartilhada até o momento.</p>
       <?php else: ?>
@@ -161,9 +161,9 @@
                   <strong><?php echo htmlspecialchars((string) ($entry['patient_name'] ?? 'Paciente')); ?></strong>
                   <span class="small text-muted"><?php echo !empty($entry['created_at']) ? date('d/m/Y H:i', strtotime((string) $entry['created_at'])) : '-'; ?></span>
                 </div>
-                <div class="small text-muted mb-1"><?php echo htmlspecialchars((string) ($entry['meditation_title'] ?? 'Meditacao')); ?></div>
+                <div class="small text-muted mb-1"><?php echo htmlspecialchars((string) ($entry['meditation_title'] ?? 'Meditação')); ?></div>
                 <p class="mb-2"><?php echo nl2br(htmlspecialchars((string) ($entry['letter_text'] ?? ''))); ?></p>
-                <div class="small text-muted mb-1">Reflexao</div>
+                <div class="small text-muted mb-1">Reflexão</div>
                 <p class="mb-0"><?php echo nl2br(htmlspecialchars((string) ($entry['patient_note'] ?? ''))); ?></p>
               </article>
             </div>

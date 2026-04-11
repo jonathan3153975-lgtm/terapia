@@ -1,9 +1,9 @@
-<?php $title = 'Meditacao guiada'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
+<?php $title = 'Meditação guiada'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
 <div class="container page-wrap guided-page">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
   <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-    <h3 class="mb-0"><?php echo htmlspecialchars((string) ($meditation['title'] ?? 'Meditacao guiada')); ?></h3>
+    <h3 class="mb-0"><?php echo htmlspecialchars((string) ($meditation['title'] ?? 'Meditação guiada')); ?></h3>
     <a class="btn btn-outline-secondary" href="<?php echo $appUrl; ?>/patient.php?action=guided-meditations"><i class="fa-solid fa-arrow-left me-1"></i>Voltar para lista</a>
   </div>
 
@@ -11,7 +11,7 @@
     <div class="guided-hero-overlay">
       <div class="guided-hero-copy">
         <h4 class="mb-2">Feche os olhos por alguns segundos e se permita respirar.</h4>
-        <p class="mb-0">Ouça a meditação completa para liberar o baralho com sua carta de cura.</p>
+        <p class="mb-0">Ouça a meditação completa para liberar a sua carta de cura.</p>
       </div>
     </div>
   </section>
@@ -22,7 +22,7 @@
       <audio id="guidedMeditationAudio" controls preload="metadata" class="w-100">
         <source src="<?php echo $appUrl . '/' . ltrim((string) ($meditation['audio_path'] ?? ''), '/'); ?>">
       </audio>
-      <div class="small text-muted mt-2">Ao finalizar o audio, o baralho sera liberado automaticamente.</div>
+      <div class="small text-muted mt-2">Ao finalizar o áudio, o baralho será liberado automaticamente.</div>
     </div>
   </section>
 
@@ -33,21 +33,21 @@
         <span id="guidedDeckHint" class="small text-muted">Clique em uma carta para revelar sua mensagem.</span>
       </div>
 
-      <div id="guidedDeckGrid" class="guided-deck-grid" role="button" aria-label="Baralho de cartas de cura">
-        <button type="button" class="guided-card-slot" aria-label="Carta 1"><span></span></button>
-        <button type="button" class="guided-card-slot" aria-label="Carta 2"><span></span></button>
-        <button type="button" class="guided-card-slot" aria-label="Carta 3"><span></span></button>
-        <button type="button" class="guided-card-slot" aria-label="Carta 4"><span></span></button>
-        <button type="button" class="guided-card-slot" aria-label="Carta 5"><span></span></button>
-        <button type="button" class="guided-card-slot" aria-label="Carta 6"><span></span></button>
+      <div id="guidedDeckGrid" class="guided-deck-grid" aria-label="Baralho de cartas de cura">
+        <?php for ($i = 1; $i <= 6; $i++): ?>
+          <button type="button" class="guided-card-slot" aria-label="Carta <?php echo $i; ?>">
+            <span class="guided-card-inner">
+              <span class="guided-card-face guided-card-front">
+                <span class="guided-card-logo-mark">Logo do terapeuta</span>
+              </span>
+              <span class="guided-card-face guided-card-back">
+                <small class="guided-card-back-category"></small>
+                <strong class="guided-card-back-text"></strong>
+              </span>
+            </span>
+          </button>
+        <?php endfor; ?>
       </div>
-    </div>
-  </section>
-
-  <section id="guidedLetterResult" class="guided-letter-result card d-none" aria-live="polite">
-    <div class="card-body p-4 p-lg-5">
-      <div class="small text-muted mb-2">Carta revelada</div>
-      <p id="guidedLetterText" class="guided-letter-text mb-0"></p>
     </div>
   </section>
 
@@ -77,7 +77,7 @@
 
   <section class="card">
     <div class="card-body p-4">
-      <h5 class="card-title mb-3">Historico desta meditação</h5>
+      <h5 class="card-title mb-3">Histórico desta meditação</h5>
       <?php if (empty($entries)): ?>
         <div class="messenger-empty-state">
           <i class="fa-regular fa-bookmark"></i>
@@ -112,8 +112,6 @@ window.addEventListener('load', function () {
   var audio = document.getElementById('guidedMeditationAudio');
   var deckSection = document.getElementById('guidedDeckSection');
   var deckGrid = document.getElementById('guidedDeckGrid');
-  var resultCard = document.getElementById('guidedLetterResult');
-  var letterTextEl = document.getElementById('guidedLetterText');
   var reflectionSection = document.getElementById('guidedReflectionSection');
   var deckHint = document.getElementById('guidedDeckHint');
 
@@ -127,6 +125,23 @@ window.addEventListener('load', function () {
   var meditationId = <?php echo (int) ($meditation['id'] ?? 0); ?>;
   var drawInFlight = false;
   var letterRevealed = false;
+
+  var formatCategory = function (raw) {
+    var value = String(raw || '').toLowerCase();
+    if (value === 'reflexivas') {
+      return 'Reflexivas';
+    }
+    if (value === 'cura') {
+      return 'Cura';
+    }
+    if (value === 'motivacionais') {
+      return 'Motivacionais';
+    }
+    if (value === 'conflitos') {
+      return 'Conflitos';
+    }
+    return 'Dores';
+  };
 
   var unlockDeck = function () {
     if (deckSection) {
@@ -184,7 +199,7 @@ window.addEventListener('load', function () {
         .then(function (response) {
           return response.json().catch(function () { return {}; }).then(function (payload) {
             if (!response.ok || !payload.success) {
-              throw new Error(payload.message || 'Nao foi possivel revelar carta agora.');
+              throw new Error(payload.message || 'Não foi possível revelar carta agora.');
             }
             return payload;
           });
@@ -192,19 +207,25 @@ window.addEventListener('load', function () {
         .then(function (payload) {
           var letter = payload.data && payload.data.letter ? payload.data.letter : null;
           if (!letter) {
-            throw new Error('Resposta invalida ao revelar carta.');
+            throw new Error('Resposta inválida ao revelar carta.');
           }
 
           letterRevealed = true;
+          drawInFlight = false;
           if (slot) {
-            slot.classList.add('is-revealed');
+            slot.classList.add('is-spotlight');
           }
           if (deckHint) {
             deckHint.textContent = 'Carta revelada. Respire fundo e escreva sua reflexão.';
           }
 
-          if (letterTextEl) {
-            letterTextEl.textContent = letter.text || '';
+          var slotCategoryEl = slot ? slot.querySelector('.guided-card-back-category') : null;
+          var slotTextEl = slot ? slot.querySelector('.guided-card-back-text') : null;
+          if (slotCategoryEl) {
+            slotCategoryEl.textContent = formatCategory(letter.category);
+          }
+          if (slotTextEl) {
+            slotTextEl.textContent = letter.text || '';
           }
           if (letterIdInput) {
             letterIdInput.value = letter.id || '';
@@ -216,28 +237,32 @@ window.addEventListener('load', function () {
             letterTextInput.value = letter.text || '';
           }
 
-          if (resultCard) {
-            resultCard.classList.remove('d-none');
-            resultCard.classList.add('is-visible');
-          }
-          if (reflectionSection) {
-            reflectionSection.classList.remove('d-none');
-          }
-          if (noteInput) {
-            noteInput.value = '';
-            noteInput.focus();
-          }
-
           window.setTimeout(function () {
-            if (resultCard) {
-              var y = resultCard.getBoundingClientRect().top + window.scrollY - 16;
-              window.scrollTo({ top: y, behavior: 'smooth' });
+            if (slot) {
+              slot.classList.add('is-flipped');
             }
-          }, 120);
+
+            if (reflectionSection) {
+              reflectionSection.classList.remove('d-none');
+            }
+            if (noteInput) {
+              noteInput.value = '';
+              noteInput.focus();
+            }
+
+            window.setTimeout(function () {
+              if (reflectionSection) {
+                var y = reflectionSection.getBoundingClientRect().top + window.scrollY - 16;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+              }
+            }, 160);
+          }, 420);
         })
         .catch(function (error) {
           drawInFlight = false;
           slot.classList.remove('is-picked');
+          slot.classList.remove('is-spotlight');
+          slot.classList.remove('is-flipped');
           slots.forEach(function (el) {
             el.classList.remove('is-faded');
           });
