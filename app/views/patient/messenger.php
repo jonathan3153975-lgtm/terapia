@@ -2,30 +2,11 @@
 <div class="container page-wrap messenger-page">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
-  <section class="messenger-hero messenger-hero--patient card mb-4">
-    <div class="card-body p-4 p-lg-5">
-      <div class="messenger-hero-grid">
-        <div>
-          <span class="messenger-kicker">Mensageiro</span>
-          <h3 class="messenger-hero-title mb-2">Abra a mensagem que chegou para você hoje</h3>
-          <p class="messenger-hero-copy mb-3">Essa mensagem vai falar ao seu coracao. Observe como seu corpo reage quando voce ler isso. Se voce se sentir confortavel e quiser registrar seus pensamentos, escreva sua reflexao e salve para voltar aos seus pensamentos em outro momento.</p>
-        </div>
-
-        <div class="messenger-draw-panel">
-          <div id="messengerDrawStage" class="messenger-draw-stage">
-            <div class="messenger-orb"></div>
-            <div class="messenger-chest">
-              <div class="messenger-chest-lid"></div>
-              <div class="messenger-chest-body"></div>
-              <div class="messenger-chest-glow"></div>
-            </div>
-          </div>
-          <button id="drawMessageBtn" class="btn btn-dark messenger-draw-btn" type="button" <?php echo ((int) ($totalMessages ?? 0) <= 0) ? 'disabled' : ''; ?>>
-            <i class="fa-solid fa-box-open me-1"></i>Abrir mensagem
-          </button>
-          <div class="small text-muted text-center">Leia com calma. Depois, registre sua reflexão.</div>
-        </div>
-      </div>
+  <section class="messenger-hero-image mb-4" style="background-image: url('<?php echo $appUrl; ?>/app/images/mensageiro.png');">
+    <div class="messenger-hero-overlay">
+      <button id="drawMessageBtn" class="btn btn-dark messenger-draw-btn" type="button" <?php echo ((int) ($totalMessages ?? 0) <= 0) ? 'disabled' : ''; ?>>
+        <i class="fa-solid fa-box-open me-1"></i>Abrir mensagem
+      </button>
     </div>
   </section>
 
@@ -102,7 +83,6 @@
 <script>
 window.addEventListener('load', function () {
   var drawBtn = document.getElementById('drawMessageBtn');
-  var drawStage = document.getElementById('messengerDrawStage');
   var drawResultCard = document.getElementById('drawResultCard');
   var drawMessageText = document.getElementById('drawMessageText');
   var drawCycleHint = document.getElementById('drawCycleHint');
@@ -215,10 +195,6 @@ window.addEventListener('load', function () {
     }
 
     setDrawButtonBusy();
-    if (drawStage) {
-      drawStage.classList.remove('is-revealed');
-      drawStage.classList.add('is-drawing');
-    }
 
     if (drawResultCard) {
       drawResultCard.classList.remove('is-revealed');
@@ -259,10 +235,6 @@ window.addEventListener('load', function () {
           throw new Error('Resposta inválida ao abrir mensagem.');
         }
 
-        if (drawStage) {
-          drawStage.classList.remove('is-drawing');
-          drawStage.classList.add('is-revealed');
-        }
         if (drawResultCard) {
           drawResultCard.classList.add('is-revealed');
         }
@@ -299,9 +271,6 @@ window.addEventListener('load', function () {
         });
       })
       .catch(function (error) {
-        if (drawStage) {
-          drawStage.classList.remove('is-drawing');
-        }
         if (drawMessageText) {
           drawMessageText.textContent = error.message || 'Erro ao abrir o baú.';
         }

@@ -632,6 +632,26 @@ body.app-body {
 	gap: 18px;
 }
 
+.messenger-hero-image {
+	position: relative;
+	min-height: 420px;
+	border-radius: 20px;
+	overflow: hidden;
+	background-size: cover;
+	background-position: center;
+	border: 1px solid rgba(255, 255, 255, .32);
+	box-shadow: 0 20px 34px rgba(15, 23, 42, .16);
+}
+
+.messenger-hero-overlay {
+	position: absolute;
+	inset: 0;
+	padding: 22px;
+	background: linear-gradient(135deg, rgba(6, 22, 38, .28), rgba(6, 22, 38, .08) 56%, rgba(6, 22, 38, .34));
+	display: grid;
+	align-content: stretch;
+}
+
 .messenger-hero {
 	position: relative;
 	overflow: hidden;
@@ -773,10 +793,12 @@ body.app-body {
 }
 
 .messenger-draw-btn {
-	min-width: 220px;
+	min-width: 240px;
 	padding: 13px 20px;
 	border-radius: 999px;
 	font-weight: 700;
+	justify-self: end;
+	align-self: end;
 }
 
 .messenger-reveal {
@@ -995,13 +1017,23 @@ body.app-body {
 		grid-template-columns: 1fr;
 	}
 
+	.messenger-hero-image {
+		min-height: 310px;
+	}
+
+	.messenger-hero-overlay {
+		padding: 14px;
+	}
+
 	.messenger-hero-select {
 		min-width: 0;
 		width: 100%;
 	}
 
 	.messenger-draw-btn {
+		min-width: 0;
 		width: 100%;
+		justify-self: stretch;
 	}
 
 	.father-word-hero-image {
@@ -1024,6 +1056,10 @@ body.app-body {
 }
 
 @media (min-width: 1200px) {
+	.messenger-hero-image {
+		min-height: 520px;
+	}
+
 	.father-word-hero-image {
 		min-height: 520px;
 	}
