@@ -14,6 +14,7 @@ use App\Models\Patient;
 use App\Models\PatientFaithEntry;
 use App\Models\PatientGuidedMeditationEntry;
 use App\Models\PatientMessageEntry;
+use App\Models\PatientSignupLink;
 use App\Models\Payment;
 use App\Models\Task;
 use App\Models\User;
@@ -43,6 +44,7 @@ class TherapistController extends Controller
     private GuidedMeditation $guidedMeditationModel;
     private HealingLetter $healingLetterModel;
     private PatientGuidedMeditationEntry $patientGuidedMeditationEntryModel;
+    private PatientSignupLink $patientSignupLinkModel;
 
     public function __construct()
     {
@@ -62,19 +64,44 @@ class TherapistController extends Controller
         $this->guidedMeditationModel = new GuidedMeditation();
         $this->healingLetterModel = new HealingLetter();
         $this->patientGuidedMeditationEntryModel = new PatientGuidedMeditationEntry();
+        $this->patientSignupLinkModel = new PatientSignupLink();
     }
 
     public function dashboard(): void
     {
         $therapistId = (int) Auth::id();
 
+        $activeSubscriptions = (new \App\Models\PatientSubscription())->countActiveByTherapist($therapistId);
+        $completedAppointments = $this->appointmentModel->countCompletedByTherapist($therapistId);
+        $scheduledAppointments = $this->appointmentModel->countScheduledByTherapist($therapistId);
+        $totalMaterials = $this->materialModel->countByTherapist($therapistId);
+
+        $chartLabels = [];
+        $chartPatients = [];
+        $chartAppointments = [];
+        $chartTasks = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $dt = new \DateTimeImmutable("-{$i} months");
+            $ym = $dt->format('Y-m');
+            $chartLabels[] = $dt->format('m/Y');
+            $chartPatients[] = $this->patientModel->countCreatedInMonthByTherapist($therapistId, $ym);
+            $chartAppointments[] = $this->appointmentModel->countCreatedInMonthByTherapist($therapistId, $ym);
+            $chartTasks[] = $this->taskModel->countCreatedInMonthByTherapist($therapistId, $ym);
+        }
+
         $this->view('therapist/dashboard', [
             'appUrl' => Config::get('APP_URL', ''),
             'totalPatients' => $this->patientModel->countByTherapist($therapistId),
-            'totalAppointments' => $this->appointmentModel->countByTherapist($therapistId),
+            'activePatients' => $activeSubscriptions,
+            'completedAppointments' => $completedAppointments,
+            'scheduledAppointments' => $scheduledAppointments,
+            'totalMaterials' => $totalMaterials,
             'totalTasks' => $this->taskModel->countByTherapist($therapistId),
-            'totalMessages' => $this->dailyMessageModel->countByTherapist($therapistId),
-            'totalFiles' => $this->fileModel->countByTherapist($therapistId),
+            'pendingReviewPatients' => $this->patientModel->countPendingReviewByTherapist($therapistId),
+            'chartLabels' => $chartLabels,
+            'chartPatients' => $chartPatients,
+            'chartAppointments' => $chartAppointments,
+            'chartTasks' => $chartTasks,
         ]);
     }
 
@@ -1980,12 +2007,81 @@ class TherapistController extends Controller
         $term = Utils::sanitize($_GET['search'] ?? '');
         $therapistId = (int) Auth::id();
         $patients = $this->patientModel->searchByTherapist($therapistId, $term);
+        $signupLinks = $this->patientSignupLinkModel->listByTherapist($therapistId, 10);
 
         $this->view('therapist/patients/index', [
             'appUrl' => Config::get('APP_URL', ''),
             'patients' => $patients,
             'search' => $term,
+            'signupLinks' => $signupLinks,
+            'generatedLink' => trim((string) ($_GET['generated_link'] ?? '')),
         ]);
+    }
+
+    public function createPatientSignupLink(): void
+    {
+        $therapistId = (int) Auth::id();
+        $recipientEmail = Utils::sanitize($_POST['recipient_email'] ?? '');
+
+        $token = bin2hex(random_bytes(24));
+        $expiresAt = (new \DateTimeImmutable('+30 days'))->format('Y-m-d H:i:s');
+        $created = $this->patientSignupLinkModel->insert([
+            'therapist_id' => $therapistId,
+            'token' => $token,
+            'recipient_email' => $recipientEmail !== '' ? $recipientEmail : null,
+            'expires_at' => $expiresAt,
+            'used_count' => 0,
+            'max_uses' => 30,
+            'status' => 'active',
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$created) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Falha ao gerar link de cadastro.'));
+        }
+
+        $signupLink = Config::get('APP_URL', '') . '/index.php?action=patient-signup&token=' . urlencode($token);
+        if ($recipientEmail !== '' && Utils::isValidEmail($recipientEmail)) {
+            $therapistName = (string) (Auth::name() ?? 'Terapeuta');
+            try {
+                $mail = new MailService();
+                $mail->send($recipientEmail, 'Paciente', 'Ficha de cadastro do paciente', EmailTemplate::patientSignupInvite($therapistName, $signupLink));
+            } catch (\Throwable $e) {
+                error_log('[patient-signup-link-email] ' . $e->getMessage());
+            }
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=success&msg=' . urlencode('Link criado com sucesso.') . '&generated_link=' . urlencode($signupLink));
+    }
+
+    public function approvePatientReview(): void
+    {
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_POST['id'] ?? 0);
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $okPatient = $this->patientModel->updateById($patientId, [
+            'status' => 'active',
+            'review_status' => 'approved',
+            'approved_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $patientAccess = $this->userModel->findPatientAccessByTherapistAndPatient($therapistId, $patientId);
+        $okUser = true;
+        if ($patientAccess) {
+            $okUser = $this->userModel->updateById((int) $patientAccess['id'], ['status' => 'active']);
+        }
+
+        if (!$okPatient || !$okUser) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Falha ao aprovar cadastro do paciente.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=success&msg=' . urlencode('Cadastro do paciente aprovado com sucesso.'));
     }
 
     public function createPatient(): void

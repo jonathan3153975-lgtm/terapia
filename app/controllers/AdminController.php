@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use App\Models\FileStorage;
 use App\Models\Patient;
+use App\Models\PatientSubscription;
+use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
 use Classes\Controller;
@@ -18,6 +20,8 @@ class AdminController extends Controller
     private Patient $patientModel;
     private FileStorage $fileModel;
     private Plan $planModel;
+    private Payment $paymentModel;
+    private PatientSubscription $patientSubscriptionModel;
 
     public function __construct()
     {
@@ -26,6 +30,8 @@ class AdminController extends Controller
         $this->patientModel = new Patient();
         $this->fileModel = new FileStorage();
         $this->planModel = new Plan();
+        $this->paymentModel = new Payment();
+        $this->patientSubscriptionModel = new PatientSubscription();
     }
 
     private function therapistLogoUploadBasePath(): string
@@ -104,13 +110,38 @@ class AdminController extends Controller
 
     public function dashboard(): void
     {
+        $chartLabels = [];
+        $chartTherapists = [];
+        $chartPatients = [];
+        $chartSubscriptions = [];
+        $chartRevenue = [];
+        $chartStorageMb = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $dt = new \DateTimeImmutable("-{$i} months");
+            $ym = $dt->format('Y-m');
+            $chartLabels[] = $dt->format('m/Y');
+            $chartTherapists[] = $this->userModel->countTherapistsCreatedInMonth($ym);
+            $chartPatients[] = $this->patientModel->countCreatedInMonth($ym);
+            $chartSubscriptions[] = $this->patientSubscriptionModel->countStartedInMonth($ym);
+            $chartRevenue[] = $this->paymentModel->paidAmountInMonth($ym);
+            $chartStorageMb[] = round($this->fileModel->totalBytesInMonth($ym) / (1024 * 1024), 2);
+        }
+
         $this->view('admin/dashboard', [
             'appUrl' => Config::get('APP_URL', ''),
             'totalTherapists' => $this->userModel->countByRole('therapist'),
             'totalPatients' => $this->patientModel->count('1=1'),
-            'activePatients' => $this->patientModel->count("status = 'active'"),
+            'activeSubscriptions' => $this->patientSubscriptionModel->countActiveAll(),
+            'totalReceived' => $this->paymentModel->totalPaidAmountAll(),
             'totalFiles' => $this->fileModel->count('1=1'),
             'usedBytes' => $this->fileModel->totalBytes(),
+            'chartLabels' => $chartLabels,
+            'chartTherapists' => $chartTherapists,
+            'chartPatients' => $chartPatients,
+            'chartSubscriptions' => $chartSubscriptions,
+            'chartRevenue' => $chartRevenue,
+            'chartStorageMb' => $chartStorageMb,
         ]);
     }
 
@@ -192,6 +223,26 @@ class AdminController extends Controller
 
         $msg = $nextStatus === 1 ? 'Pacote ativado com sucesso.' : 'Pacote desativado com sucesso.';
         $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=success&msg=' . urlencode($msg));
+    }
+
+    public function deletePatientPackage(): void
+    {
+        $packageId = (int) ($_POST['id'] ?? 0);
+        $package = $this->planModel->findPatientPlanById($packageId);
+        if (!$package) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=error&msg=' . urlencode('Pacote não encontrado.'));
+        }
+
+        if ($this->planModel->countSubscriptions($packageId) > 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=error&msg=' . urlencode('Este pacote já possui assinaturas e não pode ser excluído.'));
+        }
+
+        $deleted = $this->planModel->deletePatientPlanById($packageId);
+        if (!$deleted) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=error&msg=' . urlencode('Falha ao excluir pacote.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patient-packages&status=success&msg=' . urlencode('Pacote excluído com sucesso.'));
     }
 
     public function createTherapist(): void

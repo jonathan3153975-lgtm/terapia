@@ -8,6 +8,46 @@ class Patient extends Model
 {
     protected string $table = 'patients';
 
+    public function countPendingReviewByTherapist(int $therapistId): int
+    {
+        return $this->count("therapist_id = ? AND review_status = 'pending_review'", [$therapistId]);
+    }
+
+    public function countCreatedInMonthByTherapist(int $therapistId, string $yearMonth): int
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) AS total
+             FROM patients
+             WHERE therapist_id = ?
+               AND DATE_FORMAT(created_at, '%Y-%m') = ?",
+            [$therapistId, $yearMonth]
+        );
+
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    public function countCreatedInMonth(string $yearMonth): int
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) AS total
+             FROM patients
+             WHERE DATE_FORMAT(created_at, '%Y-%m') = ?",
+            [$yearMonth]
+        );
+
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
     public function findByTherapistAndId(int $therapistId, int $patientId): ?array
     {
         $stmt = $this->query('SELECT * FROM patients WHERE therapist_id = ? AND id = ? LIMIT 1', [$therapistId, $patientId]);

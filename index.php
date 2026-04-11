@@ -38,6 +38,7 @@ if (!file_exists($autoload)) {
 require $autoload;
 
 use App\Controllers\AuthController;
+use App\Controllers\PublicPatientSignupController;
 use Config\Config;
 use Helpers\Session;
 
@@ -46,10 +47,14 @@ Session::start();
 
 $action = $_GET['action'] ?? 'login';
 $auth = new AuthController();
+$publicSignup = new PublicPatientSignupController();
 
 match ($action) {
     'login' => $auth->login(),
     'process-login' => $auth->processLogin(),
     'logout' => $auth->logout(),
+    'patient-signup' => $publicSignup->showForm(),
+    'patient-signup-submit' => $publicSignup->submitForm(),
+    'patient-signup-success' => $publicSignup->successPage(),
     default => $auth->login(),
 };

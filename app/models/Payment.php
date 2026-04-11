@@ -8,6 +8,35 @@ class Payment extends Model
 {
     protected string $table = 'payments';
 
+    public function totalPaidAmountAll(): float
+    {
+        $stmt = $this->query("SELECT COALESCE(SUM(amount),0) AS total FROM payments WHERE status = 'paid'");
+        if (!$stmt) {
+            return 0.0;
+        }
+
+        $row = $stmt->fetch();
+        return (float) ($row['total'] ?? 0);
+    }
+
+    public function paidAmountInMonth(string $yearMonth): float
+    {
+        $stmt = $this->query(
+            "SELECT COALESCE(SUM(amount),0) AS total
+             FROM payments
+             WHERE status = 'paid'
+               AND paid_at IS NOT NULL
+               AND DATE_FORMAT(paid_at, '%Y-%m') = ?",
+            [$yearMonth]
+        );
+        if (!$stmt) {
+            return 0.0;
+        }
+
+        $row = $stmt->fetch();
+        return (float) ($row['total'] ?? 0);
+    }
+
     public function findByProviderReference(string $providerReference): ?array
     {
         $stmt = $this->query('SELECT * FROM payments WHERE provider_reference = ? LIMIT 1', [$providerReference]);

@@ -63,4 +63,20 @@ class Plan extends Model
         $row = $stmt->fetch();
         return $row ?: null;
     }
+
+    public function countSubscriptions(int $planId): int
+    {
+        $stmt = $this->query('SELECT COUNT(*) AS total FROM patient_subscriptions WHERE plan_id = ?', [$planId]);
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    public function deletePatientPlanById(int $planId): bool
+    {
+        return (bool) $this->query('DELETE FROM plans WHERE id = ? AND target = "patient"', [$planId]);
+    }
 }

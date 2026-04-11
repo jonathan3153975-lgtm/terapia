@@ -1345,15 +1345,65 @@ body.app-body {
 }
 
 .patient-subscription-card {
-	border: 1px solid rgba(148, 163, 184, .24);
-	background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
-	box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+	border: 1px solid rgba(148, 163, 184, .22);
+	background:
+		radial-gradient(600px 220px at 110% -10%, rgba(56, 189, 248, .14), transparent 60%),
+		linear-gradient(170deg, #ffffff 0%, #f8fafc 52%, #eef6ff 100%);
+	box-shadow: 0 12px 28px rgba(15, 23, 42, .1);
+	transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.patient-subscription-card:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 18px 34px rgba(15, 23, 42, .14);
+		linear-gradient(170deg, #ffffff 0%, #f8fafc 52%, #eef6ff 100%);
+	box-shadow: 0 12px 28px rgba(15, 23, 42, .1);
+	transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.patient-subscription-card:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 18px 34px rgba(15, 23, 42, .14);
 }
 
 .patient-subscription-price {
 	font-size: clamp(1.3rem, 3vw, 1.8rem);
 	font-weight: 800;
 	color: #0f172a;
+}
+
+.login-brand-logo-wrap {
+	width: 88px;
+	height: 88px;
+	border-radius: 18px;
+	background: rgba(255,255,255,.12);
+	border: 1px solid rgba(255,255,255,.24);
+	display: grid;
+	place-items: center;
+}
+
+.login-brand-logo {
+	width: 64px;
+	height: 64px;
+	object-fit: contain;
+	filter: drop-shadow(0 8px 14px rgba(0,0,0,.2));
+}
+
+.login-brand-logo-wrap {
+	width: 88px;
+	height: 88px;
+	border-radius: 18px;
+	background: rgba(255,255,255,.12);
+	border: 1px solid rgba(255,255,255,.24);
+	display: grid;
+	place-items: center;
+}
+
+.login-brand-logo {
+	width: 64px;
+	height: 64px;
+	object-fit: contain;
+	filter: drop-shadow(0 8px 14px rgba(0,0,0,.2));
 }
 
 @keyframes guided-card-rise {

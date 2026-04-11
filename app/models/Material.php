@@ -8,6 +8,28 @@ class Material extends Model
 {
     protected string $table = 'materials';
 
+    public function countByTherapist(int $therapistId): int
+    {
+        return $this->count('therapist_id = ?', [$therapistId]);
+    }
+
+    public function countCreatedInMonthByTherapist(int $therapistId, string $yearMonth): int
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) AS total
+             FROM materials
+             WHERE therapist_id = ?
+               AND DATE_FORMAT(created_at, '%Y-%m') = ?",
+            [$therapistId, $yearMonth]
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
     public function listByTherapist(int $therapistId, string $term = ''): array
     {
         $sql = 'SELECT m.*, COUNT(DISTINCT md.id) AS sent_count,

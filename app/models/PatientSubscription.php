@@ -8,6 +8,33 @@ class PatientSubscription extends Model
 {
     protected string $table = 'patient_subscriptions';
 
+    public function countActiveAll(): int
+    {
+        return $this->count("status = 'active' AND (ends_at IS NULL OR ends_at >= NOW())");
+    }
+
+    public function countActiveByTherapist(int $therapistId): int
+    {
+        return $this->count("therapist_id = ? AND status = 'active' AND (ends_at IS NULL OR ends_at >= NOW())", [$therapistId]);
+    }
+
+    public function countStartedInMonth(string $yearMonth): int
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) AS total
+             FROM patient_subscriptions
+             WHERE status = 'active'
+               AND starts_at IS NOT NULL
+               AND DATE_FORMAT(starts_at, '%Y-%m') = ?",
+            [$yearMonth]
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
     public function findLatestByPatient(int $patientId): ?array
     {
         $stmt = $this->query(

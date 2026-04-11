@@ -18,6 +18,23 @@ class Task extends Model
         return $this->count('therapist_id = ?', [$therapistId]);
     }
 
+    public function countCreatedInMonthByTherapist(int $therapistId, string $yearMonth): int
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) AS total
+             FROM tasks
+             WHERE therapist_id = ?
+               AND DATE_FORMAT(created_at, '%Y-%m') = ?",
+            [$therapistId, $yearMonth]
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
     public function listByPatient(int $patientId): array
     {
         $stmt = $this->query(
@@ -42,6 +59,24 @@ class Task extends Model
     public function countDoneByPatient(int $patientId): int
     {
         return $this->count("patient_id = ? AND status = 'done'", [$patientId]);
+    }
+
+    public function countDoneInMonthByPatient(int $patientId, string $yearMonth): int
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) AS total
+             FROM tasks
+             WHERE patient_id = ?
+               AND status = 'done'
+               AND DATE_FORMAT(updated_at, '%Y-%m') = ?",
+            [$patientId, $yearMonth]
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
     }
 
     public function countInboxByPatientAndKind(int $patientId, string $deliveryKind): int

@@ -6,24 +6,72 @@
     <h3>Pacientes</h3>
     <a class="btn btn-primary" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-create"><i class="fa-solid fa-user-plus"></i> Novo paciente</a>
   </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <h6 class="mb-0">Ficha de cadastro por link</h6>
+        <small class="text-muted">Envie por e-mail ou copie o link manualmente.</small>
+      </div>
+      <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-signup-link-create" class="row g-2 align-items-end">
+        <div class="col-md-8">
+          <label class="form-label">E-mail do paciente (opcional)</label>
+          <input type="email" class="form-control" name="recipient_email" placeholder="Se informado, enviaremos automaticamente o link.">
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-outline-primary w-100" type="submit"><i class="fa-solid fa-link me-1"></i>Gerar link</button>
+        </div>
+      </form>
+
+      <?php if (!empty($generatedLink)): ?>
+        <div class="mt-3">
+          <label class="form-label">Link gerado</label>
+          <div class="input-group">
+            <input id="generatedSignupLink" type="text" class="form-control" value="<?php echo htmlspecialchars((string) $generatedLink); ?>" readonly>
+            <button class="btn btn-outline-secondary" type="button" id="copySignupLinkBtn"><i class="fa-solid fa-copy"></i> Copiar</button>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($signupLinks)): ?>
+        <div class="mt-3 small text-muted">
+          Últimos links:
+          <?php foreach ($signupLinks as $link): ?>
+            <div>#<?php echo (int) ($link['id'] ?? 0); ?> | expira em <?php echo !empty($link['expires_at']) ? date('d/m/Y H:i', strtotime((string) $link['expires_at'])) : '-'; ?> | uso <?php echo (int) ($link['used_count'] ?? 0); ?>/<?php echo (int) ($link['max_uses'] ?? 0); ?></div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </div>
+  </div>
+
   <div class="card mb-3"><div class="card-body">
     <input id="patientSearch" class="form-control" placeholder="Digite para filtrar dinamicamente" value="<?php echo htmlspecialchars($search); ?>">
   </div></div>
   <div class="card">
     <div class="table-responsive">
       <table class="table mb-0">
-        <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Nome</th><th>Status</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Ações</th></tr></thead>
         <tbody>
           <?php if (empty($patients)): ?>
-            <tr><td colspan="5" class="text-center py-4 text-muted">Nenhum paciente cadastrado.</td></tr>
+            <tr><td colspan="6" class="text-center py-4 text-muted">Nenhum paciente cadastrado.</td></tr>
           <?php else: foreach ($patients as $patient): ?>
             <tr class="row-patient" data-search="<?php echo strtolower(htmlspecialchars(($patient['name'] ?? '') . ' ' . ($patient['cpf'] ?? '') . ' ' . ($patient['email'] ?? ''))); ?>">
               <td><?php echo htmlspecialchars($patient['name']); ?></td>
+              <td>
+                <?php $isPendingReview = (($patient['review_status'] ?? 'approved') === 'pending_review'); ?>
+                <span class="badge <?php echo $isPendingReview ? 'text-bg-warning' : 'text-bg-success'; ?>"><?php echo $isPendingReview ? 'Pendente revisão' : 'Aprovado'; ?></span>
+              </td>
               <td><?php echo htmlspecialchars($patient['cpf']); ?></td>
               <td><?php echo htmlspecialchars($patient['phone']); ?></td>
               <td><?php echo htmlspecialchars($patient['email'] ?? '-'); ?></td>
               <td class="align-middle">
                 <div class="d-flex align-items-center gap-1 flex-nowrap">
+                  <?php if ($isPendingReview): ?>
+                    <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-approve-review" class="d-flex m-0">
+                      <input type="hidden" name="id" value="<?php echo (int) $patient['id']; ?>">
+                      <button class="btn btn-sm btn-outline-success" style="width:32px;padding:0;line-height:1.8;" type="submit" title="Aprovar cadastro"><i class="fa-solid fa-check"></i></button>
+                    </form>
+                  <?php endif; ?>
                   <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-show&id=<?php echo (int) $patient['id']; ?>" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
                   <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-history&id=<?php echo (int) $patient['id']; ?>" title="Histórico"><i class="fa-solid fa-book-medical"></i></a>
                   <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-password&id=<?php echo (int) $patient['id']; ?>" title="Redefinir senha"><i class="fa-solid fa-key"></i></a>
@@ -43,6 +91,19 @@
 </div>
 <script>
 window.addEventListener('load', function(){
+  const copyBtn = document.getElementById('copySignupLinkBtn');
+  const copyInput = document.getElementById('generatedSignupLink');
+  if (copyBtn && copyInput) {
+    copyBtn.addEventListener('click', function() {
+      copyInput.select();
+      copyInput.setSelectionRange(0, 99999);
+      document.execCommand('copy');
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Copiado', 'Link copiado para a área de transferência.', 'success');
+      }
+    });
+  }
+
   $('#patientSearch').on('input', function(){
     const t = ($(this).val() || '').toLowerCase();
     $('.row-patient').each(function(){

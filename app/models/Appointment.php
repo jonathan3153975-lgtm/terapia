@@ -78,6 +78,51 @@ class Appointment extends Model
         return $this->count('therapist_id = ?', [$therapistId]);
     }
 
+    public function countCompletedByTherapist(int $therapistId): int
+    {
+        $stmt = $this->query(
+            'SELECT COUNT(*) AS total FROM appointments WHERE therapist_id = ? AND session_date < NOW()',
+            [$therapistId]
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    public function countScheduledByTherapist(int $therapistId): int
+    {
+        $stmt = $this->query(
+            'SELECT COUNT(*) AS total FROM appointments WHERE therapist_id = ? AND session_date >= NOW()',
+            [$therapistId]
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    public function countCreatedInMonthByTherapist(int $therapistId, string $yearMonth): int
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) AS total
+             FROM appointments
+             WHERE therapist_id = ?
+               AND DATE_FORMAT(created_at, '%Y-%m') = ?",
+            [$therapistId, $yearMonth]
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
     public function listByPatient(int $patientId): array
     {
         $stmt = $this->query('SELECT * FROM appointments WHERE patient_id = ? ORDER BY session_date DESC', [$patientId]);
@@ -99,6 +144,25 @@ class Appointment extends Model
         if (!$stmt) {
             return 0;
         }
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    public function countCompletedInMonthByPatient(int $patientId, string $yearMonth): int
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) AS total
+             FROM appointments
+             WHERE patient_id = ?
+               AND session_date <= NOW()
+               AND DATE_FORMAT(session_date, '%Y-%m') = ?",
+            [$patientId, $yearMonth]
+        );
+
+        if (!$stmt) {
+            return 0;
+        }
+
         $row = $stmt->fetch();
         return (int) ($row['total'] ?? 0);
     }

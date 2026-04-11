@@ -546,14 +546,36 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         $nextAppointment = $this->appointmentModel->findNextByPatient($patientId);
+        $activeSubscription = $this->patientSubscriptionModel->findActiveByPatient($patientId);
+
+        $chartLabels = [];
+        $chartSessions = [];
+        $chartTasksDone = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $dt = new \DateTimeImmutable("-{$i} months");
+            $ym = $dt->format('Y-m');
+            $chartLabels[] = $dt->format('m/Y');
+            $chartSessions[] = $this->appointmentModel->countCompletedInMonthByPatient($patientId, $ym);
+            $chartTasksDone[] = $this->taskModel->countDoneInMonthByPatient($patientId, $ym);
+        }
+
+        $pendingTasks = $this->taskModel->countPendingInboxTasksByPatient($patientId);
+        $doneTasks = $this->taskModel->countDoneByPatient($patientId);
+        $completionRate = ($pendingTasks + $doneTasks) > 0 ? (int) round(($doneTasks / ($pendingTasks + $doneTasks)) * 100) : 0;
 
         $this->view('patient/dashboard', [
             'appUrl' => Config::get('APP_URL', ''),
             'daysSinceRegister' => $this->daysSince($patient['created_at'] ?? null),
             'sessionsDone' => $this->appointmentModel->countCompletedByPatient($patientId),
             'nextAppointment' => $nextAppointment,
-            'receivedTasks' => $this->taskModel->countPendingInboxTasksByPatient($patientId),
+            'receivedTasks' => $pendingTasks,
             'receivedMaterials' => $this->taskModel->countInboxByPatientAndKind($patientId, 'material') + $this->materialDeliveryModel->countByPatient($patientId),
+            'doneTasks' => $doneTasks,
+            'completionRate' => $completionRate,
+            'activeSubscription' => $activeSubscription,
+            'chartLabels' => $chartLabels,
+            'chartSessions' => $chartSessions,
+            'chartTasksDone' => $chartTasksDone,
         ]);
     }
 

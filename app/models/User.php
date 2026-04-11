@@ -32,6 +32,23 @@ class User extends Model
         return $this->count('role = ?', [$role]);
     }
 
+    public function countTherapistsCreatedInMonth(string $yearMonth): int
+    {
+        $stmt = $this->query(
+            "SELECT COUNT(*) AS total
+             FROM users
+             WHERE role = 'therapist'
+               AND DATE_FORMAT(created_at, '%Y-%m') = ?",
+            [$yearMonth]
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
     public function findTherapistById(int $id): ?array
     {
         $stmt = $this->query("SELECT * FROM users WHERE id = ? AND role = 'therapist' LIMIT 1", [$id]);

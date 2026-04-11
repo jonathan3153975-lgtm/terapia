@@ -3,22 +3,25 @@
   <div class="login-backdrop"></div>
   <div class="login-card-wrap">
     <div class="login-brand-panel">
+      <div class="login-brand-logo-wrap mb-3">
+        <img src="<?php echo $appUrl; ?>/app/images/logo.png" alt="Logo" class="login-brand-logo">
+      </div>
       <h1>Terapia SaaS</h1>
-      <p>Gestao clinica simples, segura e elegante para terapeutas e pacientes.</p>
+      <p>Plataforma moderna para jornada terapêutica com acompanhamento inteligente.</p>
       <ul>
-        <li><i class="fa-solid fa-check"></i> Agenda e historico integrados</li>
-        <li><i class="fa-solid fa-check"></i> Portal dedicado ao paciente</li>
-        <li><i class="fa-solid fa-check"></i> Controle financeiro e tarefas</li>
+        <li><i class="fa-solid fa-check"></i> Agenda e histórico integrados</li>
+        <li><i class="fa-solid fa-check"></i> Portal com assinatura e conteúdos</li>
+        <li><i class="fa-solid fa-check"></i> Gestão completa de tarefas e materiais</li>
       </ul>
     </div>
     <div class="card shadow-sm login-card">
       <div class="card-body p-4 p-md-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4 class="mb-0">Entrar no sistema</h4>
+          <h4 class="mb-0">Acessar plataforma</h4>
           <button id="themeToggle" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-circle-half-stroke"></i></button>
         </div>
         <?php if (isset($_GET['error'])): ?>
-          <div class="alert alert-danger">Credenciais invalidas.</div>
+          <div class="alert alert-danger">Credenciais inválidas ou acesso ainda não liberado.</div>
         <?php endif; ?>
         <form id="loginForm" method="POST" action="<?php echo $appUrl; ?>/index.php?action=process-login">
           <div class="mb-3">

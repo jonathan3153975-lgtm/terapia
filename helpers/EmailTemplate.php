@@ -6,6 +6,74 @@ use Config\Config;
 
 class EmailTemplate
 {
+    public static function patientSignupInvite(string $therapistName, string $signupLink): string
+    {
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f5f7fb; margin: 0; }
+        .container { max-width: 620px; margin: 24px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 24px rgba(15,23,42,.08); }
+        .header { background: linear-gradient(135deg, #0f172a, #1e293b); color: #fff; padding: 26px; }
+        .content { padding: 26px; color: #334155; line-height: 1.6; }
+        .btn { display: inline-block; padding: 12px 18px; border-radius: 8px; text-decoration: none; background: #0f172a; color: #fff; font-weight: 600; }
+        .hint { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><h2 style="margin:0;">Ficha de cadastro do paciente</h2></div>
+        <div class="content">
+            <p>Olá,</p>
+            <p>Seu terapeuta <strong>{$therapistName}</strong> enviou um link seguro para preencher sua ficha de cadastro.</p>
+            <p><a class="btn" href="{$signupLink}">Preencher ficha</a></p>
+            <div class="hint"><strong>Link direto:</strong><br>{$signupLink}</div>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    }
+
+    public static function patientAccessCredentials(string $patientName, string $loginEmail, string $rawPassword, string $loginUrl): string
+    {
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f5f7fb; margin: 0; }
+        .container { max-width: 620px; margin: 24px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 24px rgba(15,23,42,.08); }
+        .header { background: linear-gradient(135deg, #1d4ed8, #2563eb); color: #fff; padding: 26px; }
+        .content { padding: 26px; color: #334155; line-height: 1.6; }
+        .box { background: #f8fafc; border: 1px solid #dbeafe; border-radius: 10px; padding: 14px; }
+        .btn { display: inline-block; padding: 12px 18px; border-radius: 8px; text-decoration: none; background: #2563eb; color: #fff; font-weight: 600; margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><h2 style="margin:0;">Acesso ao sistema</h2></div>
+        <div class="content">
+            <p>Olá, <strong>{$patientName}</strong>.</p>
+            <p>Seu cadastro foi recebido e seus dados de acesso foram gerados:</p>
+            <div class="box">
+                <div><strong>Login:</strong> {$loginEmail}</div>
+                <div><strong>Senha:</strong> {$rawPassword}</div>
+            </div>
+            <p>Seu cadastro ficará <strong>pendente de revisão</strong> do terapeuta. Após aprovação, seu acesso será liberado.</p>
+            <a class="btn" href="{$loginUrl}">Acessar sistema</a>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    }
+
     public static function taskAssigned(string $patientName, string $taskTitle, string $taskDescription, string $dueDate): string
     {
         $appUrl = Config::get('APP_URL', 'https://app.terapia.local');

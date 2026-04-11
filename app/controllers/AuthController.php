@@ -43,6 +43,13 @@ class AuthController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&error=1');
         }
 
+        if ((string) ($user['status'] ?? 'active') !== 'active') {
+            if ($isAjax) {
+                $this->error('Seu acesso está pendente de liberação pelo terapeuta.');
+            }
+            $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&error=1');
+        }
+
         Auth::login($user);
 
         $appUrl = Config::get('APP_URL', '');

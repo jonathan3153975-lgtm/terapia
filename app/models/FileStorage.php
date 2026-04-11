@@ -33,6 +33,22 @@ class FileStorage extends Model
         return (int) ($row['total'] ?? 0);
     }
 
+    public function totalBytesInMonth(string $yearMonth): int
+    {
+        $stmt = $this->query(
+            "SELECT COALESCE(SUM(file_size),0) AS total
+             FROM files
+             WHERE DATE_FORMAT(created_at, '%Y-%m') = ?",
+            [$yearMonth]
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
     public function listByTask(int $taskId): array
     {
         $stmt = $this->query('SELECT * FROM files WHERE task_id = ? ORDER BY created_at ASC', [$taskId]);
