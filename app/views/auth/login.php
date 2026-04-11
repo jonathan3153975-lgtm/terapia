@@ -1,13 +1,10 @@
-<?php $title = 'Login - Terapia SaaS'; include __DIR__ . '/../partials/header.php'; ?>
+<?php $title = 'Login - Tera-Tech'; include __DIR__ . '/../partials/header.php'; ?>
 <div class="login-shell">
   <div class="login-backdrop"></div>
   <div class="login-card-wrap">
     <div class="login-brand-panel">
-      <div class="login-brand-logo-wrap mb-3">
-        <img src="<?php echo $appUrl; ?>/app/images/logo.png" alt="Logo" class="login-brand-logo">
-      </div>
-      <h1>Terapia SaaS</h1>
-      <p>Plataforma moderna para jornada terapêutica com acompanhamento inteligente.</p>
+      <h1>Tera-Tech - Seu ambiente de terapia diária.</h1>
+      <p>Para seu ambiente de conhecimento e autoajuda que te levará ao extraordinário!</p>
       <ul>
         <li><i class="fa-solid fa-check"></i> Agenda e histórico integrados</li>
         <li><i class="fa-solid fa-check"></i> Portal com assinatura e conteúdos</li>
@@ -16,9 +13,8 @@
     </div>
     <div class="card shadow-sm login-card">
       <div class="card-body p-4 p-md-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="mb-3">
           <h4 class="mb-0">Acessar plataforma</h4>
-          <button id="themeToggle" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-circle-half-stroke"></i></button>
         </div>
         <?php if (isset($_GET['error'])): ?>
           <div class="alert alert-danger">Credenciais inválidas ou acesso ainda não liberado.</div>

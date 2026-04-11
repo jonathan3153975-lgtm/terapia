@@ -39,7 +39,6 @@ $role = (string) Auth::role();
   </nav>
 
   <div class="sidebar-footer">
-    <button id="themeToggle" class="btn btn-sm btn-outline-secondary w-100 mb-2"><i class="fa-solid fa-circle-half-stroke"></i> Tema</button>
     <a class="btn btn-sm btn-outline-danger w-100" href="<?php echo $appUrl; ?>/index.php?action=logout"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
   </div>
 </aside>

@@ -20,11 +20,6 @@ if ($assetBase === '') {
 <script src="<?php echo $assetBase; ?>/public/js/app.js"></script>
 <script>
 (function() {
-	const stored = localStorage.getItem('theme-mode');
-	if (stored === 'dark') {
-		document.documentElement.setAttribute('data-theme', 'dark');
-	}
-
 	const closeSidebar = function() {
 		document.body.classList.remove('sidebar-open');
 	};
@@ -42,19 +37,6 @@ if ($assetBase === '') {
 	}
 
 	document.addEventListener('click', function(e) {
-		const btn = e.target.closest('#themeToggle');
-		if (btn) {
-			const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-			if (isDark) {
-				document.documentElement.removeAttribute('data-theme');
-				localStorage.setItem('theme-mode', 'light');
-				return;
-			}
-			document.documentElement.setAttribute('data-theme', 'dark');
-			localStorage.setItem('theme-mode', 'dark');
-			return;
-		}
-
 		if (e.target.closest('.sidebar-link')) {
 			closeSidebar();
 		}
