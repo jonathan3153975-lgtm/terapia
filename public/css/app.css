@@ -852,6 +852,87 @@ body.app-body {
 	color: var(--accent);
 }
 
+.father-word-page {
+	display: grid;
+	gap: 18px;
+}
+
+.father-word-hero {
+	border: 1px solid rgba(15, 118, 110, .18);
+	border-radius: 18px;
+	background:
+		radial-gradient(560px 220px at 0% -10%, rgba(20, 184, 166, .18), transparent 62%),
+		radial-gradient(380px 170px at 100% 120%, rgba(245, 158, 11, .16), transparent 70%),
+		var(--bg-panel);
+}
+
+.father-word-kicker {
+	display: inline-block;
+	font-size: .76rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: .08em;
+	color: #0f766e;
+	margin-bottom: 10px;
+}
+
+.father-word-title {
+	font-size: clamp(1.6rem, 2.8vw, 2.3rem);
+	line-height: 1.1;
+}
+
+.father-word-copy {
+	max-width: 62ch;
+	color: var(--text-soft);
+	line-height: 1.7;
+}
+
+.father-word-action {
+	border: 1px solid rgba(15, 23, 42, .08);
+	background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(244, 248, 255, .95));
+}
+
+.father-word-draw-btn {
+	min-width: 260px;
+	padding: 14px 22px;
+	border-radius: 999px;
+	font-weight: 700;
+	letter-spacing: .02em;
+	box-shadow: 0 12px 20px rgba(15, 23, 42, .14);
+}
+
+.father-word-result {
+	border: 1px solid rgba(37, 99, 235, .16);
+	background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(232, 242, 255, .92));
+	transform: translateY(12px);
+	opacity: .72;
+	transition: transform .45s ease, opacity .45s ease, box-shadow .45s ease;
+}
+
+.father-word-result.is-visible {
+	transform: translateY(0);
+	opacity: 1;
+	box-shadow: 0 16px 30px rgba(30, 64, 175, .09);
+}
+
+.father-word-text {
+	font-size: clamp(1.05rem, 2vw, 1.28rem);
+	line-height: 1.86;
+	white-space: pre-wrap;
+}
+
+.father-word-reflection-card {
+	border: 1px solid rgba(20, 184, 166, .16);
+	background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(239, 252, 250, .95));
+}
+
+.father-word-reflection-input {
+	border-radius: 14px;
+	min-height: 168px;
+	padding: 16px;
+	line-height: 1.7;
+}
+
 @keyframes messenger-pulse {
 	0%, 100% { transform: scale(.96); opacity: .72; }
 	50% { transform: scale(1.04); opacity: 1; }

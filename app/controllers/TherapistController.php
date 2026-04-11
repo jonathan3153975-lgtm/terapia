@@ -4,10 +4,12 @@ namespace App\Controllers;
 
 use App\Models\Appointment;
 use App\Models\DailyMessage;
+use App\Models\FaithWord;
 use App\Models\FileStorage;
 use App\Models\Material;
 use App\Models\MaterialDelivery;
 use App\Models\Patient;
+use App\Models\PatientFaithEntry;
 use App\Models\PatientMessageEntry;
 use App\Models\Payment;
 use App\Models\Task;
@@ -33,6 +35,8 @@ class TherapistController extends Controller
     private User $userModel;
     private DailyMessage $dailyMessageModel;
     private PatientMessageEntry $patientMessageEntryModel;
+    private FaithWord $faithWordModel;
+    private PatientFaithEntry $patientFaithEntryModel;
 
     public function __construct()
     {
@@ -47,6 +51,8 @@ class TherapistController extends Controller
         $this->userModel = new User();
         $this->dailyMessageModel = new DailyMessage();
         $this->patientMessageEntryModel = new PatientMessageEntry();
+        $this->faithWordModel = new FaithWord();
+        $this->patientFaithEntryModel = new PatientFaithEntry();
     }
 
     public function dashboard(): void
@@ -287,6 +293,115 @@ class TherapistController extends Controller
         }
 
         $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-messages&status=success&msg=' . urlencode('Mensagem excluída com sucesso.'));
+    }
+
+    public function faithWords(): void
+    {
+        $therapistId = (int) Auth::id();
+        $search = trim((string) ($_GET['q'] ?? ''));
+
+        $words = $this->faithWordModel->listByTherapist($therapistId, $search);
+        $sharedEntries = $this->patientFaithEntryModel->listSharedByTherapist($therapistId, 80);
+
+        $this->view('therapist/faith-words/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'words' => $words,
+            'sharedEntries' => $sharedEntries,
+            'filters' => [
+                'q' => $search,
+            ],
+        ]);
+    }
+
+    public function storeFaithWord(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $referenceText = trim((string) ($_POST['reference_text'] ?? ''));
+        $verseText = trim((string) ($_POST['verse_text'] ?? ''));
+
+        if ($referenceText === '' || $verseText === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Referência e texto do versículo são obrigatórios.'));
+        }
+
+        $saved = $this->faithWordModel->insert([
+            'therapist_id' => $therapistId,
+            'reference_text' => $referenceText,
+            'verse_text' => $verseText,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Falha ao cadastrar versículo.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=success&msg=' . urlencode('Palavra cadastrada com sucesso.'));
+    }
+
+    public function updateFaithWord(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Registro inválido.'));
+        }
+
+        $current = $this->faithWordModel->findByTherapistAndId($therapistId, $id);
+        if (!$current) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Palavra não encontrada.'));
+        }
+
+        $referenceText = trim((string) ($_POST['reference_text'] ?? ''));
+        $verseText = trim((string) ($_POST['verse_text'] ?? ''));
+
+        if ($referenceText === '' || $verseText === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Referência e texto do versículo são obrigatórios.'));
+        }
+
+        $updated = $this->faithWordModel->updateById($id, [
+            'reference_text' => $referenceText,
+            'verse_text' => $verseText,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Falha ao atualizar palavra.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=success&msg=' . urlencode('Palavra atualizada com sucesso.'));
+    }
+
+    public function deleteFaithWord(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Registro inválido.'));
+        }
+
+        $current = $this->faithWordModel->findByTherapistAndId($therapistId, $id);
+        if (!$current) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Palavra não encontrada.'));
+        }
+
+        $deleted = $this->faithWordModel->deleteByTherapistAndId($therapistId, $id);
+        if (!$deleted) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=error&msg=' . urlencode('Falha ao excluir palavra.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-faith-words&status=success&msg=' . urlencode('Palavra excluída com sucesso.'));
     }
 
     private function financialRedirectBase(int $month, int $year): string

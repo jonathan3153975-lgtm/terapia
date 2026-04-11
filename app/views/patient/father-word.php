@@ -1,0 +1,194 @@
+<?php $title = 'Pai, fala comigo'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
+<div class="container page-wrap father-word-page">
+  <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
+
+  <section class="father-word-hero card mb-4">
+    <div class="card-body p-4 p-lg-5">
+      <span class="father-word-kicker">Pai, fala comigo</span>
+      <h3 class="father-word-title mb-2">Um momento de palavra e reflexão</h3>
+      <p class="father-word-copy mb-0">Toque no botão abaixo e receba sua palavra. Leia com calma e depois salve sua reflexão.</p>
+    </div>
+  </section>
+
+  <section class="father-word-action card mb-4" id="fatherWordActionCard">
+    <div class="card-body p-4 d-flex justify-content-center">
+      <button id="fatherWordDrawBtn" class="btn btn-dark father-word-draw-btn" type="button">
+        <i class="fa-solid fa-hands-praying me-2"></i>Pai, fala comigo
+      </button>
+    </div>
+  </section>
+
+  <section id="fatherWordResultCard" class="father-word-result card mb-4 d-none" aria-live="polite">
+    <div class="card-body p-4 p-lg-5">
+      <div class="small text-muted mb-1" id="fatherWordReference"></div>
+      <p id="fatherWordText" class="father-word-text mb-0"></p>
+    </div>
+  </section>
+
+  <section id="fatherWordReflectionSection" class="card mb-4 d-none father-word-reflection-card">
+    <div class="card-body p-4">
+      <form method="POST" action="<?php echo $appUrl; ?>/patient.php?action=father-word-save" id="fatherWordSaveForm">
+        <input type="hidden" name="word_id" id="fatherWordIdInput" value="">
+        <input type="hidden" name="word_reference" id="fatherWordReferenceInput" value="">
+        <input type="hidden" name="word_text" id="fatherWordTextInput" value="">
+
+        <div class="mb-3">
+          <textarea class="form-control father-word-reflection-input" name="patient_note" id="fatherWordNoteInput" rows="6" placeholder="Escreva sua reflexão sobre esta palavra..." required></textarea>
+        </div>
+
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" name="share_with_therapist" id="fatherWordShareCheckbox" value="1">
+          <label class="form-check-label" for="fatherWordShareCheckbox">
+            Encaminhar esta reflexão para meu terapeuta
+          </label>
+        </div>
+
+        <button class="btn btn-primary" type="submit" id="fatherWordSaveBtn"><i class="fa-solid fa-floppy-disk me-1"></i>Salvar reflexão</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-body p-4">
+      <h5 class="card-title mb-3">Meu histórico de palavras</h5>
+      <?php if (empty($entries)): ?>
+        <div class="messenger-empty-state">
+          <i class="fa-regular fa-bookmark"></i>
+          <p class="mb-0">Você ainda não salvou nenhuma reflexão deste módulo.</p>
+        </div>
+      <?php else: ?>
+        <div class="row g-3">
+          <?php foreach ($entries as $entry): ?>
+            <div class="col-12 col-xl-6">
+              <article class="messenger-entry-card h-100">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                  <strong><?php echo htmlspecialchars((string) ($entry['word_reference'] ?? '')); ?></strong>
+                  <span class="small text-muted"><?php echo !empty($entry['drawn_at']) ? date('d/m/Y H:i', strtotime((string) $entry['drawn_at'])) : '-'; ?></span>
+                </div>
+                <p class="mb-3"><?php echo nl2br(htmlspecialchars((string) ($entry['word_text'] ?? ''))); ?></p>
+                <div class="small text-muted mb-1">Minha reflexão</div>
+                <p class="mb-2"><?php echo nl2br(htmlspecialchars((string) ($entry['patient_note'] ?? ''))); ?></p>
+                <?php if ((int) ($entry['share_with_therapist'] ?? 0) === 1): ?>
+                  <span class="badge text-bg-success">Compartilhada com terapeuta</span>
+                <?php endif; ?>
+              </article>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </div>
+  </section>
+</div>
+
+<script>
+window.addEventListener('load', function () {
+  var drawBtn = document.getElementById('fatherWordDrawBtn');
+  var actionCard = document.getElementById('fatherWordActionCard');
+  var resultCard = document.getElementById('fatherWordResultCard');
+  var referenceEl = document.getElementById('fatherWordReference');
+  var textEl = document.getElementById('fatherWordText');
+  var reflectionSection = document.getElementById('fatherWordReflectionSection');
+
+  var wordIdInput = document.getElementById('fatherWordIdInput');
+  var wordReferenceInput = document.getElementById('fatherWordReferenceInput');
+  var wordTextInput = document.getElementById('fatherWordTextInput');
+  var noteInput = document.getElementById('fatherWordNoteInput');
+  var saveForm = document.getElementById('fatherWordSaveForm');
+  var saveBtn = document.getElementById('fatherWordSaveBtn');
+
+  if (saveForm && saveBtn) {
+    saveForm.addEventListener('submit', function (event) {
+      if (!wordTextInput || !wordTextInput.value.trim()) {
+        event.preventDefault();
+        window.alert('Clique em "Pai, fala comigo" para receber uma palavra antes de salvar.');
+        return;
+      }
+
+      if (saveBtn.disabled) {
+        event.preventDefault();
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="fa-solid fa-hourglass-half me-1"></i>Salvando...';
+    });
+  }
+
+  if (!drawBtn) {
+    return;
+  }
+
+  drawBtn.addEventListener('click', function () {
+    if (drawBtn.disabled) {
+      return;
+    }
+
+    drawBtn.disabled = true;
+    drawBtn.innerHTML = '<i class="fa-solid fa-hourglass-half me-1"></i>Recebendo...';
+
+    fetch('<?php echo $appUrl; ?>/patient.php?action=father-word-draw', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (payload) {
+          if (!response.ok || !payload.success) {
+            throw new Error(payload.message || 'Não foi possível receber a palavra agora.');
+          }
+          return payload;
+        });
+      })
+      .then(function (payload) {
+        var word = payload.data && payload.data.word ? payload.data.word : null;
+        if (!word) {
+          throw new Error('Resposta inválida ao receber palavra.');
+        }
+
+        if (actionCard) {
+          actionCard.classList.add('d-none');
+        }
+
+        if (referenceEl) {
+          referenceEl.textContent = word.reference || '';
+        }
+        if (textEl) {
+          textEl.textContent = word.text || '';
+        }
+
+        if (wordIdInput) {
+          wordIdInput.value = word.id || '';
+        }
+        if (wordReferenceInput) {
+          wordReferenceInput.value = word.reference || '';
+        }
+        if (wordTextInput) {
+          wordTextInput.value = word.text || '';
+        }
+
+        if (resultCard) {
+          resultCard.classList.remove('d-none');
+          resultCard.classList.add('is-visible');
+        }
+        if (reflectionSection) {
+          reflectionSection.classList.remove('d-none');
+        }
+        if (noteInput) {
+          noteInput.value = '';
+          noteInput.focus();
+        }
+
+        window.setTimeout(function () {
+          if (resultCard) {
+            var y = resultCard.getBoundingClientRect().top + window.scrollY - 16;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          }
+        }, 120);
+      })
+      .catch(function (error) {
+        window.alert(error.message || 'Erro ao receber palavra.');
+        drawBtn.disabled = false;
+        drawBtn.innerHTML = '<i class="fa-solid fa-hands-praying me-2"></i>Pai, fala comigo';
+      });
+  });
+});
+</script>
+<?php include __DIR__ . '/../partials/footer.php'; ?>

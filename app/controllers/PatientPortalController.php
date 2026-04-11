@@ -4,10 +4,12 @@ namespace App\Controllers;
 
 use App\Models\Appointment;
 use App\Models\DailyMessage;
+use App\Models\FaithWord;
 use App\Models\FileStorage;
 use App\Models\Material;
 use App\Models\MaterialDelivery;
 use App\Models\Patient;
+use App\Models\PatientFaithEntry;
 use App\Models\PatientMessageEntry;
 use App\Models\Task;
 use App\Models\User;
@@ -29,6 +31,8 @@ class PatientPortalController extends Controller
     private User $userModel;
     private DailyMessage $dailyMessageModel;
     private PatientMessageEntry $patientMessageEntryModel;
+    private FaithWord $faithWordModel;
+    private PatientFaithEntry $patientFaithEntryModel;
 
     public function __construct()
     {
@@ -42,6 +46,8 @@ class PatientPortalController extends Controller
         $this->userModel = new User();
         $this->dailyMessageModel = new DailyMessage();
         $this->patientMessageEntryModel = new PatientMessageEntry();
+        $this->faithWordModel = new FaithWord();
+        $this->patientFaithEntryModel = new PatientFaithEntry();
     }
 
     private function normalizeDailyMessageCategory(string $value): string
@@ -76,6 +82,34 @@ class PatientPortalController extends Controller
         $ids = $this->getMessengerCycleDrawnIds($patientId);
         $ids[] = $messageId;
         $this->setMessengerCycleDrawnIds($patientId, $ids);
+    }
+
+    private function fatherWordCycleSessionKey(int $patientId): string
+    {
+        return 'father_word_drawn_ids_patient_' . $patientId;
+    }
+
+    private function getFatherWordCycleDrawnIds(int $patientId): array
+    {
+        $key = $this->fatherWordCycleSessionKey($patientId);
+        $ids = $_SESSION[$key] ?? [];
+        if (!is_array($ids)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0));
+    }
+
+    private function setFatherWordCycleDrawnIds(int $patientId, array $ids): void
+    {
+        $_SESSION[$this->fatherWordCycleSessionKey($patientId)] = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
+    }
+
+    private function appendFatherWordCycleDrawnId(int $patientId, int $wordId): void
+    {
+        $ids = $this->getFatherWordCycleDrawnIds($patientId);
+        $ids[] = $wordId;
+        $this->setFatherWordCycleDrawnIds($patientId, $ids);
     }
 
     private function sanitizeRichText(string $html): string
@@ -454,6 +488,147 @@ class PatientPortalController extends Controller
         }
 
         $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=success&msg=' . urlencode('Mensagem salva com sucesso.'));
+    }
+
+    public function fatherWord(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $entries = $this->patientFaithEntryModel->listByPatient($patientId);
+
+        $this->view('patient/father-word', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'entries' => $entries,
+        ]);
+    }
+
+    public function drawFatherWord(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->error('Paciente não encontrado', 404);
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        if ($therapistId <= 0) {
+            $this->error('Terapeuta não encontrado', 404);
+        }
+
+        $allWordIds = $this->faithWordModel->listIdsByTherapist($therapistId);
+        if ($allWordIds === []) {
+            $this->error('Nenhuma palavra disponível para sorteio.', 404);
+        }
+
+        $cycleDrawnIds = $this->getFatherWordCycleDrawnIds($patientId);
+        $cycleDrawnIds = array_values(array_intersect($allWordIds, $cycleDrawnIds));
+        $cycleRestarted = false;
+
+        if (count($cycleDrawnIds) >= count($allWordIds)) {
+            $cycleDrawnIds = [];
+            $this->setFatherWordCycleDrawnIds($patientId, []);
+            $cycleRestarted = true;
+        }
+
+        $word = $this->faithWordModel->randomByTherapistExcludingIds($therapistId, $cycleDrawnIds);
+        if (!$word) {
+            $this->error('Nenhuma palavra disponível para sorteio.', 404);
+        }
+
+        $wordId = (int) ($word['id'] ?? 0);
+        if ($wordId > 0) {
+            $this->appendFatherWordCycleDrawnId($patientId, $wordId);
+            $cycleDrawnIds[] = $wordId;
+        }
+
+        $this->json([
+            'success' => true,
+            'message' => 'Palavra sorteada',
+            'data' => [
+                'word' => [
+                    'id' => $wordId,
+                    'reference' => (string) ($word['reference_text'] ?? ''),
+                    'text' => (string) ($word['verse_text'] ?? ''),
+                ],
+                'cycle' => [
+                    'restarted' => $cycleRestarted,
+                ],
+            ],
+        ]);
+    }
+
+    public function saveFatherWordEntry(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        if ($therapistId <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Terapeuta não vinculado.'));
+        }
+
+        $wordId = (int) ($_POST['word_id'] ?? 0);
+        $wordReference = trim((string) ($_POST['word_reference'] ?? ''));
+        $wordText = trim((string) ($_POST['word_text'] ?? ''));
+        $patientNote = trim((string) ($_POST['patient_note'] ?? ''));
+        $shareWithTherapist = isset($_POST['share_with_therapist']) ? 1 : 0;
+
+        if ($wordReference === '' || $wordText === '' || $patientNote === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Palavra e reflexão são obrigatórias.'));
+        }
+
+        $saved = $this->patientFaithEntryModel->insert([
+            'therapist_id' => $therapistId,
+            'patient_id' => $patientId,
+            'word_id' => $wordId > 0 ? $wordId : null,
+            'word_reference' => $wordReference,
+            'word_text' => $wordText,
+            'patient_note' => $patientNote,
+            'share_with_therapist' => $shareWithTherapist,
+            'drawn_at' => date('Y-m-d H:i:s'),
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Falha ao salvar reflexão.'));
+        }
+
+        if ($shareWithTherapist === 1) {
+            $this->taskModel->insert([
+                'therapist_id' => $therapistId,
+                'patient_id' => $patientId,
+                'due_date' => date('Y-m-d'),
+                'title' => 'Leitura Pai, fala comigo',
+                'description' => $wordReference . "\n\n" . $wordText,
+                'patient_response_html' => $patientNote,
+                'responded_at' => date('Y-m-d H:i:s'),
+                'send_to_patient' => 0,
+                'delivery_kind' => 'task',
+                'status' => 'done',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $therapist = $this->userModel->findById($therapistId);
+            if ($therapist) {
+                $subject = 'Nova reflexão em Pai, fala comigo';
+                $message = 'Seu paciente compartilhou uma nova reflexão em Pai, fala comigo. Acesse o painel para visualizar.';
+                AlertDispatcher::dispatch(['email'], (string) ($therapist['email'] ?? ''), null, $subject, $message);
+            }
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=success&msg=' . urlencode('Palavra e reflexão salvas com sucesso.'));
     }
 
     public function showTaskMaterial(): void
