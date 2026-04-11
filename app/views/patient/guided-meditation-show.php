@@ -1,4 +1,9 @@
-<?php $title = 'Meditação guiada'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
+<?php
+$title = 'Meditação guiada';
+$hasTherapistLogo = !empty($therapist['company_logo_path']);
+include __DIR__ . '/../partials/header.php';
+include __DIR__ . '/../partials/nav.php';
+?>
 <div class="container page-wrap guided-page">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
@@ -26,7 +31,7 @@
     </div>
   </section>
 
-  <section id="guidedDeckSection" class="card guided-deck-card d-none" style="<?php echo !empty($therapist['company_logo_path']) ? ('--therapist-logo-bg: url(' . htmlspecialchars($appUrl . '/' . ltrim((string) $therapist['company_logo_path'], '/')) . ');') : ''; ?>">
+  <section id="guidedDeckSection" class="card guided-deck-card d-none<?php echo $hasTherapistLogo ? ' has-therapist-logo' : ''; ?>" style="<?php echo $hasTherapistLogo ? ('--therapist-logo-bg: url(' . htmlspecialchars($appUrl . '/' . ltrim((string) $therapist['company_logo_path'], '/')) . ');') : ''; ?>">
     <div class="card-body p-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <h5 class="mb-0">Escolha uma carta de cura</h5>
@@ -38,7 +43,7 @@
           <button type="button" class="guided-card-slot" aria-label="Carta <?php echo $i; ?>">
             <span class="guided-card-inner">
               <span class="guided-card-face guided-card-front">
-                <span class="guided-card-logo-mark">Logo do terapeuta</span>
+                <span class="guided-card-logo-mark<?php echo $hasTherapistLogo ? ' has-logo' : ''; ?>"<?php echo $hasTherapistLogo ? ' aria-label="Logotipo do terapeuta"' : ''; ?>><?php echo $hasTherapistLogo ? '' : 'Logo do terapeuta'; ?></span>
               </span>
               <span class="guided-card-face guided-card-back">
                 <small class="guided-card-back-category"></small>
@@ -126,6 +131,23 @@ window.addEventListener('load', function () {
   var drawInFlight = false;
   var letterRevealed = false;
 
+  var revealReflection = function () {
+    if (reflectionSection) {
+      reflectionSection.classList.remove('d-none');
+    }
+    if (noteInput) {
+      noteInput.value = '';
+      noteInput.focus();
+    }
+
+    window.setTimeout(function () {
+      if (reflectionSection) {
+        var y = reflectionSection.getBoundingClientRect().top + window.scrollY - 16;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 160);
+  };
+
   var formatCategory = function (raw) {
     var value = String(raw || '').toLowerCase();
     if (value === 'reflexivas') {
@@ -147,6 +169,11 @@ window.addEventListener('load', function () {
     if (deckSection) {
       deckSection.classList.remove('d-none');
       deckSection.classList.add('is-open');
+
+      window.setTimeout(function () {
+        var y = deckSection.getBoundingClientRect().top + window.scrollY - 20;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }, 120);
     }
   };
 
@@ -238,25 +265,30 @@ window.addEventListener('load', function () {
           }
 
           window.setTimeout(function () {
+            var slotInner = slot ? slot.querySelector('.guided-card-inner') : null;
+            var reflectionShown = false;
+            var finishReveal = function () {
+              if (reflectionShown) {
+                return;
+              }
+              reflectionShown = true;
+              revealReflection();
+            };
+
+            if (slotInner) {
+              slotInner.addEventListener('transitionend', function (event) {
+                if (event.propertyName === 'transform' && slot && slot.classList.contains('is-flipped')) {
+                  finishReveal();
+                }
+              }, { once: true });
+            }
+
             if (slot) {
               slot.classList.add('is-flipped');
             }
 
-            if (reflectionSection) {
-              reflectionSection.classList.remove('d-none');
-            }
-            if (noteInput) {
-              noteInput.value = '';
-              noteInput.focus();
-            }
-
-            window.setTimeout(function () {
-              if (reflectionSection) {
-                var y = reflectionSection.getBoundingClientRect().top + window.scrollY - 16;
-                window.scrollTo({ top: y, behavior: 'smooth' });
-              }
-            }, 160);
-          }, 420);
+            window.setTimeout(finishReveal, 980);
+          }, 280);
         })
         .catch(function (error) {
           drawInFlight = false;
