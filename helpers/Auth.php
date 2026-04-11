@@ -58,7 +58,43 @@ class Auth
     public static function patientId(): ?int
     {
         Session::start();
+        if (self::isPatientPreviewActive()) {
+            return isset($_SESSION['preview_patient_id']) ? (int) $_SESSION['preview_patient_id'] : null;
+        }
         return isset($_SESSION['patient_id']) ? (int) $_SESSION['patient_id'] : null;
+    }
+
+    public static function startPatientPreview(int $therapistId, int $patientId, string $patientName = ''): void
+    {
+        Session::start();
+        $_SESSION['preview_therapist_id'] = $therapistId;
+        $_SESSION['preview_patient_id'] = $patientId;
+        $_SESSION['preview_patient_name'] = $patientName;
+        $_SESSION['preview_started_at'] = time();
+    }
+
+    public static function stopPatientPreview(): void
+    {
+        Session::start();
+        unset($_SESSION['preview_therapist_id'], $_SESSION['preview_patient_id'], $_SESSION['preview_patient_name'], $_SESSION['preview_started_at']);
+    }
+
+    public static function isPatientPreviewActive(): bool
+    {
+        Session::start();
+        return (string) ($_SESSION['user_role'] ?? '') === 'therapist'
+            && !empty($_SESSION['preview_patient_id'])
+            && !empty($_SESSION['preview_therapist_id'])
+            && (int) ($_SESSION['preview_therapist_id'] ?? 0) === (int) ($_SESSION['user_id'] ?? 0);
+    }
+
+    public static function patientPreviewName(): ?string
+    {
+        Session::start();
+        if (!self::isPatientPreviewActive()) {
+            return null;
+        }
+        return (string) ($_SESSION['preview_patient_name'] ?? 'Paciente');
     }
 
     public static function requireRoles(array $roles): void

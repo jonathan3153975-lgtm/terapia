@@ -103,6 +103,31 @@ body.app-body {
 	letter-spacing: .2px;
 }
 
+.preview-mode-banner {
+	position: sticky;
+	top: 0;
+	z-index: 25;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 10px 12px;
+	margin-bottom: 12px;
+	border: 1px solid rgba(251, 191, 36, .5);
+	background: linear-gradient(90deg, rgba(245, 158, 11, .18), rgba(251, 191, 36, .16));
+	border-radius: 10px;
+	backdrop-filter: blur(3px);
+}
+
+.preview-mode-banner-text {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: .92rem;
+	font-weight: 700;
+	color: #78350f;
+}
+
 .sidebar-overlay {
 	display: none;
 }

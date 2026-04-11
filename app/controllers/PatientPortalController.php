@@ -51,7 +51,7 @@ class PatientPortalController extends Controller
 
     public function __construct()
     {
-        Auth::requireRoles(['patient']);
+        $this->authorizePortalAccess();
         $this->taskModel = new Task();
         $this->appointmentModel = new Appointment();
         $this->materialModel = new Material();
@@ -72,6 +72,20 @@ class PatientPortalController extends Controller
         $this->mercadoPagoGateway = new MercadoPagoGateway();
 
         $this->enforceActiveSubscription();
+    }
+
+    private function authorizePortalAccess(): void
+    {
+        if (Auth::role() === 'patient') {
+            return;
+        }
+
+        if (Auth::role() === 'therapist' && Auth::isPatientPreviewActive()) {
+            return;
+        }
+
+        header('Location: ' . Config::get('APP_URL', '') . '/index.php?action=login');
+        exit;
     }
 
     private function enforceActiveSubscription(): void

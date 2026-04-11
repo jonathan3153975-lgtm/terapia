@@ -73,6 +73,7 @@
                     </form>
                   <?php endif; ?>
                   <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-show&id=<?php echo (int) $patient['id']; ?>" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
+                  <a class="btn btn-sm btn-outline-primary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-preview-start&id=<?php echo (int) $patient['id']; ?>" title="Abrir ambiente do paciente"><i class="fa-solid fa-right-to-bracket"></i></a>
                   <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-history&id=<?php echo (int) $patient['id']; ?>" title="Histórico"><i class="fa-solid fa-book-medical"></i></a>
                   <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-password&id=<?php echo (int) $patient['id']; ?>" title="Redefinir senha"><i class="fa-solid fa-key"></i></a>
                   <a class="btn btn-sm btn-outline-secondary" style="width:32px;padding:0;line-height:1.8;" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-edit&id=<?php echo (int) $patient['id']; ?>" title="Editar"><i class="fa-solid fa-pen"></i></a>

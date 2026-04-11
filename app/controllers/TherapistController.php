@@ -2084,6 +2084,26 @@ class TherapistController extends Controller
         $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=success&msg=' . urlencode('Cadastro do paciente aprovado com sucesso.'));
     }
 
+    public function startPatientPreview(): void
+    {
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_GET['id'] ?? 0);
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Paciente não encontrado para visualização.'));
+        }
+
+        Auth::startPatientPreview($therapistId, $patientId, (string) ($patient['name'] ?? 'Paciente'));
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=success&msg=' . urlencode('Visualização do ambiente do paciente iniciada.'));
+    }
+
+    public function stopPatientPreview(): void
+    {
+        Auth::stopPatientPreview();
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=success&msg=' . urlencode('Visualização do paciente encerrada.'));
+    }
+
     public function createPatient(): void
     {
         $this->view('therapist/patients/create', ['appUrl' => Config::get('APP_URL', '')]);

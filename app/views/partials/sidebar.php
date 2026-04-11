@@ -3,6 +3,9 @@ use Helpers\Auth;
 
 $currentAction = $_GET['action'] ?? '';
 $role = (string) Auth::role();
+$isPatientPreview = Auth::isPatientPreviewActive();
+$displayRole = $isPatientPreview ? 'patient' : $role;
+$displayName = $isPatientPreview ? (Auth::patientPreviewName() ?? Auth::name()) : Auth::name();
 ?>
 <aside class="app-sidebar">
   <div class="sidebar-brand">
@@ -10,14 +13,19 @@ $role = (string) Auth::role();
     <span>Terapia SaaS</span>
   </div>
 
-  <div class="sidebar-user"><?php echo htmlspecialchars((string) Auth::name()); ?></div>
+  <div class="sidebar-user">
+    <?php echo htmlspecialchars((string) $displayName); ?>
+    <?php if ($isPatientPreview): ?>
+      <div class="small text-warning-emphasis mt-1">Modo visualização do paciente</div>
+    <?php endif; ?>
+  </div>
 
   <nav class="sidebar-nav">
-    <?php if ($role === 'super_admin'): ?>
+    <?php if ($displayRole === 'super_admin'): ?>
       <a class="sidebar-link <?php echo $currentAction === 'admin-dashboard' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=admin-dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapists') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapists"><i class="fa-solid fa-user-doctor"></i><span>Terapeutas</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'patient-packages') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=patient-packages"><i class="fa-solid fa-box-open"></i><span>Pacotes pacientes</span></a>
-    <?php elseif ($role === 'therapist'): ?>
+    <?php elseif ($displayRole === 'therapist'): ?>
       <a class="sidebar-link <?php echo $currentAction === 'therapist-dashboard' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-dashboard"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-schedule') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-schedule"><i class="fa-solid fa-calendar-days"></i><span>Agenda</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-materials') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-materials"><i class="fa-solid fa-book-open"></i><span>Materiais</span></a>
@@ -27,7 +35,7 @@ $role = (string) Auth::role();
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-healing-letters') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-healing-letters"><i class="fa-solid fa-clover"></i><span>Cartas de cura</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-financial') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial"><i class="fa-solid fa-wallet"></i><span>Financeiro</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'patients') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=patients"><i class="fa-solid fa-users"></i><span>Pacientes</span></a>
-    <?php elseif ($role === 'patient'): ?>
+    <?php elseif ($displayRole === 'patient'): ?>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'subscription-') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=subscription-plans"><i class="fa-solid fa-crown"></i><span>Minha assinatura</span></a>
       <a class="sidebar-link <?php echo $currentAction === 'dashboard' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=dashboard"><i class="fa-solid fa-gauge"></i><span>Dashboard</span></a>
       <a class="sidebar-link <?php echo $currentAction === 'tasks' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=tasks"><i class="fa-solid fa-list-check"></i><span>Minhas tarefas</span></a>
@@ -39,6 +47,9 @@ $role = (string) Auth::role();
   </nav>
 
   <div class="sidebar-footer">
+    <?php if ($isPatientPreview): ?>
+      <a class="btn btn-sm btn-outline-warning w-100 mb-2" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-preview-stop"><i class="fa-solid fa-rotate-left"></i> Voltar ao terapeuta</a>
+    <?php endif; ?>
     <a class="btn btn-sm btn-outline-danger w-100" href="<?php echo $appUrl; ?>/index.php?action=logout"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
   </div>
 </aside>
