@@ -579,12 +579,14 @@ class PatientPortalController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Meditação não encontrada.'));
         }
 
+        $therapist = $this->userModel->findById($therapistId);
         $entries = $this->patientGuidedMeditationEntryModel->listByPatient($patientId, $meditationId);
 
         $this->view('patient/guided-meditation-show', [
             'appUrl' => Config::get('APP_URL', ''),
             'meditation' => $meditation,
             'entries' => $entries,
+            'therapist' => $therapist,
         ]);
     }
 

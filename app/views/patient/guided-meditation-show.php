@@ -26,7 +26,7 @@
     </div>
   </section>
 
-  <section id="guidedDeckSection" class="card guided-deck-card d-none">
+  <section id="guidedDeckSection" class="card guided-deck-card d-none" style="<?php echo !empty($therapist['company_logo_path']) ? ('--therapist-logo-bg: url(' . htmlspecialchars($appUrl . '/' . ltrim((string) $therapist['company_logo_path'], '/')) . ');') : ''; ?>">
     <div class="card-body p-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <h5 class="mb-0">Escolha uma carta de cura</h5>

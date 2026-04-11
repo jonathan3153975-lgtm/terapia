@@ -1177,7 +1177,7 @@ body.app-body {
 	inset: 0;
 	border-radius: 16px;
 	transform-style: preserve-3d;
-	transition: transform .72s cubic-bezier(.2, .8, .2, 1);
+	transition: transform .85s cubic-bezier(.34, 1.56, .64, 1);
 }
 
 .guided-card-face {
@@ -1191,11 +1191,11 @@ body.app-body {
 }
 
 .guided-card-front {
-	border: 1px solid rgba(255, 255, 255, .45);
+	border: 1px solid rgba(200, 210, 220, .55);
 	box-shadow: 0 12px 22px rgba(15, 23, 42, .14);
 	background:
-		repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 8px, rgba(255,255,255,.04) 8px 16px),
-		linear-gradient(140deg, #0f172a 0%, #1e3a8a 46%, #0f766e 100%);
+		repeating-linear-gradient(45deg, rgba(255,255,255,.22) 0 8px, rgba(255,255,255,.08) 8px 16px),
+		linear-gradient(135deg, #e5e7eb 0%, #d1d5db 50%, #9ca3af 100%);
 }
 
 .guided-card-logo-mark {
@@ -1208,13 +1208,14 @@ body.app-body {
 	font-size: .78rem;
 	font-weight: 700;
 	letter-spacing: .02em;
-	color: rgba(255, 255, 255, .84);
-	border: 1px dashed rgba(255, 255, 255, .45);
+	color: rgba(50, 60, 80, .72);
+	border: 2px dashed rgba(100, 120, 150, .45);
 	background:
-		linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.04)),
+		linear-gradient(180deg, rgba(255,255,255,.24), rgba(200,210,220,.12)),
 		var(--therapist-logo-bg, transparent);
 	background-size: cover;
 	background-position: center;
+	background-blend-mode: overlay;
 }
 
 .guided-card-back {
@@ -1268,6 +1269,11 @@ body.app-body {
 	animation: guided-card-grow .38s ease both;
 }
 
+.guided-card-slot.is-flipped {
+	z-index: 10;
+	box-shadow: 0 28px 48px rgba(15, 23, 42, .32);
+}
+
 .guided-card-slot.is-flipped .guided-card-inner {
 	transform: rotateY(180deg);
 }
@@ -1318,6 +1324,9 @@ body.app-body {
 @keyframes guided-card-grow {
 	0% {
 		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.08);
 	}
 	100% {
 		transform: scale(1.03);
