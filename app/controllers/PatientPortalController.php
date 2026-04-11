@@ -430,6 +430,21 @@ class PatientPortalController extends Controller
         }
 
         if ($shareWithTherapist === 1) {
+            $this->taskModel->insert([
+                'therapist_id' => $therapistId,
+                'patient_id' => $patientId,
+                'due_date' => date('Y-m-d'),
+                'title' => 'Leitura Mensageiro',
+                'description' => $messageText,
+                'patient_response_html' => $patientNote,
+                'responded_at' => date('Y-m-d H:i:s'),
+                'send_to_patient' => 0,
+                'delivery_kind' => 'task',
+                'status' => 'done',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
             $therapist = $this->userModel->findById($therapistId);
             if ($therapist) {
                 $subject = 'Nova reflexão no Mensageiro';

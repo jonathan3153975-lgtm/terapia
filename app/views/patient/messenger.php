@@ -6,19 +6,9 @@
     <div class="card-body p-4 p-lg-5">
       <div class="messenger-hero-grid">
         <div>
-          <span class="messenger-kicker">Ritual do dia</span>
+          <span class="messenger-kicker">Mensageiro</span>
           <h3 class="messenger-hero-title mb-2">Abra a mensagem que chegou para você hoje</h3>
-          <p class="messenger-hero-copy mb-3">O sorteio é totalmente aleatório. Uma mensagem não volta a aparecer neste ciclo até que todas as outras também tenham sido abertas.</p>
-          <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span class="messenger-progress-pill">
-              <i class="fa-regular fa-compass me-1"></i>
-              <span id="cycleProgressText"><?php echo (int) ($cycleDrawCount ?? 0); ?> de <?php echo (int) ($totalMessages ?? 0); ?> abertas neste ciclo</span>
-            </span>
-            <span class="messenger-progress-pill messenger-progress-pill--soft">
-              <i class="fa-regular fa-star me-1"></i>
-              <?php echo (int) ($totalMessages ?? 0); ?> mensagem(ns) disponíveis
-            </span>
-          </div>
+          <p class="messenger-hero-copy mb-3">Essa mensagem vai falar ao seu coracao. Observe como seu corpo reage quando voce ler isso. Se voce se sentir confortavel e quiser registrar seus pensamentos, escreva sua reflexao e salve para voltar aos seus pensamentos em outro momento.</p>
         </div>
 
         <div class="messenger-draw-panel">
@@ -42,7 +32,6 @@
   <section id="drawResultCard" class="messenger-reveal card mb-4 d-none" aria-live="polite">
     <div class="card-body p-4 p-lg-5">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <span id="drawCategoryBadge" class="badge rounded-pill messenger-category-badge">-</span>
         <span id="drawCycleHint" class="small text-muted"></span>
       </div>
       <h4 class="messenger-reveal-title">A mensagem se abriu</h4>
@@ -52,12 +41,7 @@
 
   <section id="messengerReflectionSection" class="card mb-4 d-none messenger-reflection-card">
     <div class="card-body p-4">
-      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-        <div>
-          <h5 class="card-title mb-1">Sua reflexão</h5>
-          <p class="text-muted mb-0">Agora que você leu a mensagem, registre o que ela despertou em você.</p>
-        </div>
-      </div>
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3"></div>
 
       <form method="POST" action="<?php echo $appUrl; ?>/patient.php?action=messenger-save" id="messengerSaveForm">
         <input type="hidden" name="message_id" id="messageIdInput" value="">
@@ -65,7 +49,6 @@
         <input type="hidden" name="message_text" id="messageTextInput" value="">
 
         <div class="mb-3">
-          <label class="form-label">Escreva sua reflexão</label>
           <textarea class="form-control messenger-reflection-input" name="patient_note" id="patientNoteInput" rows="6" placeholder="O que essa mensagem tocou em você hoje?" required></textarea>
         </div>
 
@@ -85,7 +68,6 @@
     <div class="card-body p-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <h5 class="card-title mb-0">Meu baú de reflexões</h5>
-        <span class="badge text-bg-light border"><?php echo count($entries ?? []); ?> registro(s)</span>
       </div>
 
       <?php if (empty($entries)): ?>
@@ -96,20 +78,9 @@
       <?php else: ?>
         <div class="row g-3">
           <?php foreach ($entries as $entry): ?>
-            <?php
-              $entryCategory = (string) ($entry['message_category'] ?? 'dores');
-              $entryCategoryLabel = $entryCategory === 'reflexivas'
-                ? 'Reflexivas'
-                : ($entryCategory === 'cura'
-                  ? 'Cura'
-                  : ($entryCategory === 'motivacionais'
-                    ? 'Motivacionais'
-                    : ($entryCategory === 'conflitos' ? 'Conflitos' : 'Dores')));
-            ?>
             <div class="col-12 col-xl-6">
               <article class="messenger-entry-card h-100">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-                  <span class="badge rounded-pill text-bg-light border"><?php echo htmlspecialchars($entryCategoryLabel); ?></span>
                   <span class="small text-muted"><?php echo !empty($entry['drawn_at']) ? date('d/m/Y H:i', strtotime((string) $entry['drawn_at'])) : '-'; ?></span>
                 </div>
                 <div class="small text-muted mb-1">Mensagem aberta</div>
@@ -133,10 +104,8 @@ window.addEventListener('load', function () {
   var drawBtn = document.getElementById('drawMessageBtn');
   var drawStage = document.getElementById('messengerDrawStage');
   var drawResultCard = document.getElementById('drawResultCard');
-  var drawCategoryBadge = document.getElementById('drawCategoryBadge');
   var drawMessageText = document.getElementById('drawMessageText');
   var drawCycleHint = document.getElementById('drawCycleHint');
-  var cycleProgressText = document.getElementById('cycleProgressText');
   var reflectionSection = document.getElementById('messengerReflectionSection');
   var patientNoteInput = document.getElementById('patientNoteInput');
 
@@ -145,21 +114,56 @@ window.addEventListener('load', function () {
   var messageTextInput = document.getElementById('messageTextInput');
   var saveForm = document.getElementById('messengerSaveForm');
   var saveBtn = document.getElementById('messengerSaveBtn');
+  var typingToken = 0;
 
-  var categoryLabel = function (cat) {
-    if (cat === 'reflexivas') {
-      return 'Reflexivas';
+  var revealTextWithTyping = function (el, text, onDone) {
+    if (!el) {
+      if (typeof onDone === 'function') {
+        onDone();
+      }
+      return;
     }
-    if (cat === 'cura') {
-      return 'Cura';
+
+    var fullText = String(text || '');
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || fullText.length <= 8) {
+      el.classList.remove('is-typing');
+      el.textContent = fullText;
+      if (typeof onDone === 'function') {
+        onDone();
+      }
+      return;
     }
-    if (cat === 'motivacionais') {
-      return 'Motivacionais';
-    }
-    if (cat === 'conflitos') {
-      return 'Conflitos';
-    }
-    return 'Dores';
+
+    typingToken += 1;
+    var localToken = typingToken;
+    var idx = 0;
+    var chunk = fullText.length > 240 ? 3 : 2;
+    var speed = fullText.length > 240 ? 10 : 14;
+
+    el.textContent = '';
+    el.classList.add('is-typing');
+
+    var tick = function () {
+      if (localToken !== typingToken) {
+        return;
+      }
+
+      idx = Math.min(fullText.length, idx + chunk);
+      el.textContent = fullText.slice(0, idx);
+
+      if (idx >= fullText.length) {
+        el.classList.remove('is-typing');
+        if (typeof onDone === 'function') {
+          onDone();
+        }
+        return;
+      }
+
+      window.setTimeout(tick, speed);
+    };
+
+    window.setTimeout(tick, 40);
   };
 
   var setDrawButtonIdle = function () {
@@ -223,9 +227,6 @@ window.addEventListener('load', function () {
     if (reflectionSection) {
       reflectionSection.classList.add('d-none');
     }
-    if (drawCategoryBadge) {
-      drawCategoryBadge.textContent = 'Sorteando';
-    }
     if (drawMessageText) {
       drawMessageText.textContent = 'As mensagens estão se movendo dentro do baú...';
     }
@@ -265,17 +266,8 @@ window.addEventListener('load', function () {
         if (drawResultCard) {
           drawResultCard.classList.add('is-revealed');
         }
-        if (drawCategoryBadge) {
-          drawCategoryBadge.textContent = categoryLabel(message.category || 'dores');
-        }
-        if (drawMessageText) {
-          drawMessageText.textContent = message.text || '';
-        }
         if (drawCycleHint && cycle) {
-          drawCycleHint.textContent = (cycle.restarted ? 'Novo ciclo iniciado. ' : '') + 'Restam ' + (cycle.remainingCount || 0) + ' mensagem(ns) até completar este ciclo.';
-        }
-        if (cycleProgressText && cycle) {
-          cycleProgressText.textContent = (cycle.drawnCount || 0) + ' de ' + (cycle.totalCount || 0) + ' abertas neste ciclo';
+          drawCycleHint.textContent = cycle.restarted ? 'Novo ciclo iniciado para você.' : '';
         }
 
         if (messageIdInput) {
@@ -299,21 +291,16 @@ window.addEventListener('load', function () {
           reflectionSection.classList.remove('d-none');
         }
 
-        window.setTimeout(function () {
-          if (reflectionSection) {
-            reflectionSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        revealTextWithTyping(drawMessageText, message.text || '', function () {
+          if (drawResultCard) {
+            var y = drawResultCard.getBoundingClientRect().top + window.scrollY - 18;
+            window.scrollTo({ top: y, behavior: 'smooth' });
           }
-          if (patientNoteInput) {
-            patientNoteInput.focus();
-          }
-        }, 180);
+        });
       })
       .catch(function (error) {
         if (drawStage) {
           drawStage.classList.remove('is-drawing');
-        }
-        if (drawCategoryBadge) {
-          drawCategoryBadge.textContent = 'Indisponível';
         }
         if (drawMessageText) {
           drawMessageText.textContent = error.message || 'Erro ao abrir o baú.';
