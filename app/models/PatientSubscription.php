@@ -8,6 +8,17 @@ class PatientSubscription extends Model
 {
     protected string $table = 'patient_subscriptions';
 
+    public function deactivateActiveByPatient(int $patientId): bool
+    {
+        return (bool) $this->query(
+            "UPDATE patient_subscriptions
+             SET status = 'canceled', updated_at = NOW()
+             WHERE patient_id = ?
+               AND status = 'active'",
+            [$patientId]
+        );
+    }
+
     public function countActiveAll(): int
     {
         return $this->count("status = 'active' AND (ends_at IS NULL OR ends_at >= NOW())");

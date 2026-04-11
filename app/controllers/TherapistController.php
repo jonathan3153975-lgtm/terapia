@@ -15,7 +15,9 @@ use App\Models\PatientFaithEntry;
 use App\Models\PatientGuidedMeditationEntry;
 use App\Models\PatientMessageEntry;
 use App\Models\PatientSignupLink;
+use App\Models\PatientSubscription;
 use App\Models\Payment;
+use App\Models\Plan;
 use App\Models\Task;
 use App\Models\User;
 use Classes\Controller;
@@ -45,6 +47,8 @@ class TherapistController extends Controller
     private HealingLetter $healingLetterModel;
     private PatientGuidedMeditationEntry $patientGuidedMeditationEntryModel;
     private PatientSignupLink $patientSignupLinkModel;
+    private Plan $planModel;
+    private PatientSubscription $patientSubscriptionModel;
 
     public function __construct()
     {
@@ -65,6 +69,8 @@ class TherapistController extends Controller
         $this->healingLetterModel = new HealingLetter();
         $this->patientGuidedMeditationEntryModel = new PatientGuidedMeditationEntry();
         $this->patientSignupLinkModel = new PatientSignupLink();
+        $this->planModel = new Plan();
+        $this->patientSubscriptionModel = new PatientSubscription();
     }
 
     public function dashboard(): void
@@ -2008,6 +2014,15 @@ class TherapistController extends Controller
         $therapistId = (int) Auth::id();
         $patients = $this->patientModel->searchByTherapist($therapistId, $term);
         $signupLinks = $this->patientSignupLinkModel->listByTherapist($therapistId, 10);
+        $availablePlans = $this->planModel->listActivePatientPlans();
+        $patientSubscriptions = [];
+        foreach ($patients as $patient) {
+            $patientId = (int) ($patient['id'] ?? 0);
+            if ($patientId <= 0) {
+                continue;
+            }
+            $patientSubscriptions[$patientId] = $this->patientSubscriptionModel->findLatestByPatient($patientId);
+        }
 
         $this->view('therapist/patients/index', [
             'appUrl' => Config::get('APP_URL', ''),
@@ -2015,7 +2030,86 @@ class TherapistController extends Controller
             'search' => $term,
             'signupLinks' => $signupLinks,
             'generatedLink' => trim((string) ($_GET['generated_link'] ?? '')),
+            'availablePlans' => $availablePlans,
+            'patientSubscriptions' => $patientSubscriptions,
         ]);
+    }
+
+    public function assignPatientPlan(): void
+    {
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_POST['patient_id'] ?? 0);
+        $planId = (int) ($_POST['plan_id'] ?? 0);
+
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Paciente inválido para atribuição de plano.'));
+        }
+
+        $plan = $this->planModel->findPatientPlanById($planId);
+        if (!$plan || (int) ($plan['is_active'] ?? 0) !== 1) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Plano inválido ou inativo.'));
+        }
+
+        $start = new \DateTimeImmutable();
+        $end = match ((string) ($plan['billing_cycle'] ?? 'mensal')) {
+            'anual' => $start->modify('+1 year'),
+            'semestral' => $start->modify('+6 months'),
+            default => $start->modify('+1 month'),
+        };
+
+        $this->patientSubscriptionModel->deactivateActiveByPatient($patientId);
+
+        $created = $this->patientSubscriptionModel->insert([
+            'patient_id' => $patientId,
+            'therapist_id' => $therapistId,
+            'plan_id' => (int) ($plan['id'] ?? 0),
+            'payment_id' => null,
+            'status' => 'active',
+            'billing_cycle' => (string) ($plan['billing_cycle'] ?? 'mensal'),
+            'amount' => number_format((float) ($plan['price'] ?? 0), 2, '.', ''),
+            'provider' => 'manual',
+            'provider_reference' => 'MANUAL-' . $patientId . '-' . time(),
+            'checkout_url' => null,
+            'starts_at' => $start->format('Y-m-d H:i:s'),
+            'ends_at' => $end->format('Y-m-d H:i:s'),
+            'paid_at' => $start->format('Y-m-d H:i:s'),
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$created) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Falha ao atribuir plano ao paciente.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=success&msg=' . urlencode('Plano atribuído com sucesso.'));
+    }
+
+    public function togglePatientPlanStatus(): void
+    {
+        $therapistId = (int) Auth::id();
+        $patientId = (int) ($_POST['patient_id'] ?? 0);
+        $patient = $this->patientModel->findByTherapistAndId($therapistId, $patientId);
+
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Paciente não encontrado para alteração de plano.'));
+        }
+
+        $latest = $this->patientSubscriptionModel->findLatestByPatient($patientId);
+        if (!$latest || (int) ($latest['therapist_id'] ?? 0) !== $therapistId) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Nenhum plano atribuído para este paciente.'));
+        }
+
+        $currentStatus = (string) ($latest['status'] ?? 'pending');
+        $nextStatus = $currentStatus === 'active' ? 'canceled' : 'active';
+        $updated = $this->patientSubscriptionModel->markStatusById((int) ($latest['id'] ?? 0), $nextStatus);
+
+        if (!$updated) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Falha ao atualizar status do plano.'));
+        }
+
+        $label = $nextStatus === 'active' ? 'ativado' : 'desativado';
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=success&msg=' . urlencode('Plano ' . $label . ' com sucesso.'));
     }
 
     public function createPatientSignupLink(): void

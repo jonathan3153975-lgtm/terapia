@@ -50,10 +50,10 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table mb-0">
-        <thead><tr><th>Nome</th><th>Status</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Nome</th><th>Status</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Plano</th><th>Ações</th></tr></thead>
         <tbody>
           <?php if (empty($patients)): ?>
-            <tr><td colspan="6" class="text-center py-4 text-muted">Nenhum paciente cadastrado.</td></tr>
+            <tr><td colspan="7" class="text-center py-4 text-muted">Nenhum paciente cadastrado.</td></tr>
           <?php else: foreach ($patients as $patient): ?>
             <tr class="row-patient" data-search="<?php echo strtolower(htmlspecialchars(($patient['name'] ?? '') . ' ' . ($patient['cpf'] ?? '') . ' ' . ($patient['email'] ?? ''))); ?>">
               <td><?php echo htmlspecialchars($patient['name']); ?></td>
@@ -64,8 +64,35 @@
               <td><?php echo htmlspecialchars($patient['cpf']); ?></td>
               <td><?php echo htmlspecialchars($patient['phone']); ?></td>
               <td><?php echo htmlspecialchars($patient['email'] ?? '-'); ?></td>
+              <td>
+                <?php $sub = $patientSubscriptions[(int) ($patient['id'] ?? 0)] ?? null; ?>
+                <div class="small mb-1">
+                  <?php if ($sub): ?>
+                    <strong><?php echo htmlspecialchars((string) ($sub['plan_name'] ?? 'Plano')); ?></strong>
+                    <span class="badge <?php echo (string) ($sub['status'] ?? '') === 'active' ? 'text-bg-success' : 'text-bg-secondary'; ?>"><?php echo htmlspecialchars((string) ($sub['status'] ?? '')); ?></span>
+                  <?php else: ?>
+                    <span class="text-muted">Sem plano</span>
+                  <?php endif; ?>
+                </div>
+                <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-plan-assign" class="d-flex gap-1">
+                  <input type="hidden" name="patient_id" value="<?php echo (int) ($patient['id'] ?? 0); ?>">
+                  <select class="form-select form-select-sm" name="plan_id" required>
+                    <option value="">Plano...</option>
+                    <?php foreach (($availablePlans ?? []) as $plan): ?>
+                      <option value="<?php echo (int) ($plan['id'] ?? 0); ?>">
+                        <?php echo htmlspecialchars((string) ($plan['name'] ?? 'Plano')); ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                  <button class="btn btn-sm btn-outline-primary" type="submit" title="Atribuir plano"><i class="fa-solid fa-check"></i></button>
+                </form>
+              </td>
               <td class="align-middle">
                 <div class="d-flex align-items-center gap-1 flex-nowrap">
+                  <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-plan-toggle" class="d-flex m-0">
+                    <input type="hidden" name="patient_id" value="<?php echo (int) ($patient['id'] ?? 0); ?>">
+                    <button class="btn btn-sm btn-outline-warning" style="width:32px;padding:0;line-height:1.8;" type="submit" title="Ativar/Desativar plano"><i class="fa-solid fa-power-off"></i></button>
+                  </form>
                   <?php if ($isPendingReview): ?>
                     <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-approve-review" class="d-flex m-0">
                       <input type="hidden" name="id" value="<?php echo (int) $patient['id']; ?>">

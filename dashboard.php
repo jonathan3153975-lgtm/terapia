@@ -104,6 +104,8 @@ match ($action) {
     'patients-preview-menu' => (new TherapistController())->patientPreviewMenu(),
     'patients-signup-link-create' => (new TherapistController())->createPatientSignupLink(),
     'patients-approve-review' => (new TherapistController())->approvePatientReview(),
+    'patients-plan-assign' => (new TherapistController())->assignPatientPlan(),
+    'patients-plan-toggle' => (new TherapistController())->togglePatientPlanStatus(),
     'patients-preview-start' => (new TherapistController())->startPatientPreview(),
     'patients-preview-stop' => (new TherapistController())->stopPatientPreview(),
     'patients-create' => (new TherapistController())->createPatient(),

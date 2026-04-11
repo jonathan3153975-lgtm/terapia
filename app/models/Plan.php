@@ -8,6 +8,24 @@ class Plan extends Model
 {
     protected string $table = 'plans';
 
+    public function listActivePatientPlans(): array
+    {
+        $stmt = $this->query(
+            "SELECT p.*, u.name AS therapist_name
+             FROM plans p
+             LEFT JOIN users u ON u.id = p.therapist_id
+             WHERE p.target = 'patient'
+               AND p.is_active = 1
+             ORDER BY p.name ASC"
+        );
+
+        if (!$stmt) {
+            return [];
+        }
+
+        return $stmt->fetchAll();
+    }
+
     public function listPatientPlansByTherapist(int $therapistId): array
     {
         $stmt = $this->query(
