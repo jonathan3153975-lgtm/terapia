@@ -42,6 +42,7 @@ $displayName = $isPatientPreview ? (Auth::patientPreviewName() ?? Auth::name()) 
       <a class="sidebar-link <?php echo $currentAction === 'tasks' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=tasks"><i class="fa-solid fa-list-check"></i><span>Minhas tarefas</span></a>
       <a class="sidebar-link <?php echo $currentAction === 'materials' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=materials"><i class="fa-solid fa-book"></i><span>Meus materiais</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'messenger') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=messenger"><i class="fa-solid fa-box-open"></i><span>Mensageiro</span></a>
+      <a class="sidebar-link <?php echo str_starts_with($currentAction, 'gratitude') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=gratitude"><i class="fa-solid fa-book-heart"></i><span>Diário da gratidão</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'father-word') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=father-word"><i class="fa-solid fa-book-bible"></i><span>Pai, fala comigo</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'guided-meditation') || $currentAction === 'guided-meditations' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=guided-meditations"><i class="fa-solid fa-compact-disc"></i><span>Meditação guiada</span></a>
     <?php endif; ?>

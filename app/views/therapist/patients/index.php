@@ -50,10 +50,10 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table mb-0">
-        <thead><tr><th>Nome</th><th>Status</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Plano</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Nome</th><th>Status</th><th>Plano</th><th>Ações</th></tr></thead>
         <tbody>
           <?php if (empty($patients)): ?>
-            <tr><td colspan="7" class="text-center py-4 text-muted">Nenhum paciente cadastrado.</td></tr>
+            <tr><td colspan="4" class="text-center py-4 text-muted">Nenhum paciente cadastrado.</td></tr>
           <?php else: foreach ($patients as $patient): ?>
             <tr class="row-patient" data-search="<?php echo strtolower(htmlspecialchars(($patient['name'] ?? '') . ' ' . ($patient['cpf'] ?? '') . ' ' . ($patient['email'] ?? ''))); ?>">
               <td><?php echo htmlspecialchars($patient['name']); ?></td>
@@ -61,9 +61,6 @@
                 <?php $isPendingReview = (($patient['review_status'] ?? 'approved') === 'pending_review'); ?>
                 <span class="badge <?php echo $isPendingReview ? 'text-bg-warning' : 'text-bg-success'; ?>"><?php echo $isPendingReview ? 'Pendente revisão' : 'Aprovado'; ?></span>
               </td>
-              <td><?php echo htmlspecialchars($patient['cpf']); ?></td>
-              <td><?php echo htmlspecialchars($patient['phone']); ?></td>
-              <td><?php echo htmlspecialchars($patient['email'] ?? '-'); ?></td>
               <td>
                 <?php $sub = $patientSubscriptions[(int) ($patient['id'] ?? 0)] ?? null; ?>
                 <div class="small mb-1">

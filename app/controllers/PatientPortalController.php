@@ -12,6 +12,7 @@ use App\Models\Material;
 use App\Models\MaterialDelivery;
 use App\Models\Patient;
 use App\Models\PatientFaithEntry;
+use App\Models\PatientGratitudeEntry;
 use App\Models\PatientGuidedMeditationEntry;
 use App\Models\PatientMessageEntry;
 use App\Models\PatientSubscription;
@@ -41,6 +42,7 @@ class PatientPortalController extends Controller
     private PatientMessageEntry $patientMessageEntryModel;
     private FaithWord $faithWordModel;
     private PatientFaithEntry $patientFaithEntryModel;
+    private PatientGratitudeEntry $patientGratitudeEntryModel;
     private GuidedMeditation $guidedMeditationModel;
     private HealingLetter $healingLetterModel;
     private PatientGuidedMeditationEntry $patientGuidedMeditationEntryModel;
@@ -63,6 +65,7 @@ class PatientPortalController extends Controller
         $this->patientMessageEntryModel = new PatientMessageEntry();
         $this->faithWordModel = new FaithWord();
         $this->patientFaithEntryModel = new PatientFaithEntry();
+        $this->patientGratitudeEntryModel = new PatientGratitudeEntry();
         $this->guidedMeditationModel = new GuidedMeditation();
         $this->healingLetterModel = new HealingLetter();
         $this->patientGuidedMeditationEntryModel = new PatientGuidedMeditationEntry();
@@ -205,6 +208,226 @@ class PatientPortalController extends Controller
         $ids = $this->getHealingLettersCycleDrawnIds($patientId);
         $ids[] = $letterId;
         $this->setHealingLettersCycleDrawnIds($patientId, $ids);
+    }
+
+    private function resolveGratitudeCycleContext(int $patientId): array
+    {
+        $latest = $this->patientGratitudeEntryModel->getLatestCycleStatsByPatient($patientId);
+        if (!$latest) {
+            return [
+                'current_cycle' => 1,
+                'next_cycle' => 1,
+                'next_day' => 1,
+                'is_locked' => false,
+            ];
+        }
+
+        $currentCycle = (int) ($latest['cycle_number'] ?? 1);
+        $maxDay = (int) ($latest['max_day'] ?? 0);
+        $isLocked = $maxDay >= 30;
+
+        if ($isLocked) {
+            return [
+                'current_cycle' => $currentCycle,
+                'next_cycle' => $currentCycle + 1,
+                'next_day' => 1,
+                'is_locked' => true,
+            ];
+        }
+
+        return [
+            'current_cycle' => $currentCycle,
+            'next_cycle' => $currentCycle,
+            'next_day' => $maxDay + 1,
+            'is_locked' => false,
+        ];
+    }
+
+    private function buildGratitudeCycleDocument(array $entries, int $cycleNumber, string $patientName): string
+    {
+        $rows = '';
+        foreach ($entries as $entry) {
+            $day = (int) ($entry['day_number'] ?? 0);
+            $content = (string) ($entry['content_html'] ?? '');
+            $rows .= '<h4>Dia ' . $day . '</h4>' . $content . '<hr>';
+        }
+
+        return '<h3>Diário de gratidão (30 dias)</h3>'
+            . '<p><strong>Paciente:</strong> ' . htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8') . '</p>'
+            . '<p><strong>Ciclo:</strong> ' . $cycleNumber . '</p>'
+            . $rows;
+    }
+
+    public function gratitude(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $context = $this->resolveGratitudeCycleContext($patientId);
+        $entries = $this->patientGratitudeEntryModel->listByPatientAndCycle($patientId, (int) $context['current_cycle']);
+
+        $this->view('patient/gratitude', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'patient' => $patient,
+            'entries' => $entries,
+            'currentCycle' => (int) $context['current_cycle'],
+            'nextCycle' => (int) $context['next_cycle'],
+            'nextDay' => (int) $context['next_day'],
+            'isCurrentCycleLocked' => (bool) $context['is_locked'],
+        ]);
+    }
+
+    public function storeGratitudeEntry(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $contentHtml = $this->sanitizeRichText((string) ($_POST['content_html'] ?? ''));
+        if (trim(strip_tags($contentHtml)) === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Escreva sua gratidão antes de salvar.'));
+        }
+
+        $context = $this->resolveGratitudeCycleContext($patientId);
+        $targetCycle = (int) $context['next_cycle'];
+        $targetDay = (int) $context['next_day'];
+
+        $saved = $this->patientGratitudeEntryModel->insert([
+            'therapist_id' => $therapistId,
+            'patient_id' => $patientId,
+            'cycle_number' => $targetCycle,
+            'day_number' => $targetDay,
+            'content_html' => $contentHtml,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Falha ao salvar o registro de gratidão.'));
+        }
+
+        if ($targetDay >= 30) {
+            $cycleEntries = $this->patientGratitudeEntryModel->listByPatientAndCycle($patientId, $targetCycle);
+            $compiledHtml = $this->buildGratitudeCycleDocument($cycleEntries, $targetCycle, (string) ($patient['name'] ?? 'Paciente'));
+            $this->taskModel->insert([
+                'therapist_id' => $therapistId,
+                'patient_id' => $patientId,
+                'due_date' => date('Y-m-d'),
+                'title' => 'Diário de gratidão (30 dias)',
+                'description' => 'Resumo do diário de gratidão do paciente (ciclo ' . $targetCycle . ').',
+                'patient_response_html' => $compiledHtml,
+                'responded_at' => date('Y-m-d H:i:s'),
+                'send_to_patient' => 0,
+                'delivery_kind' => 'task',
+                'status' => 'done',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=success&msg=' . urlencode('Registro salvo com sucesso.'));
+    }
+
+    public function showGratitudeEntry(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $entryId = (int) ($_GET['id'] ?? 0);
+        $entry = $this->patientGratitudeEntryModel->findByPatientAndId($patientId, $entryId);
+        if (!$entry) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro não encontrado.'));
+        }
+
+        $this->view('patient/gratitude-show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'entry' => $entry,
+        ]);
+    }
+
+    public function editGratitudeEntry(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $entryId = (int) ($_GET['id'] ?? 0);
+        $entry = $this->patientGratitudeEntryModel->findByPatientAndId($patientId, $entryId);
+        if (!$entry) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro não encontrado.'));
+        }
+
+        $stats = $this->patientGratitudeEntryModel->getCycleStatsByPatient($patientId, (int) ($entry['cycle_number'] ?? 0));
+        if ((int) ($stats['max_day'] ?? 0) >= 30) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Após 30 dias, o diário é bloqueado para edição.'));
+        }
+
+        $this->view('patient/gratitude-edit', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'entry' => $entry,
+        ]);
+    }
+
+    public function updateGratitudeEntry(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $entryId = (int) ($_POST['id'] ?? 0);
+        $entry = $this->patientGratitudeEntryModel->findByPatientAndId($patientId, $entryId);
+        if (!$entry) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro não encontrado.'));
+        }
+
+        $stats = $this->patientGratitudeEntryModel->getCycleStatsByPatient($patientId, (int) ($entry['cycle_number'] ?? 0));
+        if ((int) ($stats['max_day'] ?? 0) >= 30) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Após 30 dias, o diário é bloqueado para edição.'));
+        }
+
+        $contentHtml = $this->sanitizeRichText((string) ($_POST['content_html'] ?? ''));
+        if (trim(strip_tags($contentHtml)) === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude-edit&id=' . $entryId . '&status=error&msg=' . urlencode('Escreva sua gratidão antes de salvar.'));
+        }
+
+        $updated = $this->patientGratitudeEntryModel->updateById($entryId, [
+            'content_html' => $contentHtml,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude-edit&id=' . $entryId . '&status=error&msg=' . urlencode('Falha ao atualizar o registro.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=success&msg=' . urlencode('Registro atualizado com sucesso.'));
+    }
+
+    public function deleteGratitudeEntry(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $entryId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+        $entry = $this->patientGratitudeEntryModel->findByPatientAndId($patientId, $entryId);
+        if (!$entry) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro não encontrado.'));
+        }
+
+        $stats = $this->patientGratitudeEntryModel->getCycleStatsByPatient($patientId, (int) ($entry['cycle_number'] ?? 0));
+        if ((int) ($stats['max_day'] ?? 0) >= 30) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Após 30 dias, o diário é bloqueado para exclusão.'));
+        }
+
+        $deleted = $this->patientGratitudeEntryModel->deleteByPatientAndId($patientId, $entryId);
+        if (!$deleted) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Falha ao excluir registro.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=success&msg=' . urlencode('Registro excluído com sucesso.'));
     }
 
     private function sanitizeRichText(string $html): string
