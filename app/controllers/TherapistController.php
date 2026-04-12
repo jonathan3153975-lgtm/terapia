@@ -13,11 +13,13 @@ use App\Models\MaterialDelivery;
 use App\Models\Patient;
 use App\Models\PatientFaithEntry;
 use App\Models\PatientGuidedMeditationEntry;
+use App\Models\PatientPrayerEntry;
 use App\Models\PatientMessageEntry;
 use App\Models\PatientSignupLink;
 use App\Models\PatientSubscription;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Prayer;
 use App\Models\Task;
 use App\Models\User;
 use Classes\Controller;
@@ -44,8 +46,10 @@ class TherapistController extends Controller
     private FaithWord $faithWordModel;
     private PatientFaithEntry $patientFaithEntryModel;
     private GuidedMeditation $guidedMeditationModel;
+    private Prayer $prayerModel;
     private HealingLetter $healingLetterModel;
     private PatientGuidedMeditationEntry $patientGuidedMeditationEntryModel;
+    private PatientPrayerEntry $patientPrayerEntryModel;
     private PatientSignupLink $patientSignupLinkModel;
     private Plan $planModel;
     private PatientSubscription $patientSubscriptionModel;
@@ -66,8 +70,10 @@ class TherapistController extends Controller
         $this->faithWordModel = new FaithWord();
         $this->patientFaithEntryModel = new PatientFaithEntry();
         $this->guidedMeditationModel = new GuidedMeditation();
+        $this->prayerModel = new Prayer();
         $this->healingLetterModel = new HealingLetter();
         $this->patientGuidedMeditationEntryModel = new PatientGuidedMeditationEntry();
+        $this->patientPrayerEntryModel = new PatientPrayerEntry();
         $this->patientSignupLinkModel = new PatientSignupLink();
         $this->planModel = new Plan();
         $this->patientSubscriptionModel = new PatientSubscription();
@@ -807,6 +813,283 @@ class TherapistController extends Controller
         $this->deleteGuidedMeditationFileIfExists((string) ($current['audio_path'] ?? ''));
 
         $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=success&msg=' . urlencode('Meditação excluída com sucesso.'));
+    }
+
+    private function prayerUploadBasePath(string $kind): string
+    {
+        $suffix = $kind === 'audio' ? 'audios' : 'images';
+        $uploadBase = dirname(__DIR__, 2) . '/uploads/prayers/' . $suffix;
+        if (!is_dir($uploadBase)) {
+            @mkdir($uploadBase, 0775, true);
+        }
+
+        return $uploadBase;
+    }
+
+    private function storePrayerImageFromRequest(): array
+    {
+        if (!isset($_FILES['reference_image']) || (int) ($_FILES['reference_image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return [
+                'name' => null,
+                'path' => null,
+            ];
+        }
+
+        $tmpName = (string) ($_FILES['reference_image']['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            return [
+                'name' => null,
+                'path' => null,
+            ];
+        }
+
+        $originalName = trim((string) ($_FILES['reference_image']['name'] ?? ''));
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+            return [
+                'name' => null,
+                'path' => null,
+            ];
+        }
+
+        $safeFile = uniqid('prayer_img_', true) . '.' . $ext;
+        $target = $this->prayerUploadBasePath('image') . '/' . $safeFile;
+        if (!@move_uploaded_file($tmpName, $target)) {
+            return [
+                'name' => null,
+                'path' => null,
+            ];
+        }
+
+        return [
+            'name' => $originalName,
+            'path' => 'uploads/prayers/images/' . $safeFile,
+        ];
+    }
+
+    private function storePrayerAudioFromRequest(): array
+    {
+        if (!isset($_FILES['audio_file']) || (int) ($_FILES['audio_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return [
+                'name' => '',
+                'path' => '',
+            ];
+        }
+
+        $tmpName = (string) ($_FILES['audio_file']['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            return [
+                'name' => '',
+                'path' => '',
+            ];
+        }
+
+        $originalName = trim((string) ($_FILES['audio_file']['name'] ?? ''));
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['mp3', 'wav', 'ogg', 'm4a'], true)) {
+            return [
+                'name' => '',
+                'path' => '',
+            ];
+        }
+
+        $safeFile = uniqid('prayer_audio_', true) . '.' . $ext;
+        $target = $this->prayerUploadBasePath('audio') . '/' . $safeFile;
+        if (!@move_uploaded_file($tmpName, $target)) {
+            return [
+                'name' => '',
+                'path' => '',
+            ];
+        }
+
+        return [
+            'name' => $originalName,
+            'path' => 'uploads/prayers/audios/' . $safeFile,
+        ];
+    }
+
+    private function deletePrayerFileIfExists(string $relativePath): void
+    {
+        $relativePath = trim($relativePath);
+        if ($relativePath === '') {
+            return;
+        }
+
+        $absolute = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        if (is_file($absolute)) {
+            @unlink($absolute);
+        }
+    }
+
+    public function prayers(): void
+    {
+        $therapistId = (int) Auth::id();
+        $search = trim((string) ($_GET['q'] ?? ''));
+
+        $prayers = $this->prayerModel->listByTherapist($therapistId, $search);
+        $sharedEntries = $this->patientPrayerEntryModel->listSharedByTherapist($therapistId, 100);
+
+        $this->view('therapist/prayers/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'prayers' => $prayers,
+            'sharedEntries' => $sharedEntries,
+            'filters' => [
+                'q' => $search,
+            ],
+        ]);
+    }
+
+    public function storePrayer(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $title = trim((string) ($_POST['title'] ?? ''));
+
+        if ($title === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Título é obrigatório.'));
+        }
+
+        $audio = $this->storePrayerAudioFromRequest();
+        if ($audio['path'] === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Anexe um arquivo de áudio válido (.mp3, .wav, .ogg, .m4a).'));
+        }
+
+        $image = $this->storePrayerImageFromRequest();
+
+        $saved = $this->prayerModel->insert([
+            'therapist_id' => $therapistId,
+            'title' => $title,
+            'reference_image_name' => $image['name'],
+            'reference_image_path' => $image['path'],
+            'audio_name' => $audio['name'],
+            'audio_path' => $audio['path'],
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->deletePrayerFileIfExists((string) $audio['path']);
+            $this->deletePrayerFileIfExists((string) ($image['path'] ?? ''));
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Falha ao cadastrar oração.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=success&msg=' . urlencode('Oração cadastrada com sucesso.'));
+    }
+
+    public function updatePrayer(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_POST['id'] ?? 0);
+        $title = trim((string) ($_POST['title'] ?? ''));
+
+        if ($id <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Registro inválido para edição.'));
+        }
+
+        if ($title === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Título é obrigatório.'));
+        }
+
+        $current = $this->prayerModel->findByTherapistAndId($therapistId, $id);
+        if (!$current) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Oração não encontrada.'));
+        }
+
+        $newImageName = (string) ($current['reference_image_name'] ?? '');
+        $newImagePath = (string) ($current['reference_image_path'] ?? '');
+        $newAudioName = (string) ($current['audio_name'] ?? '');
+        $newAudioPath = (string) ($current['audio_path'] ?? '');
+
+        $hasImageUpload = isset($_FILES['reference_image']) && (int) ($_FILES['reference_image']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK;
+        $hasAudioUpload = isset($_FILES['audio_file']) && (int) ($_FILES['audio_file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK;
+
+        $newImage = null;
+        if ($hasImageUpload) {
+            $newImage = $this->storePrayerImageFromRequest();
+            if (!empty($newImage['path'])) {
+                $newImageName = (string) ($newImage['name'] ?? '');
+                $newImagePath = (string) ($newImage['path'] ?? '');
+            }
+        }
+
+        $newAudio = null;
+        if ($hasAudioUpload) {
+            $newAudio = $this->storePrayerAudioFromRequest();
+            if (empty($newAudio['path'])) {
+                if ($newImage !== null && !empty($newImage['path'])) {
+                    $this->deletePrayerFileIfExists((string) $newImage['path']);
+                }
+
+                $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Anexe um arquivo de áudio válido (.mp3, .wav, .ogg, .m4a).'));
+            }
+
+            $newAudioName = (string) ($newAudio['name'] ?? '');
+            $newAudioPath = (string) ($newAudio['path'] ?? '');
+        }
+
+        $updated = $this->prayerModel->updateById($id, [
+            'title' => $title,
+            'reference_image_name' => $newImageName !== '' ? $newImageName : null,
+            'reference_image_path' => $newImagePath !== '' ? $newImagePath : null,
+            'audio_name' => $newAudioName,
+            'audio_path' => $newAudioPath,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            if ($newImage !== null && !empty($newImage['path'])) {
+                $this->deletePrayerFileIfExists((string) $newImage['path']);
+            }
+            if ($newAudio !== null && !empty($newAudio['path'])) {
+                $this->deletePrayerFileIfExists((string) $newAudio['path']);
+            }
+
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Falha ao atualizar oração.'));
+        }
+
+        if ($newImage !== null && !empty($newImage['path'])) {
+            $this->deletePrayerFileIfExists((string) ($current['reference_image_path'] ?? ''));
+        }
+        if ($newAudio !== null && !empty($newAudio['path'])) {
+            $this->deletePrayerFileIfExists((string) ($current['audio_path'] ?? ''));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=success&msg=' . urlencode('Oração atualizada com sucesso.'));
+    }
+
+    public function deletePrayer(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Registro inválido.'));
+        }
+
+        $current = $this->prayerModel->findByTherapistAndId($therapistId, $id);
+        if (!$current) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Oração não encontrada.'));
+        }
+
+        $deleted = $this->prayerModel->deleteByTherapistAndId($therapistId, $id);
+        if (!$deleted) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=error&msg=' . urlencode('Falha ao excluir oração.'));
+        }
+
+        $this->deletePrayerFileIfExists((string) ($current['reference_image_path'] ?? ''));
+        $this->deletePrayerFileIfExists((string) ($current['audio_path'] ?? ''));
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-prayers&status=success&msg=' . urlencode('Oração excluída com sucesso.'));
     }
 
     public function healingLetters(): void

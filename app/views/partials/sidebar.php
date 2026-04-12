@@ -32,6 +32,7 @@ $displayName = $isPatientPreview ? (Auth::patientPreviewName() ?? Auth::name()) 
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-messages') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-messages"><i class="fa-solid fa-envelope-open-text"></i><span>Mensagens diárias</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-faith-words') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-faith-words"><i class="fa-solid fa-cross"></i><span>Pai, fala comigo</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-guided-meditations') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-guided-meditations"><i class="fa-solid fa-headphones"></i><span>Meditação guiada</span></a>
+      <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-prayers') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-prayers"><i class="fa-solid fa-hands-praying"></i><span>Orações</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-healing-letters') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-healing-letters"><i class="fa-solid fa-clover"></i><span>Cartas de cura</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-financial') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial"><i class="fa-solid fa-wallet"></i><span>Financeiro</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'patients') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=patients"><i class="fa-solid fa-users"></i><span>Pacientes</span></a>
@@ -45,6 +46,7 @@ $displayName = $isPatientPreview ? (Auth::patientPreviewName() ?? Auth::name()) 
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'gratitude') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=gratitude"><i class="fa-solid fa-book-heart"></i><span>Diário da gratidão</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'father-word') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=father-word"><i class="fa-solid fa-book-bible"></i><span>Pai, fala comigo</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'guided-meditation') || $currentAction === 'guided-meditations' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=guided-meditations"><i class="fa-solid fa-compact-disc"></i><span>Meditação guiada</span></a>
+      <a class="sidebar-link <?php echo str_starts_with($currentAction, 'prayer') || $currentAction === 'prayers' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=prayers"><i class="fa-solid fa-hands-praying"></i><span>Orações</span></a>
     <?php endif; ?>
   </nav>
 

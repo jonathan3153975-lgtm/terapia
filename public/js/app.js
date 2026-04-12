@@ -66,3 +66,202 @@ const FormSubmitGuard = {
 };
 
 window.FormSubmitGuard = FormSubmitGuard;
+
+(function() {
+  function createPageButton(label, page, currentPage, disabled) {
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'records-tabulation-btn' + (page === currentPage ? ' is-active' : '');
+    button.textContent = label;
+    button.disabled = !!disabled;
+    button.dataset.page = String(page);
+    return button;
+  }
+
+  function initializeRecordsTabulation() {
+    var tables = document.querySelectorAll('table.table');
+    tables.forEach(function(table, index) {
+      if (table.dataset.tabulationReady === '1' || table.hasAttribute('data-no-tabulation')) {
+        return;
+      }
+
+      var tbody = table.querySelector('tbody');
+      if (!tbody) {
+        return;
+      }
+
+      var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+      if (rows.length === 0) {
+        return;
+      }
+
+      var headerCount = table.querySelectorAll('thead th').length;
+      var validRows = rows.filter(function(row) {
+        var cells = row.querySelectorAll('td');
+        if (cells.length === 0) {
+          return false;
+        }
+
+        var colspanCell = row.querySelector('td[colspan]');
+        var fullSpan = false;
+        if (colspanCell) {
+          var colspan = Number(colspanCell.getAttribute('colspan') || 0);
+          fullSpan = headerCount > 0 ? colspan >= headerCount : colspan > 1;
+        }
+        return !fullSpan;
+      });
+
+      if (validRows.length === 0) {
+        return;
+      }
+
+      table.dataset.tabulationReady = '1';
+      var tableId = table.id || ('recordsTable' + index);
+      table.id = tableId;
+
+      var pageSize = 10;
+      var currentPage = 1;
+      var totalPages = Math.max(1, Math.ceil(validRows.length / pageSize));
+      var rowsData = validRows.map(function(row) {
+        return {
+          row: row,
+          text: (row.textContent || '').toLowerCase()
+        };
+      });
+      var filteredRows = validRows.slice();
+
+      var controls = document.createElement('div');
+      controls.className = 'records-tabulation-controls';
+      controls.innerHTML = '' +
+        '<div class="records-tabulation-toolbar">' +
+          '<div class="records-tabulation-search-wrap">' +
+            '<input type="search" class="records-tabulation-search" placeholder="Buscar na lista..." aria-label="Buscar na lista">' +
+          '</div>' +
+          '<div class="records-tabulation-page-size-wrap">' +
+            '<label class="records-tabulation-page-size-label">Itens por página</label>' +
+            '<select class="records-tabulation-page-size" aria-label="Itens por página">' +
+              '<option value="10" selected>10</option>' +
+              '<option value="20">20</option>' +
+              '<option value="50">50</option>' +
+              '<option value="100">100</option>' +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+        '<div class="records-tabulation-footer">' +
+          '<div class="records-tabulation-summary"></div>' +
+          '<div class="records-tabulation-pages"></div>' +
+        '</div>';
+
+      var wrapper = table.closest('.table-responsive') || table.parentElement;
+      wrapper.insertAdjacentElement('afterend', controls);
+
+      var summary = controls.querySelector('.records-tabulation-summary');
+      var pages = controls.querySelector('.records-tabulation-pages');
+      var searchInput = controls.querySelector('.records-tabulation-search');
+      var pageSizeSelect = controls.querySelector('.records-tabulation-page-size');
+
+      function applyFilter() {
+        var term = ((searchInput && searchInput.value) || '').trim().toLowerCase();
+        if (!term) {
+          filteredRows = validRows.slice();
+          return;
+        }
+
+        filteredRows = rowsData
+          .filter(function(item) {
+            return item.text.indexOf(term) !== -1;
+          })
+          .map(function(item) {
+            return item.row;
+          });
+      }
+
+      function render() {
+        applyFilter();
+
+        totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+        if (currentPage > totalPages) {
+          currentPage = totalPages;
+        }
+
+        var start = (currentPage - 1) * pageSize;
+        var end = start + pageSize;
+
+        validRows.forEach(function(row, rowIndex) {
+          var visible = filteredRows.indexOf(row) !== -1;
+          if (!visible) {
+            row.style.display = 'none';
+            return;
+          }
+
+          var filteredIndex = filteredRows.indexOf(row);
+          row.style.display = filteredIndex >= start && filteredIndex < end ? '' : 'none';
+        });
+
+        var initial = filteredRows.length === 0 ? 0 : start + 1;
+        var final = Math.min(end, filteredRows.length);
+        summary.textContent = 'Exibindo ' + initial + ' a ' + final + ' de ' + filteredRows.length + ' registros';
+        if (filteredRows.length !== validRows.length) {
+          summary.textContent += ' (filtrado de ' + validRows.length + ')';
+        }
+
+        pages.innerHTML = '';
+        if (filteredRows.length <= pageSize) {
+          pages.style.display = 'none';
+          return;
+        }
+
+        pages.style.display = 'inline-flex';
+        pages.appendChild(createPageButton('Anterior', Math.max(1, currentPage - 1), currentPage, currentPage === 1));
+
+        var pageStart = Math.max(1, currentPage - 2);
+        var pageEnd = Math.min(totalPages, currentPage + 2);
+        for (var p = pageStart; p <= pageEnd; p += 1) {
+          pages.appendChild(createPageButton(String(p), p, currentPage, false));
+        }
+
+        pages.appendChild(createPageButton('Próxima', Math.min(totalPages, currentPage + 1), currentPage, currentPage === totalPages));
+      }
+
+      controls.addEventListener('click', function(event) {
+        var target = event.target;
+        if (!(target instanceof HTMLElement) || !target.classList.contains('records-tabulation-btn')) {
+          return;
+        }
+
+        var page = Number(target.dataset.page || currentPage);
+        if (!Number.isFinite(page) || page < 1 || page > totalPages || page === currentPage) {
+          return;
+        }
+
+        currentPage = page;
+        render();
+      });
+
+      if (searchInput) {
+        searchInput.addEventListener('input', function() {
+          currentPage = 1;
+          render();
+        });
+      }
+
+      if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', function() {
+          var selectedSize = Number(pageSizeSelect.value || '10');
+          if (!Number.isFinite(selectedSize) || selectedSize <= 0) {
+            selectedSize = 10;
+          }
+
+          pageSize = selectedSize;
+          currentPage = 1;
+          render();
+        });
+      }
+
+      render();
+    });
+  }
+
+  window.initializeRecordsTabulation = initializeRecordsTabulation;
+  window.addEventListener('load', initializeRecordsTabulation);
+})();

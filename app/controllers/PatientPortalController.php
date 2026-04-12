@@ -15,9 +15,11 @@ use App\Models\PatientFaithEntry;
 use App\Models\PatientGratitudeEntry;
 use App\Models\PatientGuidedMeditationEntry;
 use App\Models\PatientMessageEntry;
+use App\Models\PatientPrayerEntry;
 use App\Models\PatientSubscription;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Prayer;
 use App\Models\Task;
 use App\Models\User;
 use Classes\Controller;
@@ -44,8 +46,10 @@ class PatientPortalController extends Controller
     private PatientFaithEntry $patientFaithEntryModel;
     private PatientGratitudeEntry $patientGratitudeEntryModel;
     private GuidedMeditation $guidedMeditationModel;
+    private Prayer $prayerModel;
     private HealingLetter $healingLetterModel;
     private PatientGuidedMeditationEntry $patientGuidedMeditationEntryModel;
+    private PatientPrayerEntry $patientPrayerEntryModel;
     private Plan $planModel;
     private Payment $paymentModel;
     private PatientSubscription $patientSubscriptionModel;
@@ -67,8 +71,10 @@ class PatientPortalController extends Controller
         $this->patientFaithEntryModel = new PatientFaithEntry();
         $this->patientGratitudeEntryModel = new PatientGratitudeEntry();
         $this->guidedMeditationModel = new GuidedMeditation();
+        $this->prayerModel = new Prayer();
         $this->healingLetterModel = new HealingLetter();
         $this->patientGuidedMeditationEntryModel = new PatientGuidedMeditationEntry();
+        $this->patientPrayerEntryModel = new PatientPrayerEntry();
         $this->planModel = new Plan();
         $this->paymentModel = new Payment();
         $this->patientSubscriptionModel = new PatientSubscription();
@@ -1207,6 +1213,124 @@ class PatientPortalController extends Controller
         }
 
         $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditation-show&id=' . $meditationId . '&status=success&msg=' . urlencode('Reflexão salva com sucesso.'));
+    }
+
+    public function prayers(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $prayers = $therapistId > 0 ? $this->prayerModel->listByTherapist($therapistId) : [];
+
+        $this->view('patient/prayers', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'prayers' => $prayers,
+        ]);
+    }
+
+    public function prayerShow(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $prayerId = (int) ($_GET['id'] ?? 0);
+        if ($therapistId <= 0 || $prayerId <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Oração inválida.'));
+        }
+
+        $prayer = $this->prayerModel->findByTherapistAndId($therapistId, $prayerId);
+        if (!$prayer) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Oração não encontrada.'));
+        }
+
+        $therapist = $this->userModel->findById($therapistId);
+        $entries = $this->patientPrayerEntryModel->listByPatient($patientId, $prayerId);
+
+        $this->view('patient/prayer-show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'prayer' => $prayer,
+            'entries' => $entries,
+            'therapist' => $therapist,
+        ]);
+    }
+
+    public function savePrayerEntry(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        if ($therapistId <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Terapeuta não vinculado.'));
+        }
+
+        $prayerId = (int) ($_POST['prayer_id'] ?? 0);
+        $prayer = $this->prayerModel->findByTherapistAndId($therapistId, $prayerId);
+        if (!$prayer) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Oração não encontrada.'));
+        }
+
+        $patientNote = trim((string) ($_POST['patient_note'] ?? ''));
+        $shareWithTherapist = isset($_POST['share_with_therapist']) ? 1 : 0;
+
+        if ($patientNote === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayer-show&id=' . $prayerId . '&status=error&msg=' . urlencode('A reflexão é obrigatória.'));
+        }
+
+        $saved = $this->patientPrayerEntryModel->insert([
+            'therapist_id' => $therapistId,
+            'patient_id' => $patientId,
+            'prayer_id' => $prayerId,
+            'patient_note' => $patientNote,
+            'share_with_therapist' => $shareWithTherapist,
+            'listened_at' => date('Y-m-d H:i:s'),
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayer-show&id=' . $prayerId . '&status=error&msg=' . urlencode('Falha ao salvar reflexão.'));
+        }
+
+        if ($shareWithTherapist === 1) {
+            $this->taskModel->insert([
+                'therapist_id' => $therapistId,
+                'patient_id' => $patientId,
+                'due_date' => date('Y-m-d'),
+                'title' => 'Reflexão Oração',
+                'description' => (string) ($prayer['title'] ?? 'Oração'),
+                'patient_response_html' => $patientNote,
+                'responded_at' => date('Y-m-d H:i:s'),
+                'send_to_patient' => 0,
+                'delivery_kind' => 'task',
+                'status' => 'done',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $therapist = $this->userModel->findById($therapistId);
+            if ($therapist) {
+                $subject = 'Nova reflexão em Orações';
+                $message = 'Seu paciente compartilhou uma nova reflexão no módulo de Orações. Acesse o painel para visualizar.';
+                AlertDispatcher::dispatch(['email'], (string) ($therapist['email'] ?? ''), null, $subject, $message);
+            }
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayer-show&id=' . $prayerId . '&status=success&msg=' . urlencode('Reflexão salva com sucesso.'));
     }
 
     public function drawFatherWord(): void
