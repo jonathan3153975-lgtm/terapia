@@ -8,6 +8,11 @@ class Patient extends Model
 {
     protected string $table = 'patients';
 
+    public function deleteByTherapistAndId(int $therapistId, int $patientId): bool
+    {
+        return (bool) $this->query('DELETE FROM patients WHERE id = ? AND therapist_id = ?', [$patientId, $therapistId]);
+    }
+
     public function countPendingReviewByTherapist(int $therapistId): int
     {
         return $this->count("therapist_id = ? AND review_status = 'pending_review'", [$therapistId]);

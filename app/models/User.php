@@ -77,4 +77,12 @@ class User extends Model
     {
         return (bool) $this->query("DELETE FROM users WHERE id = ? AND role = 'therapist'", [$id]);
     }
+
+    public function deletePatientAccessByTherapistAndPatient(int $therapistId, int $patientId): bool
+    {
+        return (bool) $this->query(
+            "DELETE FROM users WHERE role = 'patient' AND therapist_id = ? AND patient_id = ?",
+            [$therapistId, $patientId]
+        );
+    }
 }

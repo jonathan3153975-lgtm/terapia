@@ -2608,7 +2608,8 @@ class TherapistController extends Controller
             $this->redirect($redirectWithStatus($redirectListBase, 'error', 'Paciente não encontrado.'));
         }
 
-        $deleted = (bool) $this->patientModel->query('DELETE FROM patients WHERE id = ? AND therapist_id = ?', [$patientId, $therapistId]);
+        $this->userModel->deletePatientAccessByTherapistAndPatient($therapistId, $patientId);
+        $deleted = $this->patientModel->deleteByTherapistAndId($therapistId, $patientId);
         if (!$deleted) {
             if ($isAjax) {
                 $this->error('Falha ao excluir paciente');
