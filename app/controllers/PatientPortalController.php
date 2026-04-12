@@ -99,11 +99,22 @@ class PatientPortalController extends Controller
 
     private function enforceActiveSubscription(): void
     {
-        $publicSubscriptionActions = [
+        // Ações que não exigem assinatura ativa (plano gratuito + gerenciamento de assinatura)
+        $freeActions = [
+            'dashboard',
+            'tasks',
+            'task-material',
+            'task-respond',
+            'task-respond-submit',
+        ];
+
+        $subscriptionActions = [
             'subscription-plans',
             'subscription-checkout',
             'subscription-return',
         ];
+
+        $alwaysAllowed = array_merge($freeActions, $subscriptionActions);
 
         $action = (string) ($_GET['action'] ?? 'dashboard');
         $patientId = (int) Auth::patientId();
@@ -111,18 +122,29 @@ class PatientPortalController extends Controller
             return;
         }
 
+        // Terapeuta em modo preview tem acesso irrestrito
+        if (Auth::isPatientPreviewActive()) {
+            $_SESSION['patient_has_active_plan'] = true;
+            return;
+        }
+
         $this->patientSubscriptionModel->markExpiredSubscriptions();
         $activeSubscription = $this->patientSubscriptionModel->findActiveByPatient($patientId);
 
         if ($activeSubscription) {
-            if (in_array($action, $publicSubscriptionActions, true)) {
+            $_SESSION['patient_has_active_plan'] = true;
+            if (in_array($action, $subscriptionActions, true)) {
                 $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=success&msg=' . urlencode('Sua assinatura está ativa.'));
             }
             return;
         }
 
-        if (!in_array($action, $publicSubscriptionActions, true)) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Para acessar o conteúdo, você precisa de uma assinatura ativa.'));
+        // Sem plano ativo: marcar sessão como free-tier
+        $_SESSION['patient_has_active_plan'] = false;
+
+        // Redirecionar para tarefas se tentar acessar conteúdo restrito
+        if (!in_array($action, $alwaysAllowed, true)) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Este recurso requer um plano ativo. No plano gratuito você pode responder suas tarefas.'));
         }
     }
 

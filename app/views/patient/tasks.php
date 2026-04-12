@@ -1,6 +1,20 @@
 <?php $title = 'Minhas Tarefas'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
 <div class="container page-wrap">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
+
+  <?php if (!($_SESSION['patient_has_active_plan'] ?? true)): ?>
+  <div class="free-tier-notice mb-4">
+    <div class="free-tier-notice__icon"><i class="fa-solid fa-lock-open"></i></div>
+    <div class="free-tier-notice__body">
+      <strong>Você está no plano gratuito</strong>
+      <p class="mb-0">Aqui você pode visualizar e responder as tarefas enviadas pelo seu terapeuta. Para acessar todos os recursos — materiais, mensageiro, diário da gratidão, meditação guiada e orações — ative um plano.</p>
+    </div>
+    <a class="btn btn-primary btn-sm free-tier-notice__cta" href="<?php echo $appUrl; ?>/patient.php?action=subscription-plans">
+      <i class="fa-solid fa-crown me-1"></i>Ver planos
+    </a>
+  </div>
+  <?php endif; ?>
+
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h3 class="mb-0">Minhas tarefas</h3>
     <a class="btn btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=materials"><i class="fa-solid fa-book me-1"></i>Meus materiais</a>

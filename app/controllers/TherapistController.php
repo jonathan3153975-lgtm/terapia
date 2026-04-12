@@ -2626,6 +2626,30 @@ class TherapistController extends Controller
             $this->redirect($redirectWithStatus($redirectCreateBase, 'error', 'Falha ao cadastrar paciente.'));
         }
 
+        // Criar automaticamente o acesso (usuário) para o paciente se ele tiver e-mail válido
+        $patientId = (int) $inserted;
+        if ($email !== '' && Utils::isValidEmail($email)) {
+            $existingUser = $this->userModel->findByEmail($email);
+            if (!$existingUser) {
+                $rawPassword = $this->generatePatientPassword();
+                $userCreated = $this->userModel->insert([
+                    'name' => $name,
+                    'cpf' => $cpf,
+                    'phone' => $phone,
+                    'email' => $email,
+                    'password' => Utils::hashPassword($rawPassword),
+                    'role' => 'patient',
+                    'therapist_id' => $therapistId,
+                    'patient_id' => $patientId,
+                    'status' => 'active',
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+                if ($userCreated) {
+                    $this->sendPatientCredentialsEmail($name, $email, $rawPassword, true);
+                }
+            }
+        }
+
         if ($isAjax) {
             $this->success('Paciente cadastrado', ['redirect' => $redirectListBase]);
         }
@@ -2686,6 +2710,47 @@ class TherapistController extends Controller
             'addictions' => $addictions,
             'comorbidities' => $comorbidities,
         ]);
+    }
+
+    /**
+     * Gera uma senha aleatória segura para o paciente.
+     */
+    private function generatePatientPassword(): string
+    {
+        $chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#';
+        $password = '';
+        $max = strlen($chars) - 1;
+        for ($i = 0; $i < 10; $i++) {
+            $password .= $chars[random_int(0, $max)];
+        }
+        return $password;
+    }
+
+    /**
+     * Envia e-mail de credenciais de acesso ao paciente.
+     * Usa template diferenciado se for o primeiro acesso (new_access=true).
+     */
+    private function sendPatientCredentialsEmail(string $patientName, string $patientEmail, string $rawPassword, bool $isNewAccess): void
+    {
+        if ($patientEmail === '' || !Utils::isValidEmail($patientEmail)) {
+            return;
+        }
+
+        $loginUrl = Config::get('APP_URL', '') . '/index.php?action=login';
+
+        try {
+            $mail = new MailService();
+            if ($isNewAccess) {
+                $subject = 'Seus dados de acesso ao sistema';
+                $body = EmailTemplate::patientAccessCredentials($patientName, $patientEmail, $rawPassword, $loginUrl);
+            } else {
+                $subject = 'Sua senha foi redefinida';
+                $body = EmailTemplate::passwordResetCredentials($patientName, $patientEmail, $rawPassword, $loginUrl);
+            }
+            $mail->send($patientEmail, $patientName, $subject, $body);
+        } catch (\Throwable $e) {
+            error_log('[patient-credentials-email] ' . $e->getMessage());
+        }
     }
 
     public function passwordPatient(): void
@@ -2774,6 +2839,8 @@ class TherapistController extends Controller
                 $this->redirect($redirectWithStatus($redirectPasswordBase, 'error', 'Falha ao criar acesso do paciente.'));
             }
 
+            $this->sendPatientCredentialsEmail((string) ($patient['name'] ?? ''), $patientEmail, $password, true);
+
             if ($isAjax) {
                 $this->success('Acesso do paciente criado', ['redirect' => $redirectListBase]);
             }
@@ -2796,6 +2863,9 @@ class TherapistController extends Controller
             }
             $this->redirect($redirectWithStatus($redirectPasswordBase, 'error', 'Falha ao redefinir senha do paciente.'));
         }
+
+        $emailForNotify = $patientEmail !== '' ? $patientEmail : (string) ($patientAccess['email'] ?? '');
+        $this->sendPatientCredentialsEmail((string) ($patient['name'] ?? ''), $emailForNotify, $password, false);
 
         if ($isAjax) {
             $this->success('Senha do paciente alterada', ['redirect' => $redirectListBase]);

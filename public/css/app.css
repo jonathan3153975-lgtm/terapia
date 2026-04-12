@@ -125,6 +125,12 @@ body.app-body {
 	background: rgba(19, 99, 223, .10);
 }
 
+.sidebar-link.sidebar-link--locked {
+	opacity: .48;
+	cursor: default;
+	pointer-events: none;
+}
+
 .sidebar-link i,
 .table-actions i,
 .btn i {
@@ -133,6 +139,52 @@ body.app-body {
 
 .sidebar-footer {
 	margin-top: auto;
+}
+
+/* Free-tier notice banner */
+.free-tier-notice {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	background: linear-gradient(135deg, #fffbeb, #fef3c7);
+	border: 1px solid #fbbf24;
+	border-radius: 12px;
+	padding: 16px 20px;
+}
+
+.free-tier-notice__icon {
+	font-size: 1.6rem;
+	color: #d97706;
+	flex-shrink: 0;
+}
+
+.free-tier-notice__body {
+	flex: 1;
+	font-size: .92rem;
+	color: #78350f;
+}
+
+.free-tier-notice__body strong {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 1rem;
+	color: #92400e;
+}
+
+.free-tier-notice__cta {
+	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+	.free-tier-notice {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+	.free-tier-notice__cta {
+		align-self: stretch;
+		text-align: center;
+	}
 }
 
 .app-content {
@@ -817,13 +869,14 @@ body.app-body {
 	inset: 0;
 	padding: 22px;
 	background: linear-gradient(135deg, rgba(6, 22, 38, .28), rgba(6, 22, 38, .08) 56%, rgba(6, 22, 38, .34));
-	display: grid;
-	align-content: stretch;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 16px;
 }
 
 .messenger-hero-content {
 	max-width: min(700px, 78%);
-	align-self: start;
 }
 
 .messenger-hero-image-title {
