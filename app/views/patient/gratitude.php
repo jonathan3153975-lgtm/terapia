@@ -2,7 +2,7 @@
 <div class="container page-wrap messenger-page">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
-  <section class="messenger-hero-image mb-4" style="background-image: url('<?php echo $appUrl; ?>/app/images/mensageiro.png');">
+  <section class="messenger-hero-image mb-4" style="background-image: url('<?php echo $appUrl; ?>/app/images/gratidao.png');">
     <div class="messenger-hero-overlay">
       <div class="messenger-hero-content">
         <h3 class="messenger-hero-image-title">Diário da gratidão</h3>
