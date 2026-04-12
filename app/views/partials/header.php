@@ -2,7 +2,7 @@
 /** @var string $title */
 /** @var string $appUrl */
 /** @var string $faviconUrl */
-$title = $title ?? 'Terapia SaaS';
+$title = $title ?? 'Tera-Tech';
 $appUrl = $appUrl ?? '';
 
 $assetBase = rtrim($appUrl, '/');

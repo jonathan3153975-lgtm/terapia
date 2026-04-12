@@ -1,4 +1,5 @@
 <?php
+use App\Models\User;
 use Helpers\Auth;
 
 $currentAction = $_GET['action'] ?? '';
@@ -6,11 +7,29 @@ $role = (string) Auth::role();
 $isPatientPreview = Auth::isPatientPreviewActive();
 $displayRole = $isPatientPreview ? 'patient' : $role;
 $displayName = $isPatientPreview ? (Auth::patientPreviewName() ?? Auth::name()) : Auth::name();
+$therapistBrand = null;
+$therapistBrandId = (int) (Auth::therapistId() ?? 0);
+if ($therapistBrandId > 0) {
+    $therapistBrand = (new User())->findTherapistById($therapistBrandId);
+}
+
+$sidebarBrandName = 'Tera-Tech';
+$sidebarLogoPath = trim((string) ($therapistBrand['company_logo_path'] ?? ''));
+$sidebarLogoUrl = $sidebarLogoPath !== '' ? ($appUrl . '/' . ltrim($sidebarLogoPath, '/')) : '';
 ?>
 <aside class="app-sidebar">
   <div class="sidebar-brand">
-    <i class="fa-solid fa-wave-square"></i>
-    <span>Terapia SaaS</span>
+    <div class="sidebar-brand-logo <?php echo $sidebarLogoUrl !== '' ? 'has-image' : ''; ?>">
+      <?php if ($sidebarLogoUrl !== ''): ?>
+        <img src="<?php echo htmlspecialchars($sidebarLogoUrl); ?>" alt="Logo da empresa">
+      <?php else: ?>
+        <i class="fa-solid fa-wave-square"></i>
+      <?php endif; ?>
+    </div>
+    <div class="sidebar-brand-copy">
+      <span class="sidebar-brand-title"><?php echo $sidebarBrandName; ?></span>
+      <small class="sidebar-brand-subtitle">Plataforma terapêutica</small>
+    </div>
   </div>
 
   <div class="sidebar-user">
