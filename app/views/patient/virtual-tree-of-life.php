@@ -1,263 +1,145 @@
 <?php
-$title = 'Arvore da Vida | Jornada do Paciente';
+$title = 'Árvore da Vida | Jornada do Paciente';
 include __DIR__ . '/../../partials/header.php';
 ?>
 <?php include __DIR__ . '/../../partials/nav.php'; ?>
 
-<div class="container page-wrap" style="max-width: 1160px;">
-  <section class="tree-sky" id="treeSky">
-    <span class="cloud cloud-a"></span>
-    <span class="cloud cloud-b"></span>
-    <span class="cloud cloud-c"></span>
-
-    <header class="tree-hero mb-4">
+<div class="container page-wrap" style="max-width: 1120px;">
+  <section class="preview-sky">
+    <header class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+      <div>
+        <h1 class="h4 text-white mb-1">Árvore da Vida</h1>
+        <p class="text-white-50 mb-0">Responda cada etapa e conclua sua jornada de forma guiada.</p>
+      </div>
       <button class="btn btn-light btn-sm" type="button" onclick="window.history.back()">
         <i class="fa-solid fa-arrow-left me-1"></i>Voltar
       </button>
-      <div>
-        <h1 class="h3 mb-1 text-white">Arvore da Vida</h1>
-        <p class="mb-0 text-white-50">Responda cada etapa para construir uma visao completa da sua historia.</p>
-      </div>
     </header>
 
     <div class="row g-3 align-items-start">
-      <div class="col-lg-4 order-lg-2">
-        <aside class="card border-0 shadow-sm tree-card tree-card-sticky">
-          <div class="card-body p-3 p-md-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <strong class="text-secondary">Evolucao da arvore</strong>
-              <span class="badge text-bg-light" id="stepBadge">1 / 8</span>
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm preview-card sticky-lg-top" style="top:18px;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong class="text-secondary">Progresso</strong>
+              <span class="badge text-bg-light" id="previewStep">1 / 1</span>
             </div>
-
-            <div class="tree-canvas-wrap mb-3">
-              <svg id="patientTree" viewBox="0 0 320 360" aria-label="Arvore da vida">
-                <defs>
-                  <linearGradient id="skyGlow" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stop-color="#e8f7ff"/>
-                    <stop offset="100%" stop-color="#d8f0ff"/>
-                  </linearGradient>
-                  <linearGradient id="trunkGrad" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stop-color="#8a5a33"/>
-                    <stop offset="100%" stop-color="#6e4525"/>
-                  </linearGradient>
-                </defs>
-
-                <rect x="0" y="0" width="320" height="360" fill="url(#skyGlow)" rx="18"/>
-                <circle cx="270" cy="52" r="26" fill="#ffe4a8" opacity="0.9"/>
-
-                <g id="stageRoots" class="tree-stage">
-                  <path d="M160 302 C130 327, 105 345, 76 355" />
-                  <path d="M160 302 C192 328, 220 344, 248 355" />
-                  <path d="M160 302 C159 332, 160 347, 161 358" />
+            <div class="preview-tree-box mb-2">
+              <svg id="previewTree" viewBox="0 0 320 360" aria-label="Árvore do paciente">
+                <rect x="0" y="0" width="320" height="360" fill="#eff9ff" rx="18"/>
+                <g id="pvGround" class="pv-ground">
+                  <ellipse cx="160" cy="334" rx="124" ry="22"/>
                 </g>
-
-                <g id="stageTrunk" class="tree-stage">
-                  <rect x="145" y="175" width="30" height="130" rx="10" fill="url(#trunkGrad)"/>
+                <g id="pvRoots" class="pv-stage">
+                  <path d="M160 305 C130 328, 105 346, 80 356"/>
+                  <path d="M160 305 C192 328, 218 344, 244 356"/>
                 </g>
-
-                <g id="stageBranches" class="tree-stage">
-                  <path d="M160 194 C126 164, 108 140, 90 120" />
-                  <path d="M160 190 C196 162, 214 140, 231 118" />
-                  <path d="M160 220 C126 198, 96 180, 78 168" />
-                  <path d="M160 218 C194 198, 224 180, 244 166" />
+                <g id="pvTrunk" class="pv-stage">
+                  <rect x="146" y="177" width="28" height="128" rx="8" fill="#7c4f2d"/>
                 </g>
-
-                <g id="stageLeaves" class="tree-stage">
-                  <circle cx="88" cy="114" r="27" />
-                  <circle cx="132" cy="88" r="29" />
-                  <circle cx="183" cy="84" r="30" />
-                  <circle cx="232" cy="112" r="26" />
-                  <circle cx="74" cy="168" r="22" />
-                  <circle cx="248" cy="166" r="20" />
+                <g id="pvBranches" class="pv-stage">
+                  <path d="M160 198 C126 166, 108 144, 90 123"/>
+                  <path d="M160 198 C194 166, 212 144, 230 123"/>
                 </g>
-
-                <g id="stageFruits" class="tree-stage">
-                  <circle cx="125" cy="112" r="9" />
-                  <circle cx="168" cy="104" r="10" />
-                  <circle cx="208" cy="124" r="8" />
-                  <circle cx="148" cy="146" r="8" />
+                <g id="pvLeaves" class="pv-stage">
+                  <circle cx="95" cy="120" r="26"/>
+                  <circle cx="158" cy="86" r="30"/>
+                  <circle cx="225" cy="121" r="25"/>
+                </g>
+                <g id="pvFruits" class="pv-stage">
+                  <circle cx="130" cy="120" r="8"/>
+                  <circle cx="170" cy="107" r="9"/>
+                  <circle cx="198" cy="129" r="7"/>
                 </g>
               </svg>
             </div>
-
-            <div class="progress tree-progress mb-2">
-              <div class="progress-bar" id="treeProgressBar" role="progressbar" style="width: 0%"></div>
+            <div class="progress" style="height:8px;">
+              <div class="progress-bar" id="previewProgress" style="width:0%"></div>
             </div>
-            <small class="text-muted d-block" id="progressText">Etapa 1 de 8</small>
           </div>
-        </aside>
+        </div>
       </div>
 
-      <div class="col-lg-8 order-lg-1">
-        <section class="card border-0 shadow-sm tree-card">
-          <div class="card-body p-3 p-md-4">
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm preview-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
               <div>
-                <small class="text-uppercase text-muted fw-semibold" id="sectionTag">Etapa 1</small>
-                <h2 class="h4 mb-0" id="sectionTitle">Carregando...</h2>
+                <small class="text-uppercase text-muted fw-semibold" id="previewTag">Etapa 1</small>
+                <h2 class="h5 mb-0" id="previewTitle">Carregando...</h2>
               </div>
-              <span class="badge rounded-pill text-bg-primary" id="questionCount">0 perguntas</span>
+              <span class="badge rounded-pill text-bg-primary" id="previewCount">0 perguntas</span>
             </div>
 
-            <div id="sectionsContainer"></div>
+            <div id="questionsContainer"></div>
 
-            <div class="d-flex gap-2 mt-4" id="navButtons">
-              <button type="button" class="btn btn-outline-secondary" id="prevSectionBtn">Anterior</button>
-              <button type="button" class="btn btn-primary flex-grow-1" id="nextSectionBtn">Proxima</button>
+            <div class="d-flex gap-2 mt-4">
+              <button class="btn btn-outline-secondary" id="prevBtn" type="button">Anterior</button>
+              <button class="btn btn-primary flex-grow-1" id="nextBtn" type="button">Próxima</button>
             </div>
           </div>
-        </section>
+        </div>
+
+        <div class="alert alert-info mt-3 mb-0">
+          <i class="fa-solid fa-circle-info me-1"></i>
+          Suas respostas serão enviadas ao terapeuta ao concluir a tarefa.
+        </div>
       </div>
     </div>
   </section>
 </div>
 
 <style>
-.tree-sky {
-  position: relative;
-  overflow: hidden;
+.preview-sky {
   border-radius: 20px;
   padding: 1.25rem;
-  background: linear-gradient(180deg, #6dc8ff 0%, #b3e5ff 48%, #d8f6ff 100%);
+  background: linear-gradient(180deg, #4eaeea 0%, #9cdbff 52%, #c9eeff 100%);
 }
 
-.tree-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+.preview-card { border-radius: 16px; }
+.preview-tree-box {
+  border: 1px solid #d8eaf7;
+  border-radius: 12px;
+  background: #f8fdff;
+  padding: 8px;
 }
 
-.tree-card {
-  border-radius: 18px;
-  backdrop-filter: blur(1px);
-}
+#previewTree { width: 100%; height: 300px; }
 
-.tree-card-sticky {
-  position: sticky;
-  top: 18px;
-}
+.pv-stage { opacity: 0.16; transition: opacity .25s ease; }
+.pv-stage.active { opacity: 1; }
+#pvRoots path, #pvBranches path { fill: none; stroke: #7d502d; stroke-width: 4; stroke-linecap: round; }
+#pvLeaves circle { fill: #3ea35d; }
+#pvFruits circle { fill: #ffb84d; }
+.pv-ground ellipse { fill: #d8c19a; stroke: #c5a57f; stroke-width: 1.5; }
 
-.tree-canvas-wrap {
-  background: linear-gradient(180deg, #f7fcff, #eef8ff);
-  border: 1px solid #d7ebf8;
-  border-radius: 16px;
-  padding: 10px;
-}
-
-#patientTree {
-  width: 100%;
-  height: 330px;
-}
-
-.tree-stage {
-  opacity: 0.18;
-  transition: opacity 320ms ease;
-}
-
-.tree-stage.active {
-  opacity: 1;
-}
-
-#stageRoots path,
-#stageBranches path {
-  fill: none;
-  stroke: #7a4d2b;
-  stroke-width: 4;
-  stroke-linecap: round;
-}
-
-#stageLeaves circle {
-  fill: #41a85f;
-  opacity: 0.9;
-}
-
-#stageFruits circle {
-  fill: #ffb347;
-}
-
-.tree-progress {
-  height: 8px;
-  border-radius: 999px;
-  background: #deedf8;
-}
-
-.tree-progress .progress-bar {
-  background: linear-gradient(90deg, #2ca7ff, #42cd8d);
-}
-
-.cloud {
-  position: absolute;
-  display: block;
-  background: rgba(255, 255, 255, 0.55);
-  border-radius: 999px;
-  filter: blur(1px);
-}
-
-.cloud-a { width: 110px; height: 34px; top: 28px; left: 12%; }
-.cloud-b { width: 140px; height: 38px; top: 72px; right: 16%; }
-.cloud-c { width: 90px; height: 28px; top: 124px; left: 48%; }
-
-.question-item {
-  border: 1px solid #e0edf5;
-  background: #fafdff;
-  border-radius: 14px;
-  padding: 14px;
+.preview-question {
+  border: 1px solid #e1edf5;
+  border-radius: 12px;
+  background: #fbfeff;
+  padding: 12px;
   margin-bottom: 10px;
 }
 
-.question-label {
+.preview-question label {
   display: block;
   font-weight: 600;
-  color: #123;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
-.answer-textarea {
+.preview-question textarea {
   width: 100%;
-  border: 1px solid #cfe1ed;
+  min-height: 82px;
+  border: 1px solid #d0e4f2;
   border-radius: 10px;
-  min-height: 96px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   resize: vertical;
-  background: #fff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.answer-textarea:focus {
-  border-color: #45a9e6;
-  box-shadow: 0 0 0 0.2rem rgba(69, 169, 230, 0.2);
+.preview-question textarea:focus {
   outline: none;
-}
-
-.final-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.final-block {
-  border: 1px solid #d8ebf7;
-  background: #f7fcff;
-  border-radius: 12px;
-  padding: 10px;
-}
-
-.final-block h6 {
-  margin-bottom: 8px;
-  color: #215a8b;
-}
-
-#editor {
-  height: 220px;
-  background: #fff;
-  border-radius: 0 0 10px 10px;
-}
-
-@media (max-width: 992px) {
-  .tree-card-sticky { position: static; }
-  .tree-hero { flex-direction: column; align-items: flex-start; }
-  .final-grid { grid-template-columns: 1fr; }
+  border-color: #4eaeea;
+  box-shadow: 0 0 0 0.2rem rgba(78,174,234,.2);
 }
 </style>
 
@@ -269,23 +151,20 @@ include __DIR__ . '/../../partials/header.php';
   const sections = (structure && Array.isArray(structure.sections)) ? structure.sections : [];
 
   const state = {
-    currentIndex: 0,
+    current: 0,
     answers: {},
     isFinal: false,
-    quill: null,
   };
 
   const refs = {
-    sectionTag: document.getElementById('sectionTag'),
-    sectionTitle: document.getElementById('sectionTitle'),
-    questionCount: document.getElementById('questionCount'),
-    container: document.getElementById('sectionsContainer'),
-    prevBtn: document.getElementById('prevSectionBtn'),
-    nextBtn: document.getElementById('nextSectionBtn'),
-    progressBar: document.getElementById('treeProgressBar'),
-    progressText: document.getElementById('progressText'),
-    stepBadge: document.getElementById('stepBadge'),
-    sky: document.getElementById('treeSky')
+    tag: document.getElementById('previewTag'),
+    title: document.getElementById('previewTitle'),
+    count: document.getElementById('previewCount'),
+    container: document.getElementById('questionsContainer'),
+    step: document.getElementById('previewStep'),
+    progress: document.getElementById('previewProgress'),
+    prev: document.getElementById('prevBtn'),
+    next: document.getElementById('nextBtn')
   };
 
   function escapeHtml(value) {
@@ -293,7 +172,7 @@ include __DIR__ . '/../../partials/header.php';
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/\"/g, '&quot;')
+      .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
   }
 
@@ -305,56 +184,67 @@ include __DIR__ . '/../../partials/header.php';
     return Promise.resolve();
   }
 
-  function updateTreeVisual(progress) {
-    const stages = [
-      ['stageRoots', 0.12],
-      ['stageTrunk', 0.28],
-      ['stageBranches', 0.48],
-      ['stageLeaves', 0.72],
-      ['stageFruits', 0.9],
+  function setTree(progress) {
+    const map = [
+      ['pvRoots', 0.12],
+      ['pvTrunk', 0.28],
+      ['pvBranches', 0.48],
+      ['pvLeaves', 0.72],
+      ['pvFruits', 0.9]
     ];
 
-    stages.forEach(([id, threshold]) => {
+    map.forEach(([id, min]) => {
       const el = document.getElementById(id);
       if (el) {
-        el.classList.toggle('active', progress >= threshold);
+        el.classList.toggle('active', progress >= min);
       }
     });
   }
 
-  function updateProgress() {
-    const total = sections.length + 1;
-    const current = state.isFinal ? total : state.currentIndex + 1;
-    const progress = total > 0 ? current / total : 0;
-
-    refs.progressBar.style.width = (progress * 100).toFixed(0) + '%';
-    refs.progressText.textContent = 'Etapa ' + current + ' de ' + total;
-    refs.stepBadge.textContent = current + ' / ' + total;
-    updateTreeVisual(progress);
-  }
-
-  function persistCurrentAnswers() {
+  function persistCurrent() {
     if (state.isFinal) {
-      const fields = ['passadoReflection', 'presenteReflection', 'futuroReflection'];
-      fields.forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) {
-          state.answers[id] = el.value;
-        }
-      });
+      const finalEl = document.getElementById('finalReflection');
+      state.answers.final_reflection = finalEl ? finalEl.value : '';
       return;
     }
 
-    const section = sections[state.currentIndex];
+    const section = sections[state.current];
     if (!section) {
       return;
     }
 
     const values = [];
-    refs.container.querySelectorAll('.answer-textarea').forEach((ta) => {
+    refs.container.querySelectorAll('textarea').forEach((ta) => {
       values.push(ta.value || '');
     });
     state.answers[section.key] = values;
+  }
+
+  function updateProgress(step, total) {
+    refs.step.textContent = step + ' / ' + total;
+    refs.progress.style.width = ((step / total) * 100).toFixed(0) + '%';
+    setTree(step / total);
+  }
+
+  function renderFinal() {
+    state.isFinal = true;
+
+    refs.tag.textContent = 'Etapa final';
+    refs.title.textContent = 'Reflexão de fechamento';
+    refs.count.textContent = 'Texto livre';
+
+    const reflection = state.answers.final_reflection || '';
+    refs.container.innerHTML = ''
+      + '<div class="preview-question">'
+      + '  <label>Reflexão final</label>'
+      + '  <textarea id="finalReflection" placeholder="Compartilhe a sua síntese final da jornada...">' + escapeHtml(reflection) + '</textarea>'
+      + '</div>';
+
+    refs.prev.style.display = 'inline-block';
+    refs.next.innerHTML = '<i class="fa-solid fa-check me-2"></i>Concluir tarefa';
+
+    const total = sections.length + 1;
+    updateProgress(total, total);
   }
 
   function renderSection(index) {
@@ -364,67 +254,27 @@ include __DIR__ . '/../../partials/header.php';
     }
 
     state.isFinal = false;
-    state.currentIndex = index;
+    state.current = index;
 
-    refs.sectionTag.textContent = 'Etapa ' + (index + 1);
-    refs.sectionTitle.textContent = section.title || 'Secao';
-    refs.questionCount.textContent = (section.questions || []).length + ' perguntas';
+    refs.tag.textContent = 'Etapa ' + (index + 1);
+    refs.title.textContent = section.title || 'Seção';
+    refs.count.textContent = ((section.questions || []).length) + ' perguntas';
 
     const existing = Array.isArray(state.answers[section.key]) ? state.answers[section.key] : [];
 
-    const html = (section.questions || []).map((q, i) => {
+    refs.container.innerHTML = (section.questions || []).map((q, i) => {
       const value = existing[i] || '';
-      return '<article class="question-item">'
-        + '<label class="question-label" for="q_' + i + '">' + (i + 1) + '. ' + escapeHtml(q) + '</label>'
-        + '<textarea id="q_' + i + '" class="answer-textarea" placeholder="Escreva sua resposta com calma...">' + escapeHtml(value) + '</textarea>'
-        + '</article>';
+      return '<div class="preview-question">'
+        + '<label>' + (i + 1) + '. ' + escapeHtml(q) + '</label>'
+        + '<textarea placeholder="Escreva sua resposta...">' + escapeHtml(value) + '</textarea>'
+        + '</div>';
     }).join('');
 
-    refs.container.innerHTML = html || '<div class="alert alert-warning">Nenhuma pergunta encontrada nesta secao.</div>';
+    refs.prev.style.display = index === 0 ? 'none' : 'inline-block';
+    refs.next.textContent = index === sections.length - 1 ? 'Ir para reflexão final' : 'Próxima';
 
-    refs.prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
-    refs.nextBtn.innerHTML = (index === sections.length - 1)
-      ? 'Ir para reflexao final <i class="fa-solid fa-arrow-right ms-2"></i>'
-      : 'Proxima etapa <i class="fa-solid fa-arrow-right ms-2"></i>';
-
-    updateProgress();
-  }
-
-  function renderFinal() {
-    state.isFinal = true;
-    refs.sectionTag.textContent = 'Etapa final';
-    refs.sectionTitle.textContent = 'Reflexao Integrada';
-    refs.questionCount.textContent = 'Sintese da sua jornada';
-
-    const p = state.answers.passadoReflection || '';
-    const pr = state.answers.presenteReflection || '';
-    const f = state.answers.futuroReflection || '';
-
-    refs.container.innerHTML = ''
-      + '<div class="final-grid mb-3">'
-      + '  <div class="final-block"><h6>Passado</h6><textarea id="passadoReflection" class="answer-textarea" placeholder="Eventos, desafios e forcas que surgiram...">' + escapeHtml(p) + '</textarea></div>'
-      + '  <div class="final-block"><h6>Presente</h6><textarea id="presenteReflection" class="answer-textarea" placeholder="Como voce se percebe hoje...">' + escapeHtml(pr) + '</textarea></div>'
-      + '  <div class="final-block"><h6>Futuro</h6><textarea id="futuroReflection" class="answer-textarea" placeholder="O que voce deseja cultivar adiante...">' + escapeHtml(f) + '</textarea></div>'
-      + '</div>'
-      + '<label class="form-label fw-semibold">Texto final para seu terapeuta</label>'
-      + '<div id="editor"></div>';
-
-    refs.prevBtn.style.display = 'inline-block';
-    refs.nextBtn.innerHTML = '<i class="fa-solid fa-check me-2"></i>Concluir tarefa';
-
-    state.quill = new Quill('#editor', {
-      theme: 'snow',
-      modules: {
-        toolbar: [
-          ['bold', 'italic', 'underline'],
-          [{ list: 'ordered' }, { list: 'bullet' }],
-          ['link']
-        ]
-      },
-      placeholder: 'Escreva aqui sua sintese final...'
-    });
-
-    updateProgress();
+    const total = sections.length + 1;
+    updateProgress(index + 1, total);
   }
 
   function buildPayload() {
@@ -433,30 +283,37 @@ include __DIR__ . '/../../partials/header.php';
       mappedAnswers[section.key] = Array.isArray(state.answers[section.key]) ? state.answers[section.key] : [];
     });
 
+    const reflectionRaw = (state.answers.final_reflection || '').trim();
+    const reflectionHtml = reflectionRaw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => '<p>' + escapeHtml(line) + '</p>')
+      .join('');
+
     return {
       task_id: taskId,
-      reflection: state.quill ? state.quill.root.innerHTML : '',
+      reflection: reflectionHtml,
       answers: mappedAnswers,
       prompts: {
-        passado: state.answers.passadoReflection || '',
-        presente: state.answers.presenteReflection || '',
-        futuro: state.answers.futuroReflection || ''
+        passado: '',
+        presente: '',
+        futuro: ''
       }
     };
   }
 
   async function concludeTask() {
-    persistCurrentAnswers();
+    persistCurrent();
 
-    const payload = buildPayload();
-    const plain = state.quill ? state.quill.getText().trim() : '';
+    const plain = (state.answers.final_reflection || '').trim();
     if (plain.length < 10) {
-      await swal('warning', 'Reflexao incompleta', 'Escreva ao menos algumas linhas no texto final para concluir.');
+      await swal('warning', 'Reflexão incompleta', 'Escreva ao menos algumas linhas no texto final para concluir.');
       return;
     }
 
-    refs.nextBtn.disabled = true;
-    refs.nextBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Salvando';
+    refs.next.disabled = true;
+    refs.next.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Salvando';
 
     try {
       const response = await fetch(appUrl + '/patient.php?action=virtual-task-complete', {
@@ -465,7 +322,7 @@ include __DIR__ . '/../../partials/header.php';
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(buildPayload())
       });
 
       const result = await response.json();
@@ -473,55 +330,59 @@ include __DIR__ . '/../../partials/header.php';
         throw new Error(result.message || 'Falha ao concluir tarefa.');
       }
 
-      await swal('success', 'Jornada concluida', 'Sua Arvore da Vida foi enviada com sucesso para o terapeuta.');
+      await swal('success', 'Jornada concluída', 'Sua Árvore da Vida foi enviada com sucesso para o terapeuta.');
       window.location.href = appUrl + '/patient.php?action=tasks';
     } catch (err) {
-      await swal('error', 'Nao foi possivel salvar', err.message || 'Tente novamente em alguns instantes.');
-      refs.nextBtn.disabled = false;
-      refs.nextBtn.innerHTML = '<i class="fa-solid fa-check me-2"></i>Concluir tarefa';
+      await swal('error', 'Não foi possível salvar', err.message || 'Tente novamente em alguns instantes.');
+      refs.next.disabled = false;
+      refs.next.innerHTML = '<i class="fa-solid fa-check me-2"></i>Concluir tarefa';
     }
   }
 
-  function handleNext() {
-    persistCurrentAnswers();
+  function onPrev() {
+    if (state.isFinal) {
+      renderSection(sections.length - 1);
+      return;
+    }
+
+    persistCurrent();
+    if (state.current > 0) {
+      renderSection(state.current - 1);
+    }
+  }
+
+  function onNext() {
+    if (sections.length === 0) {
+      return;
+    }
+
+    persistCurrent();
 
     if (state.isFinal) {
       concludeTask();
       return;
     }
 
-    if (state.currentIndex < sections.length - 1) {
-      renderSection(state.currentIndex + 1);
+    if (state.current < sections.length - 1) {
+      renderSection(state.current + 1);
       return;
     }
 
     renderFinal();
   }
 
-  function handlePrev() {
-    if (state.isFinal) {
-      renderSection(sections.length - 1);
-      return;
-    }
-
-    persistCurrentAnswers();
-    if (state.currentIndex > 0) {
-      renderSection(state.currentIndex - 1);
-    }
-  }
-
   function boot() {
-    refs.prevBtn.addEventListener('click', handlePrev);
-    refs.nextBtn.addEventListener('click', handleNext);
+    refs.prev.addEventListener('click', onPrev);
+    refs.next.addEventListener('click', onNext);
 
     if (!taskId || !Array.isArray(sections) || sections.length === 0) {
-      refs.sectionTag.textContent = 'Indisponivel';
-      refs.sectionTitle.textContent = 'Estrutura da tarefa nao encontrada';
-      refs.questionCount.textContent = '0 perguntas';
-      refs.container.innerHTML = '<div class="alert alert-warning mb-0">Nao foi possivel carregar a estrutura da Arvore da Vida. Solicite ao terapeuta o reenvio da tarefa.</div>';
-      refs.prevBtn.style.display = 'none';
-      refs.nextBtn.disabled = true;
-      updateProgress();
+      refs.tag.textContent = 'Indisponível';
+      refs.title.textContent = 'Estrutura não carregada';
+      refs.count.textContent = '0 perguntas';
+      refs.container.innerHTML = '<div class="alert alert-warning mb-0">Não foi possível carregar a estrutura da Árvore da Vida. Solicite ao terapeuta o reenvio da tarefa.</div>';
+      refs.next.disabled = true;
+      refs.prev.style.display = 'none';
+      updateProgress(1, 1);
       return;
     }
 

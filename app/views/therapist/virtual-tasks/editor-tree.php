@@ -1,5 +1,5 @@
 <?php
-$title = 'Editor Arvore da Vida | Tera-Tech';
+$title = 'Editor Árvore da Vida | Tera-Tech';
 include __DIR__ . '/../../partials/header.php';
 ?>
 <?php include __DIR__ . '/../../partials/nav.php'; ?>
@@ -12,8 +12,8 @@ include __DIR__ . '/../../partials/header.php';
 
     <header class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
       <div>
-        <h1 class="h4 text-white mb-1">Editor da Arvore da Vida</h1>
-        <p class="text-white-50 mb-0">Personalize a experiencia, selecione as secoes e envie ao paciente com um clique.</p>
+        <h1 class="h4 text-white mb-1">Editor da Árvore da Vida</h1>
+        <p class="text-white-50 mb-0">Personalize a experiência, selecione as seções e envie ao paciente com um clique.</p>
       </div>
       <div class="d-flex gap-2">
         <a class="btn btn-light btn-sm" href="<?php echo $appUrl; ?>/dashboard.php?action=virtual-tasks">
@@ -31,11 +31,11 @@ include __DIR__ . '/../../partials/header.php';
           <div class="card-body p-3 p-md-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h2 class="h6 mb-0 text-secondary">Visual da jornada</h2>
-              <span class="badge text-bg-light" id="previewBadge">0 / 7 secoes</span>
+              <span class="badge text-bg-light" id="previewBadge">0 / 7 seções</span>
             </div>
 
             <div class="editor-tree-box mb-3">
-              <svg id="editorTree" viewBox="0 0 360 390" aria-label="Preview da arvore">
+              <svg id="editorTree" viewBox="0 0 360 390" aria-label="Preview da árvore">
                 <defs>
                   <linearGradient id="editorSky" x1="0" x2="0" y1="0" y2="1">
                     <stop offset="0%" stop-color="#ecf9ff"/>
@@ -49,6 +49,10 @@ include __DIR__ . '/../../partials/header.php';
 
                 <rect x="0" y="0" width="360" height="390" fill="url(#editorSky)" rx="18"/>
                 <circle cx="300" cy="56" r="30" fill="#ffe6ae"/>
+
+                <g id="edGround" class="ed-ground">
+                  <ellipse cx="180" cy="362" rx="138" ry="24" />
+                </g>
 
                 <g id="edRoots" class="ed-stage">
                   <path d="M180 332 C146 360, 112 378, 84 386"/>
@@ -88,13 +92,13 @@ include __DIR__ . '/../../partials/header.php';
             <div class="progress editor-progress mb-2">
               <div class="progress-bar" id="editorProgress" style="width:0%"></div>
             </div>
-            <small class="text-muted" id="editorProgressText">Selecione as secoes para montar a tarefa.</small>
+            <small class="text-muted" id="editorProgressText">Selecione as seções para montar a tarefa.</small>
           </div>
         </article>
 
         <article class="card border-0 shadow-sm editor-card mt-3 reveal-up" style="--stagger-delay: 120ms;">
           <div class="card-body p-3 p-md-4">
-            <h3 class="h6 text-secondary mb-3">Resumo das secoes ativas</h3>
+            <h3 class="h6 text-secondary mb-3">Resumo das seções ativas</h3>
             <div id="activeSectionCards" class="active-sections"></div>
           </div>
         </article>
@@ -103,11 +107,11 @@ include __DIR__ . '/../../partials/header.php';
       <div class="col-lg-5">
         <article class="card border-0 shadow-sm editor-card sticky-lg-top reveal-up" style="top:18px; --stagger-delay: 220ms;">
           <div class="card-body p-3 p-md-4">
-            <h2 class="h6 text-secondary mb-3">Configuracao de envio</h2>
+            <h2 class="h6 text-secondary mb-3">Configuração de envio</h2>
 
             <div class="mb-3">
-              <label class="form-label">Titulo da tarefa</label>
-              <input type="text" class="form-control" id="taskTitle" value="Arvore da Vida" placeholder="Nome da tarefa">
+              <label class="form-label">Título da tarefa</label>
+              <input type="text" class="form-control" id="taskTitle" value="Árvore da Vida" placeholder="Nome da tarefa">
             </div>
 
             <div class="mb-3">
@@ -121,12 +125,12 @@ include __DIR__ . '/../../partials/header.php';
             </div>
 
             <div class="mb-3">
-              <label class="form-label">Descricao para o paciente</label>
+              <label class="form-label">Descrição para o paciente</label>
               <textarea class="form-control" id="taskDescription" rows="3" placeholder="Contextualize o objetivo da tarefa..."></textarea>
             </div>
 
             <div class="mb-4">
-              <label class="form-label d-block">Secoes da Arvore</label>
+              <label class="form-label d-block">Seções da Árvore</label>
               <div class="section-checklist" id="sectionChecklist">
                 <?php foreach ($structure['sections'] as $section): ?>
                   <label class="section-check-item" for="section_<?php echo $section['key']; ?>">
@@ -152,7 +156,7 @@ include __DIR__ . '/../../partials/header.php';
 
             <div class="d-grid gap-2">
               <button class="btn btn-primary" id="sendBtn" type="button" onclick="sendTaskToPatient()">
-                <i class="fa-solid fa-paper-plane me-2"></i>Enviar tarefa dinamica
+                <i class="fa-solid fa-paper-plane me-2"></i>Enviar tarefa dinâmica
               </button>
               <button class="btn btn-outline-secondary" type="button" onclick="testTask()">
                 <i class="fa-solid fa-vial me-2"></i>Testar em nova aba
@@ -236,6 +240,12 @@ include __DIR__ . '/../../partials/header.php';
 #edLeaves circle {
   fill: #40a75e;
   opacity: .95;
+}
+
+.ed-ground ellipse {
+  fill: #d9c19c;
+  stroke: #c6a57f;
+  stroke-width: 1.6;
 }
 
 #edFruits circle {
@@ -396,7 +406,7 @@ function getSelectedPatientId() {
 
 function getTaskTitle() {
   const input = document.getElementById('taskTitle');
-  return (input && input.value ? input.value : 'Arvore da Vida').trim();
+  return (input && input.value ? input.value : 'Árvore da Vida').trim();
 }
 
 function getTaskDescription() {
@@ -416,7 +426,7 @@ function setSendButtonLoading(loading) {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Enviando...';
   } else {
     btn.disabled = false;
-    btn.innerHTML = btn.dataset.originalText || '<i class="fa-solid fa-paper-plane me-2"></i>Enviar tarefa dinamica';
+    btn.innerHTML = btn.dataset.originalText || '<i class="fa-solid fa-paper-plane me-2"></i>Enviar tarefa dinâmica';
   }
 }
 
@@ -445,7 +455,7 @@ function renderActiveSectionCards() {
 
   const active = baseSections.filter((section) => selectedSections.includes(section.key));
   if (active.length === 0) {
-    container.innerHTML = '<div class="alert alert-warning mb-0">Selecione ao menos uma secao para montar a tarefa.</div>';
+    container.innerHTML = '<div class="alert alert-warning mb-0">Selecione ao menos uma seção para montar a tarefa.</div>';
     return;
   }
 
@@ -473,7 +483,7 @@ function updatePreviewState() {
   const progressText = document.getElementById('editorProgressText');
 
   if (badge) {
-    badge.textContent = activeCount + ' / ' + total + ' secoes';
+    badge.textContent = activeCount + ' / ' + total + ' seções';
   }
 
   if (progressBar) {
@@ -482,9 +492,9 @@ function updatePreviewState() {
 
   if (progressText) {
     if (activeCount === 0) {
-      progressText.textContent = 'Nenhuma secao ativa. Selecione ao menos uma para envio.';
+      progressText.textContent = 'Nenhuma seção ativa. Selecione ao menos uma para envio.';
     } else {
-      progressText.textContent = 'A tarefa sera enviada com ' + activeCount + ' secao(oes).';
+      progressText.textContent = 'A tarefa será enviada com ' + activeCount + ' seção(ões).';
     }
   }
 
@@ -496,7 +506,7 @@ function testTask() {
   const previewUrl = appUrl + '/dashboard.php?action=virtual-tasks-preview';
   const win = window.open(previewUrl, '_blank', 'noopener,noreferrer');
   if (!win) {
-    safeSwal('Aviso', 'Nao foi possivel abrir a aba de teste. Verifique bloqueio de pop-up.', 'warning');
+    safeSwal('Aviso', 'Não foi possível abrir a aba de teste. Verifique bloqueio de pop-up.', 'warning');
   }
 }
 
@@ -511,7 +521,7 @@ function sendTaskToPatient() {
   }
 
   if (selectedSections.length === 0) {
-    safeSwal('Aviso', 'Selecione ao menos uma secao da Arvore da Vida.', 'warning');
+    safeSwal('Aviso', 'Selecione ao menos uma seção da Árvore da Vida.', 'warning');
     return;
   }
 
@@ -544,7 +554,7 @@ function sendTaskToPatient() {
       setSendButtonLoading(false);
     })
     .catch(() => {
-      safeSwal('Erro', 'Falha de comunicacao ao enviar tarefa.', 'error');
+      safeSwal('Erro', 'Falha de comunicação ao enviar tarefa.', 'error');
       setSendButtonLoading(false);
     });
 }

@@ -1,5 +1,5 @@
 <?php
-$title = 'Preview Arvore da Vida | Terapeuta';
+$title = 'Preview Árvore da Vida | Terapeuta';
 include __DIR__ . '/../../partials/header.php';
 ?>
 <?php include __DIR__ . '/../../partials/nav.php'; ?>
@@ -8,8 +8,8 @@ include __DIR__ . '/../../partials/header.php';
   <section class="preview-sky">
     <header class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
       <div>
-        <h1 class="h4 text-white mb-1">Preview da Arvore da Vida</h1>
-        <p class="text-white-50 mb-0">Ambiente de teste para validar a experiencia antes do envio ao paciente.</p>
+        <h1 class="h4 text-white mb-1">Preview da Árvore da Vida</h1>
+        <p class="text-white-50 mb-0">Ambiente de teste para validar a experiência antes do envio ao paciente.</p>
       </div>
       <button class="btn btn-light btn-sm" type="button" onclick="window.close()">
         <i class="fa-solid fa-xmark me-1"></i>Fechar teste
@@ -25,8 +25,11 @@ include __DIR__ . '/../../partials/header.php';
               <span class="badge text-bg-light" id="previewStep">1 / 8</span>
             </div>
             <div class="preview-tree-box mb-2">
-              <svg id="previewTree" viewBox="0 0 320 360" aria-label="Arvore preview">
+              <svg id="previewTree" viewBox="0 0 320 360" aria-label="Árvore preview">
                 <rect x="0" y="0" width="320" height="360" fill="#eff9ff" rx="18"/>
+                <g id="pvGround" class="pv-ground">
+                  <ellipse cx="160" cy="334" rx="124" ry="22"/>
+                </g>
                 <g id="pvRoots" class="pv-stage">
                   <path d="M160 305 C130 328, 105 346, 80 356"/>
                   <path d="M160 305 C192 328, 218 344, 244 356"/>
@@ -72,14 +75,14 @@ include __DIR__ . '/../../partials/header.php';
 
             <div class="d-flex gap-2 mt-4">
               <button class="btn btn-outline-secondary" id="prevBtn" type="button">Anterior</button>
-              <button class="btn btn-primary flex-grow-1" id="nextBtn" type="button">Proxima</button>
+              <button class="btn btn-primary flex-grow-1" id="nextBtn" type="button">Próxima</button>
             </div>
           </div>
         </div>
 
         <div class="alert alert-info mt-3 mb-0">
           <i class="fa-solid fa-circle-info me-1"></i>
-          Modo de teste: os dados preenchidos aqui nao sao gravados no banco.
+          Modo de teste: os dados preenchidos aqui não são gravados no banco.
         </div>
       </div>
     </div>
@@ -108,6 +111,7 @@ include __DIR__ . '/../../partials/header.php';
 #pvRoots path, #pvBranches path { fill: none; stroke: #7d502d; stroke-width: 4; stroke-linecap: round; }
 #pvLeaves circle { fill: #3ea35d; }
 #pvFruits circle { fill: #ffb84d; }
+.pv-ground ellipse { fill: #d8c19a; stroke: #c5a57f; stroke-width: 1.5; }
 
 .preview-question {
   border: 1px solid #e1edf5;
@@ -174,12 +178,12 @@ include __DIR__ . '/../../partials/header.php';
 
   function renderFinal() {
     refs.tag.textContent = 'Etapa final';
-    refs.title.textContent = 'Reflexao de fechamento';
+    refs.title.textContent = 'Reflexão de fechamento';
     refs.count.textContent = 'Texto livre';
     refs.container.innerHTML = ''
       + '<div class="preview-question">'
-      + '  <label>Reflexao final</label>'
-      + '  <textarea placeholder="Simulacao da etapa final...\"></textarea>'
+      + '  <label>Reflexão final</label>'
+      + '  <textarea placeholder="Simulação da etapa final...\"></textarea>'
       + '</div>';
 
     refs.prev.style.display = 'inline-block';
@@ -200,7 +204,7 @@ include __DIR__ . '/../../partials/header.php';
     }
 
     refs.tag.textContent = 'Etapa ' + (index + 1);
-    refs.title.textContent = section.title || 'Secao';
+    refs.title.textContent = section.title || 'Seção';
     refs.count.textContent = ((section.questions || []).length) + ' perguntas';
 
     refs.container.innerHTML = (section.questions || []).map((q, i) => {
@@ -211,7 +215,7 @@ include __DIR__ . '/../../partials/header.php';
     }).join('');
 
     refs.prev.style.display = index === 0 ? 'none' : 'inline-block';
-    refs.next.textContent = index === sections.length - 1 ? 'Ir para reflexao final' : 'Proxima';
+    refs.next.textContent = index === sections.length - 1 ? 'Ir para reflexão final' : 'Próxima';
 
     const total = sections.length + 1;
     const step = index + 1;
@@ -241,9 +245,9 @@ include __DIR__ . '/../../partials/header.php';
 
     if (refs.next.textContent === 'Concluir teste') {
       if (window.Swal && typeof Swal.fire === 'function') {
-        Swal.fire('Teste concluido', 'Fluxo validado com sucesso.', 'success').then(() => window.close());
+        Swal.fire('Teste concluído', 'Fluxo validado com sucesso.', 'success').then(() => window.close());
       } else {
-        alert('Teste concluido com sucesso.');
+        alert('Teste concluído com sucesso.');
         window.close();
       }
       return;
@@ -257,10 +261,10 @@ include __DIR__ . '/../../partials/header.php';
     refs.next.addEventListener('click', onNext);
 
     if (!Array.isArray(sections) || sections.length === 0) {
-      refs.tag.textContent = 'Indisponivel';
-      refs.title.textContent = 'Estrutura nao carregada';
+      refs.tag.textContent = 'Indisponível';
+      refs.title.textContent = 'Estrutura não carregada';
       refs.count.textContent = '0 perguntas';
-      refs.container.innerHTML = '<div class="alert alert-warning mb-0">Nao foi possivel montar o preview. Recarregue ou volte ao editor.</div>';
+      refs.container.innerHTML = '<div class="alert alert-warning mb-0">Não foi possível montar o preview. Recarregue ou volte ao editor.</div>';
       refs.next.disabled = true;
       refs.prev.style.display = 'none';
       return;
