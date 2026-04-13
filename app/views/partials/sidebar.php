@@ -21,7 +21,7 @@ $sidebarLogoUrl = $sidebarLogoPath !== '' ? ($appUrl . '/' . ltrim($sidebarLogoP
   <div class="sidebar-brand">
     <div class="sidebar-brand-logo <?php echo $sidebarLogoUrl !== '' ? 'has-image' : ''; ?>">
       <?php if ($sidebarLogoUrl !== ''): ?>
-        <img src="<?php echo htmlspecialchars($sidebarLogoUrl); ?>" alt="Logo da empresa">
+        <img class="sidebar-brand-logo-image" src="<?php echo htmlspecialchars($sidebarLogoUrl); ?>" alt="Logo da empresa" width="46" height="46">
       <?php else: ?>
         <i class="fa-solid fa-wave-square"></i>
       <?php endif; ?>

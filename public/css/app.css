@@ -76,6 +76,16 @@ body.app-body {
 	display: block;
 }
 
+.sidebar-brand-logo-image {
+	max-width: 46px;
+	max-height: 46px;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+	flex: 0 0 auto;
+}
+
 .sidebar-brand-copy {
 	display: grid;
 	min-width: 0;
@@ -2154,6 +2164,17 @@ body.app-body {
 }
 
 @media (max-width: 992px) {
+	.sidebar-brand-logo {
+		width: 42px;
+		height: 42px;
+		flex-basis: 42px;
+	}
+
+	.sidebar-brand-logo-image {
+		max-width: 42px;
+		max-height: 42px;
+	}
+
 	.app-layout {
 		grid-template-columns: 1fr;
 		height: auto;
