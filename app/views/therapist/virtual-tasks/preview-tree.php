@@ -1,266 +1,276 @@
 <?php
-$title = 'Preview - Árvore da Vida | Tera-Tech';
+$title = 'Preview Arvore da Vida | Terapeuta';
 include __DIR__ . '/../../partials/header.php';
 ?>
+<?php include __DIR__ . '/../../partials/nav.php'; ?>
 
-<div style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
-  <div class="container" style="max-width: 900px;">
-    <div class="mb-4">
-      <h1 class="h2 text-white mb-1"><i class="fa-solid fa-tree me-2"></i>Árvore da Vida</h1>
-      <p class="text-white-50">Explore sua história a partir de diferentes perspectivas da sua vida</p>
-    </div>
+<div class="container page-wrap" style="max-width: 1120px;">
+  <section class="preview-sky">
+    <header class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+      <div>
+        <h1 class="h4 text-white mb-1">Preview da Arvore da Vida</h1>
+        <p class="text-white-50 mb-0">Ambiente de teste para validar a experiencia antes do envio ao paciente.</p>
+      </div>
+      <button class="btn btn-light btn-sm" type="button" onclick="window.close()">
+        <i class="fa-solid fa-xmark me-1"></i>Fechar teste
+      </button>
+    </header>
 
-    <div class="card border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
-      <div class="card-body p-4">
-        <div id="treeProgressContainer" class="mb-4">
-          <div class="progress" style="height: 8px;">
-            <div id="treeProgress" class="progress-bar" role="progressbar" style="width: 0%;"></div>
+    <div class="row g-3 align-items-start">
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm preview-card sticky-lg-top" style="top:18px;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong class="text-secondary">Progresso</strong>
+              <span class="badge text-bg-light" id="previewStep">1 / 8</span>
+            </div>
+            <div class="preview-tree-box mb-2">
+              <svg id="previewTree" viewBox="0 0 320 360" aria-label="Arvore preview">
+                <rect x="0" y="0" width="320" height="360" fill="#eff9ff" rx="18"/>
+                <g id="pvRoots" class="pv-stage">
+                  <path d="M160 305 C130 328, 105 346, 80 356"/>
+                  <path d="M160 305 C192 328, 218 344, 244 356"/>
+                </g>
+                <g id="pvTrunk" class="pv-stage">
+                  <rect x="146" y="177" width="28" height="128" rx="8" fill="#7c4f2d"/>
+                </g>
+                <g id="pvBranches" class="pv-stage">
+                  <path d="M160 198 C126 166, 108 144, 90 123"/>
+                  <path d="M160 198 C194 166, 212 144, 230 123"/>
+                </g>
+                <g id="pvLeaves" class="pv-stage">
+                  <circle cx="95" cy="120" r="26"/>
+                  <circle cx="158" cy="86" r="30"/>
+                  <circle cx="225" cy="121" r="25"/>
+                </g>
+                <g id="pvFruits" class="pv-stage">
+                  <circle cx="130" cy="120" r="8"/>
+                  <circle cx="170" cy="107" r="9"/>
+                  <circle cx="198" cy="129" r="7"/>
+                </g>
+              </svg>
+            </div>
+            <div class="progress" style="height:8px;">
+              <div class="progress-bar" id="previewProgress" style="width:0%"></div>
+            </div>
           </div>
-          <small class="text-muted mt-2 d-block">
-            Seção <span id="currentSection">1</span> de <span id="totalSections">8</span>
-          </small>
+        </div>
+      </div>
+
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm preview-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <small class="text-uppercase text-muted fw-semibold" id="previewTag">Etapa 1</small>
+                <h2 class="h5 mb-0" id="previewTitle">Carregando...</h2>
+              </div>
+              <span class="badge rounded-pill text-bg-primary" id="previewCount">0 perguntas</span>
+            </div>
+
+            <div id="questionsContainer"></div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button class="btn btn-outline-secondary" id="prevBtn" type="button">Anterior</button>
+              <button class="btn btn-primary flex-grow-1" id="nextBtn" type="button">Proxima</button>
+            </div>
+          </div>
         </div>
 
-        <!-- Árvore SVG Animada -->
-        <div style="text-align: center; margin: 30px 0;">
-          <svg id="previewTree" width="250" height="350" viewBox="0 0 250 350" style="max-width: 100%;">
-            <!-- Raízes -->
-            <g id="previewRoots" opacity="0">
-              <path d="M125 300 Q115 330 105 350" stroke="#8B4513" stroke-width="3" fill="none"/>
-              <path d="M125 300 Q135 330 145 350" stroke="#8B4513" stroke-width="3" fill="none"/>
-            </g>
-            <!-- Tronco -->
-            <g id="previewTrunk" opacity="0">
-              <rect x="115" y="200" width="20" height="100" fill="#a0522d"/>
-            </g>
-            <!-- Galhos -->
-            <g id="previewBranches" opacity="0">
-              <line x1="125" y1="220" x2="80" y2="150" stroke="#8B4513" stroke-width="2"/>
-              <line x1="125" y1="220" x2="170" y2="150" stroke="#8B4513" stroke-width="2"/>
-            </g>
-            <!-- Folhas -->
-            <g id="previewLeaves" opacity="0">
-              <circle cx="70" cy="130" r="20" fill="#27ae60"/>
-              <circle cx="125" cy="100" r="20" fill="#27ae60"/>
-              <circle cx="180" cy="130" r="20" fill="#27ae60"/>
-            </g>
-            <!-- Frutos -->
-            <g id="previewFruits" opacity="0">
-              <circle cx="125" cy="50" r="18" fill="#f1c40f"/>
-            </g>
-          </svg>
-        </div>
-
-        <!-- Questões -->
-        <div id="questionsContainer"></div>
-
-        <!-- Botões de navegação -->
-        <div class="d-flex gap-2 mt-4" id="navigationButtons">
-          <button class="btn btn-outline-secondary" id="prevBtn" onclick="previousSection()" style="display: none;">
-            <i class="fa-solid fa-arrow-left me-2"></i>Anterior
-          </button>
-          <button class="btn btn-primary flex-grow-1" id="nextBtn" onclick="nextSection()">
-            Próxima <i class="fa-solid fa-arrow-right ms-2"></i>
-          </button>
+        <div class="alert alert-info mt-3 mb-0">
+          <i class="fa-solid fa-circle-info me-1"></i>
+          Modo de teste: os dados preenchidos aqui nao sao gravados no banco.
         </div>
       </div>
     </div>
-
-    <!-- Informação de teste -->
-    <div class="alert alert-info mt-3 mb-0">
-      <i class="fa-solid fa-info-circle me-2"></i>
-      <strong>Modo Teste:</strong> Isso é uma visualização. Para enviar ao paciente, volte e clique em "Enviar Tarefa"
-    </div>
-  </div>
+  </section>
 </div>
 
 <style>
-.form-group-preview {
-  margin-bottom: 20px;
+.preview-sky {
+  border-radius: 20px;
+  padding: 1.25rem;
+  background: linear-gradient(180deg, #4eaeea 0%, #9cdbff 52%, #c9eeff 100%);
 }
 
-.form-group-preview label {
-  font-weight: 600;
-  margin-bottom: 10px;
-  display: block;
-  color: #333;
+.preview-card { border-radius: 16px; }
+.preview-tree-box {
+  border: 1px solid #d8eaf7;
+  border-radius: 12px;
+  background: #f8fdff;
+  padding: 8px;
 }
 
-.form-group-preview textarea {
-  width: 100%;
+#previewTree { width: 100%; height: 300px; }
+
+.pv-stage { opacity: 0.16; transition: opacity .25s ease; }
+.pv-stage.active { opacity: 1; }
+#pvRoots path, #pvBranches path { fill: none; stroke: #7d502d; stroke-width: 4; stroke-linecap: round; }
+#pvLeaves circle { fill: #3ea35d; }
+#pvFruits circle { fill: #ffb84d; }
+
+.preview-question {
+  border: 1px solid #e1edf5;
+  border-radius: 12px;
+  background: #fbfeff;
   padding: 12px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.preview-question label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.preview-question textarea {
+  width: 100%;
+  min-height: 82px;
+  border: 1px solid #d0e4f2;
+  border-radius: 10px;
+  padding: 8px 10px;
   resize: vertical;
-  min-height: 80px;
-  transition: border-color 0.3s ease;
 }
 
-.form-group-preview textarea:focus {
+.preview-question textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.section-questions {
-  animation: fadeInUp 0.5s ease;
+  border-color: #4eaeea;
+  box-shadow: 0 0 0 0.2rem rgba(78,174,234,.2);
 }
 </style>
 
 <script>
-const structure = <?php echo isset($structure) ? json_encode($structure) : 'null'; ?>;
-let currentSectionIndex = 0;
-const sections = (structure && Array.isArray(structure.sections)) ? structure.sections : [];
-const answers = {};
+(function() {
+  const structure = <?php echo isset($structure) ? json_encode($structure) : 'null'; ?>;
+  const sections = (structure && Array.isArray(structure.sections)) ? structure.sections : [];
+  let current = 0;
 
-function showSection(index) {
-  if (index < 0 || index >= sections.length) return;
+  const refs = {
+    tag: document.getElementById('previewTag'),
+    title: document.getElementById('previewTitle'),
+    count: document.getElementById('previewCount'),
+    container: document.getElementById('questionsContainer'),
+    step: document.getElementById('previewStep'),
+    progress: document.getElementById('previewProgress'),
+    prev: document.getElementById('prevBtn'),
+    next: document.getElementById('nextBtn')
+  };
 
-  currentSectionIndex = index;
-  const section = sections[index];
-
-  // Atualiza progresso
-  document.getElementById('currentSection').textContent = index + 1;
-  document.getElementById('totalSections').textContent = sections.length;
-  document.getElementById('treeProgress').style.width = ((index + 1) / sections.length * 100) + '%';
-
-  // Anima árvore gradualmente
-  animateTreeProgress(index);
-
-  // Mostra perguntas
-  const html = `
-    <div class="section-questions">
-      <h5 style="color: ${section.color}; margin-bottom: 20px;">
-        ${section.title}
-      </h5>
-      ${section.questions.map((q, i) => `
-        <div class="form-group-preview">
-          <label>${q}</label>
-          <textarea placeholder="Sua resposta aqui..." data-section="${section.key}" data-question="${i}"></textarea>
-        </div>
-      `).join('')}
-    </div>
-  `;
-
-  document.getElementById('questionsContainer').innerHTML = html;
-
-  // Atualiza botões
-  document.getElementById('prevBtn').style.display = index === 0 ? 'none' : 'block';
-  document.getElementById('nextBtn').textContent = index === sections.length - 1 
-    ? 'Finalizar' 
-    : 'Próxima';
-
-  // Salva respostas ao mudar
-  document.querySelectorAll('textarea').forEach(ta => {
-    ta.addEventListener('blur', function() {
-      answers[this.dataset.section] = answers[this.dataset.section] || {};
-      answers[this.dataset.section][this.dataset.question] = this.value;
+  function setTree(progress) {
+    const map = [
+      ['pvRoots', 0.12],
+      ['pvTrunk', 0.28],
+      ['pvBranches', 0.48],
+      ['pvLeaves', 0.72],
+      ['pvFruits', 0.9]
+    ];
+    map.forEach(([id, min]) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.toggle('active', progress >= min);
+      }
     });
-  });
-}
-
-function animateTreeProgress(progress) {
-  const ratio = (progress + 1) / sections.length;
-
-  // Anima opacidade das partes da árvore
-  document.getElementById('previewRoots').style.opacity = ratio >= 0.2 ? '1' : '0';
-  document.getElementById('previewTrunk').style.opacity = ratio >= 0.4 ? '1' : '0';
-  document.getElementById('previewBranches').style.opacity = ratio >= 0.6 ? '1' : '0';
-  document.getElementById('previewLeaves').style.opacity = ratio >= 0.8 ? '1' : '0';
-  document.getElementById('previewFruits').style.opacity = ratio >= 1 ? '1' : '0';
-}
-
-function nextSection() {
-  if (currentSectionIndex < sections.length - 1) {
-    showSection(currentSectionIndex + 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  } else {
-    // Última seção - mostrar reflexão final
-    showFinalReflection();
-  }
-}
-
-function previousSection() {
-  if (currentSectionIndex > 0) {
-    showSection(currentSectionIndex - 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-}
-
-function showFinalReflection() {
-  const html = `
-    <div style="text-align: center; padding: 40px 0;">
-      <i class="fa-solid fa-check-circle" style="font-size: 60px; color: #27ae60; margin-bottom: 20px; display: block;"></i>
-      <h4>Excelente! Você completou todas as seções</h4>
-      <p class="text-muted mb-4">Agora complete sua reflexão final sobre sua história de vida</p>
-    </div>
-    <div class="form-group-preview">
-      <label>✍️ Reflexão Final - Sua História de Vida</label>
-      <textarea id="finalReflection" placeholder="Escreva aqui suas reflexões sobre sua história de vida, aprendizados e perspectivas..."></textarea>
-    </div>
-    <div class="d-flex gap-2 mt-4">
-      <button class="btn btn-outline-secondary" onclick="previousSection()">
-        <i class="fa-solid fa-arrow-left me-2"></i>Voltar
-      </button>
-      <button class="btn btn-success flex-grow-1" onclick="completePreview()">
-        <i class="fa-solid fa-check me-2"></i>Finalizar Teste
-      </button>
-    </div>
-  `;
-
-  document.getElementById('questionsContainer').innerHTML = html;
-  document.getElementById('currentSection').textContent = sections.length + 1;
-  document.getElementById('totalSections').textContent = sections.length + 1;
-  document.getElementById('treeProgress').style.width = '100%';
-  document.getElementById('prevBtn').style.display = 'none';
-  document.getElementById('nextBtn').style.display = 'none';
-
-  // Anima completamente
-  document.getElementById('previewRoots').style.opacity = '1';
-  document.getElementById('previewTrunk').style.opacity = '1';
-  document.getElementById('previewBranches').style.opacity = '1';
-  document.getElementById('previewLeaves').style.opacity = '1';
-  document.getElementById('previewFruits').style.opacity = '1';
-}
-
-function completePreview() {
-  Swal.fire({
-    icon: 'success',
-    title: 'Teste Concluído!',
-    text: 'A tarefa funcionou perfeitamente. Você pode enviar para o paciente agora.',
-    confirmButtonText: 'Fechar'
-  }).then(() => {
-    window.close();
-  });
-}
-
-// Inicializa
-window.addEventListener('load', function() {
-  if (!Array.isArray(sections) || sections.length === 0) {
-    document.getElementById('questionsContainer').innerHTML = `
-      <div class="alert alert-warning mb-0">
-        <strong>Estrutura indisponível:</strong> nenhuma seção foi carregada para o preview.
-      </div>
-    `;
-    document.getElementById('nextBtn').disabled = true;
-    return;
   }
 
-  showSection(0);
-});
+  function renderFinal() {
+    refs.tag.textContent = 'Etapa final';
+    refs.title.textContent = 'Reflexao de fechamento';
+    refs.count.textContent = 'Texto livre';
+    refs.container.innerHTML = ''
+      + '<div class="preview-question">'
+      + '  <label>Reflexao final</label>'
+      + '  <textarea placeholder="Simulacao da etapa final...\"></textarea>'
+      + '</div>';
+
+    refs.prev.style.display = 'inline-block';
+    refs.next.textContent = 'Concluir teste';
+
+    const total = sections.length + 1;
+    const step = total;
+    refs.step.textContent = step + ' / ' + total;
+    const pct = (step / total) * 100;
+    refs.progress.style.width = pct.toFixed(0) + '%';
+    setTree(1);
+  }
+
+  function renderSection(index) {
+    const section = sections[index];
+    if (!section) {
+      return;
+    }
+
+    refs.tag.textContent = 'Etapa ' + (index + 1);
+    refs.title.textContent = section.title || 'Secao';
+    refs.count.textContent = ((section.questions || []).length) + ' perguntas';
+
+    refs.container.innerHTML = (section.questions || []).map((q, i) => {
+      return '<div class="preview-question">'
+        + '<label>' + (i + 1) + '. ' + q + '</label>'
+        + '<textarea placeholder="Resposta de teste..."></textarea>'
+        + '</div>';
+    }).join('');
+
+    refs.prev.style.display = index === 0 ? 'none' : 'inline-block';
+    refs.next.textContent = index === sections.length - 1 ? 'Ir para reflexao final' : 'Proxima';
+
+    const total = sections.length + 1;
+    const step = index + 1;
+    refs.step.textContent = step + ' / ' + total;
+    const pct = (step / total) * 100;
+    refs.progress.style.width = pct.toFixed(0) + '%';
+    setTree(step / total);
+  }
+
+  function onPrev() {
+    if (current > 0) {
+      current -= 1;
+      renderSection(current);
+    }
+  }
+
+  function onNext() {
+    if (sections.length === 0) {
+      return;
+    }
+
+    if (current < sections.length - 1) {
+      current += 1;
+      renderSection(current);
+      return;
+    }
+
+    if (refs.next.textContent === 'Concluir teste') {
+      if (window.Swal && typeof Swal.fire === 'function') {
+        Swal.fire('Teste concluido', 'Fluxo validado com sucesso.', 'success').then(() => window.close());
+      } else {
+        alert('Teste concluido com sucesso.');
+        window.close();
+      }
+      return;
+    }
+
+    renderFinal();
+  }
+
+  function boot() {
+    refs.prev.addEventListener('click', onPrev);
+    refs.next.addEventListener('click', onNext);
+
+    if (!Array.isArray(sections) || sections.length === 0) {
+      refs.tag.textContent = 'Indisponivel';
+      refs.title.textContent = 'Estrutura nao carregada';
+      refs.count.textContent = '0 perguntas';
+      refs.container.innerHTML = '<div class="alert alert-warning mb-0">Nao foi possivel montar o preview. Recarregue ou volte ao editor.</div>';
+      refs.next.disabled = true;
+      refs.prev.style.display = 'none';
+      return;
+    }
+
+    renderSection(0);
+  }
+
+  window.addEventListener('load', boot);
+})();
 </script>
 
 <?php include __DIR__ . '/../../partials/footer.php'; ?>

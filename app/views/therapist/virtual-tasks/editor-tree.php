@@ -1,206 +1,390 @@
 <?php
-$title = 'Editor - Árvore da Vida | Tera-Tech';
+$title = 'Editor Arvore da Vida | Tera-Tech';
 include __DIR__ . '/../../partials/header.php';
 ?>
 <?php include __DIR__ . '/../../partials/nav.php'; ?>
 
-<div class="page-wrap">
-  <div class="container-fluid">
-    <a class="btn btn-outline-secondary btn-sm mb-4" href="<?php echo $appUrl; ?>/dashboard.php?action=virtual-tasks">
-      <i class="fa-solid fa-arrow-left me-1"></i>Voltar
-    </a>
+<div class="container page-wrap" style="max-width: 1220px;">
+  <section class="editor-sky">
+    <span class="cloud cloud-a"></span>
+    <span class="cloud cloud-b"></span>
+    <span class="cloud cloud-c"></span>
 
-    <div class="row">
-      <!-- Painel de Visualização -->
-      <div class="col-lg-8">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-light border-0 d-flex justify-content-between align-items-center py-3">
-            <h5 class="mb-0"><i class="fa-solid fa-tree me-2"></i>Árvore da Vida</h5>
-            <div class="btn-group btn-group-sm" role="group">
-              <button type="button" class="btn btn-outline-secondary active" data-view="preview">
-                <i class="fa-solid fa-eye me-1"></i>Visualizar
-              </button>
-              <button type="button" class="btn btn-outline-secondary" data-view="test">
-                <i class="fa-solid fa-play me-1"></i>Testar
-              </button>
+    <header class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+      <div>
+        <h1 class="h4 text-white mb-1">Editor da Arvore da Vida</h1>
+        <p class="text-white-50 mb-0">Personalize a experiencia, selecione as secoes e envie ao paciente com um clique.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-light btn-sm" href="<?php echo $appUrl; ?>/dashboard.php?action=virtual-tasks">
+          <i class="fa-solid fa-arrow-left me-1"></i>Voltar
+        </a>
+        <button class="btn btn-outline-light btn-sm" type="button" onclick="testTask()">
+          <i class="fa-solid fa-vial me-1"></i>Testar fluxo
+        </button>
+      </div>
+    </header>
+
+    <div class="row g-3 align-items-start">
+      <div class="col-lg-7">
+        <article class="card border-0 shadow-sm editor-card reveal-up" style="--stagger-delay: 0ms;">
+          <div class="card-body p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h6 mb-0 text-secondary">Visual da jornada</h2>
+              <span class="badge text-bg-light" id="previewBadge">0 / 7 secoes</span>
             </div>
-          </div>
-          <div class="card-body p-4">
-            <div id="treeVisualization" style="text-align: center; padding: 40px 0;">
-              <svg id="treeCanvas" width="300" height="400" viewBox="0 0 300 400" style="max-width: 100%;">
-                <!-- Raízes -->
-                <g id="roots" opacity="0">
-                  <path d="M150 350 Q140 380 130 400" stroke="#8B4513" stroke-width="3" fill="none"/>
-                  <path d="M150 350 Q160 380 170 400" stroke="#8B4513" stroke-width="3" fill="none"/>
-                  <path d="M150 350 Q150 380 150 400" stroke="#8B4513" stroke-width="2" fill="none"/>
+
+            <div class="editor-tree-box mb-3">
+              <svg id="editorTree" viewBox="0 0 360 390" aria-label="Preview da arvore">
+                <defs>
+                  <linearGradient id="editorSky" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#ecf9ff"/>
+                    <stop offset="100%" stop-color="#daf1ff"/>
+                  </linearGradient>
+                  <linearGradient id="editorTrunk" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#8a5a33"/>
+                    <stop offset="100%" stop-color="#6a4225"/>
+                  </linearGradient>
+                </defs>
+
+                <rect x="0" y="0" width="360" height="390" fill="url(#editorSky)" rx="18"/>
+                <circle cx="300" cy="56" r="30" fill="#ffe6ae"/>
+
+                <g id="edRoots" class="ed-stage">
+                  <path d="M180 332 C146 360, 112 378, 84 386"/>
+                  <path d="M180 332 C216 360, 248 378, 278 386"/>
+                  <path d="M180 332 C180 360, 181 376, 182 388"/>
                 </g>
 
-                <!-- Tronco -->
-                <g id="trunk" opacity="0">
-                  <rect x="140" y="250" width="20" height="100" fill="#a0522d"/>
+                <g id="edTrunk" class="ed-stage">
+                  <rect x="163" y="190" width="34" height="144" rx="12" fill="url(#editorTrunk)"/>
                 </g>
 
-                <!-- Galhos -->
-                <g id="branches" opacity="0">
-                  <line x1="150" y1="270" x2="100" y2="200" stroke="#8B4513" stroke-width="3"/>
-                  <line x1="150" y1="270" x2="200" y2="200" stroke="#8B4513" stroke-width="3"/>
+                <g id="edBranches" class="ed-stage">
+                  <path d="M180 208 C144 176, 122 150, 102 124"/>
+                  <path d="M180 204 C216 176, 236 150, 258 124"/>
+                  <path d="M180 236 C146 212, 114 194, 90 178"/>
+                  <path d="M180 236 C214 212, 246 194, 272 178"/>
                 </g>
 
-                <!-- Folhas -->
-                <g id="leaves" opacity="0">
-                  <circle cx="90" cy="180" r="25" fill="#27ae60" opacity="0.8"/>
-                  <circle cx="150" cy="150" r="25" fill="#27ae60" opacity="0.8"/>
-                  <circle cx="210" cy="180" r="25" fill="#27ae60" opacity="0.8"/>
+                <g id="edLeaves" class="ed-stage">
+                  <circle cx="98" cy="118" r="30"/>
+                  <circle cx="146" cy="88" r="32"/>
+                  <circle cx="214" cy="86" r="34"/>
+                  <circle cx="264" cy="120" r="29"/>
+                  <circle cx="84" cy="175" r="22"/>
+                  <circle cx="278" cy="174" r="22"/>
                 </g>
 
-                <!-- Sol/Frutos no topo -->
-                <g id="fruits" opacity="0">
-                  <circle cx="150" cy="80" r="20" fill="#f1c40f"/>
+                <g id="edFruits" class="ed-stage">
+                  <circle cx="144" cy="120" r="10"/>
+                  <circle cx="186" cy="108" r="11"/>
+                  <circle cx="228" cy="126" r="9"/>
+                  <circle cx="164" cy="156" r="8"/>
                 </g>
               </svg>
             </div>
 
-            <!-- Áreas de exibição das seções -->
-            <div id="sectionsDisplay" style="display: none;">
-              <div class="sections-list">
-                <?php foreach ($structure['sections'] as $section): ?>
-                  <div class="section-card mb-3 p-3 border rounded" style="border-left: 4px solid <?php echo $section['color']; ?>">
-                    <h6 class="mb-2"><?php echo $section['title']; ?></h6>
-                    <small class="text-muted"><?php echo count($section['questions']); ?> perguntas</small>
-                  </div>
-                <?php endforeach; ?>
-              </div>
+            <div class="progress editor-progress mb-2">
+              <div class="progress-bar" id="editorProgress" style="width:0%"></div>
             </div>
+            <small class="text-muted" id="editorProgressText">Selecione as secoes para montar a tarefa.</small>
           </div>
-        </div>
+        </article>
+
+        <article class="card border-0 shadow-sm editor-card mt-3 reveal-up" style="--stagger-delay: 120ms;">
+          <div class="card-body p-3 p-md-4">
+            <h3 class="h6 text-secondary mb-3">Resumo das secoes ativas</h3>
+            <div id="activeSectionCards" class="active-sections"></div>
+          </div>
+        </article>
       </div>
 
-      <!-- Painel de Controles -->
-      <div class="col-lg-4">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-light border-0 py-3">
-            <h6 class="mb-0"><i class="fa-solid fa-sliders me-2"></i>Configuração</h6>
-          </div>
-          <div class="card-body">
-            <!-- Título -->
+      <div class="col-lg-5">
+        <article class="card border-0 shadow-sm editor-card sticky-lg-top reveal-up" style="top:18px; --stagger-delay: 220ms;">
+          <div class="card-body p-3 p-md-4">
+            <h2 class="h6 text-secondary mb-3">Configuracao de envio</h2>
+
             <div class="mb-3">
-              <label class="form-label">Título da Tarefa</label>
-              <input type="text" class="form-control" id="taskTitle" value="Árvore da Vida" placeholder="Nome da tarefa">
+              <label class="form-label">Titulo da tarefa</label>
+              <input type="text" class="form-control" id="taskTitle" value="Arvore da Vida" placeholder="Nome da tarefa">
             </div>
 
-            <!-- Seleção de Paciente -->
             <div class="mb-3">
-              <label class="form-label">Enviar para Paciente</label>
+              <label class="form-label">Paciente</label>
               <select class="form-select" id="patientSelect">
-                <option value="">-- Selecionar Paciente --</option>
+                <option value="">-- Selecione um paciente --</option>
                 <?php foreach ($patients as $patient): ?>
-                  <option value="<?php echo (int) $patient['id']; ?>">
-                    <?php echo htmlspecialchars($patient['name'] ?? ''); ?>
-                  </option>
+                  <option value="<?php echo (int) $patient['id']; ?>"><?php echo htmlspecialchars($patient['name'] ?? ''); ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
 
-            <!-- Seções com checkboxes -->
+            <div class="mb-3">
+              <label class="form-label">Descricao para o paciente</label>
+              <textarea class="form-control" id="taskDescription" rows="3" placeholder="Contextualize o objetivo da tarefa..."></textarea>
+            </div>
+
             <div class="mb-4">
-              <label class="form-label">Seções a Incluir</label>
-              <div class="sections-checkboxes">
+              <label class="form-label d-block">Secoes da Arvore</label>
+              <div class="section-checklist" id="sectionChecklist">
                 <?php foreach ($structure['sections'] as $section): ?>
-                  <div class="form-check">
-                    <input class="form-check-input section-toggle" type="checkbox" id="section_<?php echo $section['key']; ?>" checked value="<?php echo $section['key']; ?>" data-color="<?php echo $section['color']; ?>">
-                    <label class="form-check-label" for="section_<?php echo $section['key']; ?>">
-                      <?php echo $section['title']; ?>
-                    </label>
-                  </div>
+                  <label class="section-check-item" for="section_<?php echo $section['key']; ?>">
+                    <input
+                      class="section-toggle"
+                      type="checkbox"
+                      id="section_<?php echo $section['key']; ?>"
+                      value="<?php echo $section['key']; ?>"
+                      checked
+                      data-title="<?php echo htmlspecialchars($section['title']); ?>"
+                      data-color="<?php echo htmlspecialchars($section['color']); ?>"
+                      data-qcount="<?php echo (int) count($section['questions']); ?>"
+                    >
+                    <span class="section-marker" style="background: <?php echo $section['color']; ?>;"></span>
+                    <span class="section-content">
+                      <strong><?php echo htmlspecialchars($section['title']); ?></strong>
+                      <small><?php echo (int) count($section['questions']); ?> perguntas</small>
+                    </span>
+                  </label>
                 <?php endforeach; ?>
               </div>
             </div>
 
-            <!-- Descrição -->
-            <div class="mb-4">
-              <label class="form-label">Descrição (opcional)</label>
-              <textarea class="form-control" id="taskDescription" rows="3" placeholder="Instruções adicionais para o paciente"></textarea>
-            </div>
-
-            <!-- Botões de Ação -->
             <div class="d-grid gap-2">
-              <button class="btn btn-primary" onclick="sendTaskToPatient()" id="sendBtn">
-                <i class="fa-solid fa-paper-plane me-2"></i>Enviar Tarefa
+              <button class="btn btn-primary" id="sendBtn" type="button" onclick="sendTaskToPatient()">
+                <i class="fa-solid fa-paper-plane me-2"></i>Enviar tarefa dinamica
               </button>
-              <button class="btn btn-outline-secondary" onclick="testTask()">
-                <i class="fa-solid fa-flask me-2"></i>Testar Primeiro
+              <button class="btn btn-outline-secondary" type="button" onclick="testTask()">
+                <i class="fa-solid fa-vial me-2"></i>Testar em nova aba
               </button>
             </div>
           </div>
-        </div>
+        </article>
       </div>
     </div>
-  </div>
+  </section>
 </div>
 
-<!-- Modal para teste -->
-<div class="modal fade" id="testModal" tabindex="-1">
-  <div class="modal-dialog modal-fullscreen">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Teste - Árvore da Vida</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="testContent">
-        <!-- Conteúdo do teste será carregado aqui -->
-      </div>
-    </div>
-  </div>
-</div>
+<style>
+.editor-sky {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 1.25rem;
+  background: linear-gradient(180deg, #4eaeea 0%, #9ad9ff 52%, #caefff 100%);
+}
+
+.cloud {
+  position: absolute;
+  display: block;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  filter: blur(1px);
+  animation: floatCloud 14s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.cloud-a { width: 105px; height: 32px; top: 26px; left: 10%; }
+.cloud-b { width: 130px; height: 36px; top: 70px; right: 14%; animation-delay: 1.2s; }
+.cloud-c { width: 86px; height: 26px; top: 118px; left: 47%; animation-delay: 2.1s; }
+
+.editor-card {
+  border-radius: 16px;
+}
+
+.reveal-up {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 440ms cubic-bezier(0.16, 1, 0.3, 1), transform 440ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--stagger-delay, 0ms);
+}
+
+.ui-ready .reveal-up {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.editor-tree-box {
+  border: 1px solid #d8eaf7;
+  border-radius: 14px;
+  background: #f8fdff;
+  padding: 10px;
+}
+
+#editorTree {
+  width: 100%;
+  height: 330px;
+}
+
+.ed-stage {
+  opacity: 0.18;
+  transition: opacity 320ms ease;
+}
+
+.ed-stage.active {
+  opacity: 1;
+}
+
+#edRoots path,
+#edBranches path {
+  fill: none;
+  stroke: #7d502d;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+#edLeaves circle {
+  fill: #40a75e;
+  opacity: .95;
+}
+
+#edFruits circle {
+  fill: #ffb85d;
+}
+
+.editor-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #deedf8;
+}
+
+.editor-progress .progress-bar {
+  background: linear-gradient(90deg, #30a8ff, #39c488);
+}
+
+.section-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #deebf5;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fbfeff;
+  cursor: pointer;
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 240ms ease, border-color 240ms ease;
+}
+
+.section-check-item:hover {
+  border-color: #bfdbef;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(25, 86, 132, 0.08);
+}
+
+.section-check-item:focus-within {
+  border-color: #45a9e6;
+  box-shadow: 0 0 0 0.2rem rgba(69, 169, 230, 0.2);
+}
+
+.section-check-item input {
+  margin-top: 2px;
+}
+
+.section-marker {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.section-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.section-content strong {
+  font-size: .92rem;
+  color: #18314a;
+}
+
+.section-content small {
+  color: #6f8598;
+}
+
+.active-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.active-section-card {
+  border: 1px solid #d7eaf8;
+  border-radius: 12px;
+  padding: 10px;
+  background: #f8fcff;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: cardIn 380ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.active-section-card strong {
+  display: block;
+  font-size: .88rem;
+  color: #1d3f5f;
+  line-height: 1.3;
+}
+
+.active-section-card small {
+  color: #6c8295;
+}
+
+.btn:focus-visible,
+.form-control:focus,
+.form-select:focus {
+  box-shadow: 0 0 0 0.22rem rgba(69, 169, 230, 0.24);
+  border-color: #45a9e6;
+}
+
+@keyframes floatCloud {
+  0% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -4px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes cardIn {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud,
+  .reveal-up,
+  .section-check-item,
+  .active-section-card,
+  .ed-stage {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .reveal-up,
+  .active-section-card {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 992px) {
+  .active-sections {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 
 <script>
 const appUrl = '<?php echo $appUrl; ?>';
-const structure = <?php echo json_encode($structure); ?>;
-let selectedSections = <?php echo json_encode(array_column($structure['sections'], 'key')); ?>;
-
-// Animação da árvore
-function animateTree() {
-  const timeline = [
-    { element: '#roots', delay: 0 },
-    { element: '#trunk', delay: 300 },
-    { element: '#branches', delay: 600 },
-    { element: '#leaves', delay: 900 },
-    { element: '#fruits', delay: 1200 }
-  ];
-
-  timeline.forEach(item => {
-    setTimeout(() => {
-      const el = document.querySelector(item.element);
-      if (el) {
-        el.style.transition = 'opacity 0.5s ease';
-        el.style.opacity = '1';
-      }
-    }, item.delay);
-  });
-}
-
-// Inicializa animação ao carregar
-window.addEventListener('load', function() {
-  animateTree();
-
-  // Toggle de seções
-  document.querySelectorAll('.section-toggle').forEach(function(el) {
-    el.addEventListener('change', function() {
-      if (this.checked) {
-        selectedSections.push(this.value);
-      } else {
-        selectedSections = selectedSections.filter(s => s !== this.value);
-      }
-      selectedSections = Array.from(new Set(selectedSections));
-    });
-  });
-});
+const baseSections = <?php echo isset($structure['sections']) ? json_encode($structure['sections']) : '[]'; ?>;
+let selectedSections = Array.isArray(baseSections) ? baseSections.map(s => s.key) : [];
 
 function safeSwal(title, text, icon) {
   if (window.Swal && typeof Swal.fire === 'function') {
     return Swal.fire(title, text, icon);
   }
-
   alert(title + ': ' + text);
   return Promise.resolve();
 }
@@ -212,7 +396,12 @@ function getSelectedPatientId() {
 
 function getTaskTitle() {
   const input = document.getElementById('taskTitle');
-  return (input && input.value ? input.value : 'Árvore da Vida').trim();
+  return (input && input.value ? input.value : 'Arvore da Vida').trim();
+}
+
+function getTaskDescription() {
+  const textarea = document.getElementById('taskDescription');
+  return textarea ? textarea.value.trim() : '';
 }
 
 function setSendButtonLoading(loading) {
@@ -227,24 +416,102 @@ function setSendButtonLoading(loading) {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Enviando...';
   } else {
     btn.disabled = false;
-    btn.innerHTML = btn.dataset.originalText || '<i class="fa-solid fa-paper-plane me-2"></i>Enviar Tarefa';
+    btn.innerHTML = btn.dataset.originalText || '<i class="fa-solid fa-paper-plane me-2"></i>Enviar tarefa dinamica';
   }
+}
+
+function updateTreeVisual(progress) {
+  const map = [
+    ['edRoots', 0.12],
+    ['edTrunk', 0.28],
+    ['edBranches', 0.48],
+    ['edLeaves', 0.72],
+    ['edFruits', 0.9],
+  ];
+
+  map.forEach(([id, min]) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.toggle('active', progress >= min);
+    }
+  });
+}
+
+function renderActiveSectionCards() {
+  const container = document.getElementById('activeSectionCards');
+  if (!container) {
+    return;
+  }
+
+  const active = baseSections.filter((section) => selectedSections.includes(section.key));
+  if (active.length === 0) {
+    container.innerHTML = '<div class="alert alert-warning mb-0">Selecione ao menos uma secao para montar a tarefa.</div>';
+    return;
+  }
+
+  container.innerHTML = active.map((section) => {
+    const qCount = Array.isArray(section.questions) ? section.questions.length : 0;
+    return ''
+      + '<div class="active-section-card">'
+      + '  <strong>' + section.title + '</strong>'
+      + '  <small>' + qCount + ' perguntas</small>'
+      + '</div>';
+  }).join('');
+
+  container.querySelectorAll('.active-section-card').forEach((card, index) => {
+    card.style.animationDelay = (index * 60) + 'ms';
+  });
+}
+
+function updatePreviewState() {
+  const total = baseSections.length || 1;
+  const activeCount = selectedSections.length;
+  const progress = activeCount / total;
+
+  const badge = document.getElementById('previewBadge');
+  const progressBar = document.getElementById('editorProgress');
+  const progressText = document.getElementById('editorProgressText');
+
+  if (badge) {
+    badge.textContent = activeCount + ' / ' + total + ' secoes';
+  }
+
+  if (progressBar) {
+    progressBar.style.width = (progress * 100).toFixed(0) + '%';
+  }
+
+  if (progressText) {
+    if (activeCount === 0) {
+      progressText.textContent = 'Nenhuma secao ativa. Selecione ao menos uma para envio.';
+    } else {
+      progressText.textContent = 'A tarefa sera enviada com ' + activeCount + ' secao(oes).';
+    }
+  }
+
+  updateTreeVisual(progress);
+  renderActiveSectionCards();
 }
 
 function testTask() {
   const previewUrl = appUrl + '/dashboard.php?action=virtual-tasks-preview';
   const win = window.open(previewUrl, '_blank', 'noopener,noreferrer');
   if (!win) {
-    safeSwal('Aviso', 'Não foi possível abrir a aba de teste. Verifique se o navegador bloqueou pop-up.', 'warning');
+    safeSwal('Aviso', 'Nao foi possivel abrir a aba de teste. Verifique bloqueio de pop-up.', 'warning');
   }
 }
 
 function sendTaskToPatient() {
   const patientId = getSelectedPatientId();
   const taskTitle = getTaskTitle();
+  const taskDescription = getTaskDescription();
 
   if (!patientId) {
-    safeSwal('Aviso', 'Selecione um paciente para enviar a tarefa', 'warning');
+    safeSwal('Aviso', 'Selecione um paciente para enviar a tarefa.', 'warning');
+    return;
+  }
+
+  if (selectedSections.length === 0) {
+    safeSwal('Aviso', 'Selecione ao menos uma secao da Arvore da Vida.', 'warning');
     return;
   }
 
@@ -259,6 +526,7 @@ function sendTaskToPatient() {
     body: JSON.stringify({
       patient_id: patientId,
       title: taskTitle,
+      description: taskDescription,
       task_type: 'virtual_tree_of_life',
       sections: selectedSections
     })
@@ -266,20 +534,45 @@ function sendTaskToPatient() {
     .then((res) => res.json())
     .then((res) => {
       if (res.success) {
-        safeSwal('Sucesso!', res.message, 'success').then(() => {
+        safeSwal('Sucesso', res.message || 'Tarefa enviada com sucesso!', 'success').then(() => {
           window.location.href = appUrl + '/dashboard.php?action=virtual-tasks';
         });
         return;
       }
 
-      safeSwal('Erro', res.message || 'Erro ao enviar tarefa', 'error');
+      safeSwal('Erro', res.message || 'Falha ao enviar tarefa.', 'error');
       setSendButtonLoading(false);
     })
     .catch(() => {
-      safeSwal('Erro', 'Erro ao enviar tarefa', 'error');
+      safeSwal('Erro', 'Falha de comunicacao ao enviar tarefa.', 'error');
       setSendButtonLoading(false);
     });
 }
+
+window.addEventListener('load', function() {
+  document.body.classList.add('ui-ready');
+
+  const toggles = document.querySelectorAll('.section-toggle');
+  toggles.forEach((toggle) => {
+    toggle.addEventListener('change', function() {
+      if (this.checked) {
+        selectedSections.push(this.value);
+      } else {
+        selectedSections = selectedSections.filter((key) => key !== this.value);
+      }
+      selectedSections = Array.from(new Set(selectedSections));
+      updatePreviewState();
+    });
+  });
+
+  const checkItems = document.querySelectorAll('.section-check-item');
+  checkItems.forEach((item, index) => {
+    item.classList.add('reveal-up');
+    item.style.setProperty('--stagger-delay', (260 + index * 50) + 'ms');
+  });
+
+  updatePreviewState();
+});
 </script>
 
 <?php include __DIR__ . '/../../partials/footer.php'; ?>
