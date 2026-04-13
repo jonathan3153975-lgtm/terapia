@@ -2178,6 +2178,7 @@ body.app-body {
 	.app-layout {
 		grid-template-columns: 1fr;
 		height: auto;
+		min-height: 100dvh;
 		overflow: visible;
 	}
 
@@ -2185,14 +2186,18 @@ body.app-body {
 		position: fixed;
 		top: 0;
 		left: 0;
-		height: 100vh;
-		width: 270px;
+		height: 100dvh;
+		width: 100vw;
+		max-width: 100vw;
 		z-index: 1040;
 		border-right: 1px solid var(--line);
 		border-bottom: 0;
 		box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
 		transform: translateX(-108%);
 		transition: transform .25s ease;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+		padding-bottom: calc(16px + env(safe-area-inset-bottom));
 	}
 
 	body.sidebar-open .app-sidebar {
@@ -2201,6 +2206,14 @@ body.app-body {
 
 	body.sidebar-open {
 		overflow: hidden;
+	}
+
+	.sidebar-footer {
+		position: sticky;
+		bottom: 0;
+		background: var(--sidebar-bg);
+		padding-top: 10px;
+		border-top: 1px solid var(--line);
 	}
 
 	.sidebar-overlay {
@@ -2226,6 +2239,7 @@ body.app-body {
 	.app-content {
 		padding: 16px;
 		height: auto;
+		min-height: 100dvh;
 		overflow: visible;
 	}
 
