@@ -212,14 +212,21 @@ class VirtualTaskController extends Controller
             $answersBySection[$sectionName] = json_decode((string) ($response['answers_json'] ?? '[]'), true) ?? [];
         }
 
-        $formattedResponseHtml = (string) ($task['patient_response_html'] ?? '');
-        if ($formattedResponseHtml === '') {
-            $formattedResponseHtml = $this->virtualTaskModel->formatResponseHtml(
-                is_array($structure) ? $structure : [],
-                $answersBySection,
-                ''
-            );
+        $rawPatientHtml = (string) ($task['patient_response_html'] ?? '');
+        $legacyReflectionHtml = '';
+        if (
+            trim(strip_tags($rawPatientHtml)) !== ''
+            && stripos($rawPatientHtml, 'Relatório terapêutico') === false
+            && stripos($rawPatientHtml, 'Árvore da Vida') === false
+        ) {
+            $legacyReflectionHtml = $rawPatientHtml;
         }
+
+        $formattedResponseHtml = $this->virtualTaskModel->formatResponseHtml(
+            is_array($structure) ? $structure : [],
+            $answersBySection,
+            $legacyReflectionHtml
+        );
 
         $this->view('therapist/virtual-tasks/show', [
             'appUrl' => Config::get('APP_URL', ''),

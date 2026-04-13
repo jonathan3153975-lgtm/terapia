@@ -263,7 +263,10 @@ class VirtualTask extends Model
         $sections = $structure['sections'] ?? [];
         $htmlParts = [
             '<div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; color: #243746; line-height: 1.6;">',
-            '<h2 style="margin: 0 0 16px; color: #16486b;">Árvore da Vida</h2>',
+            '<div style="padding: 18px 20px; border-radius: 14px; background: linear-gradient(135deg, #0f6aa1 0%, #3da9e4 55%, #9edcff 100%); color: #ffffff; margin-bottom: 16px;">',
+            '<div style="font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .9;">Relatório terapêutico</div>',
+            '<h2 style="margin: 4px 0 0; font-size: 24px; line-height: 1.2;">Árvore da Vida</h2>',
+            '</div>',
         ];
 
         if (is_array($sections) && $sections !== []) {
@@ -273,23 +276,29 @@ class VirtualTask extends Model
                 $questions = is_array($section['questions'] ?? null) ? $section['questions'] : [];
                 $answers = is_array($answersBySection[$sectionKey] ?? null) ? $answersBySection[$sectionKey] : [];
 
-                if ($sectionKey === '' || $answers === []) {
+                if ($sectionKey === '') {
                     continue;
                 }
 
-                $htmlParts[] = '<section style="margin: 0 0 18px; padding: 16px; border: 1px solid #dbe9f4; border-radius: 12px; background: #f9fcff;">';
+                $htmlParts[] = '<section style="margin: 0 0 18px; padding: 16px; border: 1px solid #dbe9f4; border-radius: 14px; background: #f9fcff; box-shadow: 0 4px 14px rgba(20, 69, 99, 0.05);">';
                 $htmlParts[] = '<h3 style="margin: 0 0 12px; font-size: 18px; color: #123d5a;">' . $this->escapeHtml($sectionTitle) . '</h3>';
 
-                foreach ($answers as $index => $answer) {
-                    $questionText = (string) ($questions[$index] ?? ('Pergunta ' . ($index + 1)));
-                    $answerText = trim((string) $answer);
-                    if ($answerText === '') {
-                        continue;
-                    }
+                if ($questions === []) {
+                    $questions = ['Sem perguntas cadastradas para esta seção.'];
+                }
+
+                foreach ($questions as $index => $question) {
+                    $questionText = (string) $question;
+                    $answerText = trim((string) ($answers[$index] ?? ''));
+                    $isAnswered = $answerText !== '';
 
                     $htmlParts[] = '<div style="margin-bottom: 14px;">';
-                    $htmlParts[] = '<div style="font-weight: 600; color: #35576f; margin-bottom: 4px;">' . $this->escapeHtml($questionText) . '</div>';
-                    $htmlParts[] = '<div style="padding: 10px 12px; background: #ffffff; border: 1px solid #e2edf5; border-radius: 10px;">' . nl2br($this->escapeHtml($answerText)) . '</div>';
+                    $htmlParts[] = '<div style="font-weight: 600; color: #35576f; margin-bottom: 4px;">' . ($index + 1) . '. ' . $this->escapeHtml($questionText) . '</div>';
+                    $htmlParts[] = '<div style="padding: 10px 12px; background: #ffffff; border: 1px solid ' . ($isAnswered ? '#d5e7f3' : '#f0d9b2') . '; border-radius: 10px;">';
+                    $htmlParts[] = $isAnswered
+                        ? nl2br($this->escapeHtml($answerText))
+                        : '<span style="color: #8b6b2c; font-style: italic;">Não respondida.</span>';
+                    $htmlParts[] = '</div>';
                     $htmlParts[] = '</div>';
                 }
 
@@ -306,13 +315,10 @@ class VirtualTask extends Model
 
                 foreach ($answers as $index => $answer) {
                     $answerText = trim((string) $answer);
-                    if ($answerText === '') {
-                        continue;
-                    }
 
                     $htmlParts[] = '<div style="margin-bottom: 14px;">';
                     $htmlParts[] = '<div style="font-weight: 600; color: #35576f; margin-bottom: 4px;">Pergunta ' . ($index + 1) . '</div>';
-                    $htmlParts[] = '<div style="padding: 10px 12px; background: #ffffff; border: 1px solid #e2edf5; border-radius: 10px;">' . nl2br($this->escapeHtml($answerText)) . '</div>';
+                    $htmlParts[] = '<div style="padding: 10px 12px; background: #ffffff; border: 1px solid #e2edf5; border-radius: 10px;">' . ($answerText !== '' ? nl2br($this->escapeHtml($answerText)) : '<span style="color: #8b6b2c; font-style: italic;">Não respondida.</span>') . '</div>';
                     $htmlParts[] = '</div>';
                 }
 
@@ -321,7 +327,7 @@ class VirtualTask extends Model
         }
 
         if (trim(strip_tags($reflectionHtml)) !== '') {
-            $htmlParts[] = '<section style="margin: 0 0 18px; padding: 16px; border: 1px solid #dbe9f4; border-radius: 12px; background: #f9fcff;">';
+            $htmlParts[] = '<section style="margin: 0 0 18px; padding: 16px; border: 1px solid #dbe9f4; border-radius: 14px; background: #f9fcff; box-shadow: 0 4px 14px rgba(20, 69, 99, 0.05);">';
             $htmlParts[] = '<h3 style="margin: 0 0 12px; font-size: 18px; color: #123d5a;">Reflexão final</h3>';
             $htmlParts[] = '<div style="padding: 10px 12px; background: #ffffff; border: 1px solid #e2edf5; border-radius: 10px;">' . $reflectionHtml . '</div>';
             $htmlParts[] = '</section>';
