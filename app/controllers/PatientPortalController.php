@@ -1521,6 +1521,11 @@ class PatientPortalController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa não encontrada.'));
         }
 
+        // Tarefas dinâmicas possuem fluxo de resposta dedicado.
+        if ((string) ($task['task_type'] ?? 'regular') === 'virtual_tree_of_life') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=virtual-tree-of-life&id=' . (int) $task['id']);
+        }
+
         $therapistFiles = $this->fileModel->listByTaskAndSourceRole($taskId, 'therapist');
         $patientFiles = $this->fileModel->listByTaskAndSourceRole($taskId, 'patient');
 

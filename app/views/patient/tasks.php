@@ -47,9 +47,15 @@
               <?php endif; ?>
             </td>
             <td>
-              <a class="btn btn-sm btn-primary" href="<?php echo $appUrl; ?>/patient.php?action=task-respond&id=<?php echo (int) $task['id']; ?>">
-                <i class="fa-solid fa-reply me-1"></i><?php echo (($task['status'] ?? '') === 'done') ? 'Editar resposta' : 'Responder'; ?>
-              </a>
+              <?php if (($task['task_type'] ?? 'regular') === 'virtual_tree_of_life'): ?>
+                <a class="btn btn-sm btn-success" href="<?php echo $appUrl; ?>/patient.php?action=virtual-tree-of-life&id=<?php echo (int) $task['id']; ?>">
+                  <i class="fa-solid fa-tree me-1"></i><?php echo (($task['status'] ?? '') === 'done') ? 'Ver Árvore da Vida' : 'Iniciar Árvore da Vida'; ?>
+                </a>
+              <?php else: ?>
+                <a class="btn btn-sm btn-primary" href="<?php echo $appUrl; ?>/patient.php?action=task-respond&id=<?php echo (int) $task['id']; ?>">
+                  <i class="fa-solid fa-reply me-1"></i><?php echo (($task['status'] ?? '') === 'done') ? 'Editar resposta' : 'Responder'; ?>
+                </a>
+              <?php endif; ?>
             </td>
           </tr>
           <?php endforeach; endif; ?>

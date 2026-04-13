@@ -232,21 +232,11 @@ function setSendButtonLoading(loading) {
 }
 
 function testTask() {
-  const modalEl = document.getElementById('testModal');
-  const target = document.getElementById('testContent');
-  const modal = new bootstrap.Modal(modalEl);
-
-  fetch(appUrl + '/dashboard.php?action=virtual-tasks-preview', { method: 'GET' })
-    .then((res) => res.text())
-    .then((html) => {
-      if (target) {
-        target.innerHTML = html;
-      }
-      modal.show();
-    })
-    .catch(() => {
-      safeSwal('Erro', 'Não foi possível carregar o teste', 'error');
-    });
+  const previewUrl = appUrl + '/dashboard.php?action=virtual-tasks-preview';
+  const win = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+  if (!win) {
+    safeSwal('Aviso', 'Não foi possível abrir a aba de teste. Verifique se o navegador bloqueou pop-up.', 'warning');
+  }
 }
 
 function sendTaskToPatient() {
