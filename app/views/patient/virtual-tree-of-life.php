@@ -241,11 +241,11 @@ function updateTreeProgress(sectionIndex) {
   document.getElementById('treeProgressBar').style.width = (progress * 100) + '%';
 
   // Anima elementos da árvore
-  if (progress >= 0.15) $('#patientRoots').css('opacity', 1);
-  if (progress >= 0.3) $('#patientTrunk').css('opacity', 1);
-  if (progress >= 0.5) $('#patientBranches').css('opacity', 1);
-  if (progress >= 0.75) $('#patientLeaves').css('opacity', 1);
-  if (progress >= 0.9) $('#patientFruits').css('opacity', 1);
+  if (progress >= 0.15) document.getElementById('patientRoots').style.opacity = '1';
+  if (progress >= 0.3) document.getElementById('patientTrunk').style.opacity = '1';
+  if (progress >= 0.5) document.getElementById('patientBranches').style.opacity = '1';
+  if (progress >= 0.75) document.getElementById('patientLeaves').style.opacity = '1';
+  if (progress >= 0.9) document.getElementById('patientFruits').style.opacity = '1';
 }
 
 function nextPatientSection() {
@@ -362,8 +362,20 @@ function completePatientTask() {
 }
 
 // Inicializa
-$(document).ready(function() {
-  document.getElementById('totalCounter').textContent = sections.length;
+window.addEventListener('load', function() {
+  const totalCounter = document.getElementById('totalCounter');
+  totalCounter.textContent = sections.length > 0 ? String(sections.length + 1) : '0';
+
+  if (!Array.isArray(sections) || sections.length === 0) {
+    document.getElementById('sectionsContainer').innerHTML = `
+      <div class="alert alert-warning mb-0">
+        <strong>Estrutura indisponível:</strong> esta tarefa não possui seções configuradas.
+      </div>
+    `;
+    document.getElementById('nextSectionBtn').disabled = true;
+    return;
+  }
+
   showPatientSection(0);
 });
 </script>

@@ -1617,6 +1617,7 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $taskId = (int) ($input['task_id'] ?? 0);
         $reflectionHtml = (string) ($input['reflection'] ?? '');
+        $answers = $input['answers'] ?? [];
 
         if ($taskId <= 0) {
             $this->error('Tarefa inválida', 422);
@@ -1632,6 +1633,33 @@ class PatientPortalController extends Controller
         }
 
         $reflectionHtml = $this->sanitizeRichText($reflectionHtml);
+
+        // Salva respostas por seção na tabela virtual_task_responses
+        if (is_array($answers) && $answers !== []) {
+            $therapistId = (int) ($task['therapist_id'] ?? 0);
+            foreach ($answers as $sectionName => $sectionAnswers) {
+                if (!is_string($sectionName) || trim($sectionName) === '') {
+                    continue;
+                }
+
+                $normalizedAnswers = [];
+                if (is_array($sectionAnswers)) {
+                    foreach ($sectionAnswers as $answer) {
+                        if (is_scalar($answer)) {
+                            $normalizedAnswers[] = trim((string) $answer);
+                        }
+                    }
+                }
+
+                $this->virtualTaskModel->saveResponse(
+                    $therapistId,
+                    $patientId,
+                    $taskId,
+                    trim($sectionName),
+                    json_encode($normalizedAnswers, JSON_UNESCAPED_UNICODE)
+                );
+            }
+        }
 
         $updated = $this->taskModel->updateById($taskId, [
             'status' => 'done',

@@ -170,83 +170,125 @@ function animateTree() {
 
   timeline.forEach(item => {
     setTimeout(() => {
-      $(item.element).animate({ opacity: 1 }, 500);
+      const el = document.querySelector(item.element);
+      if (el) {
+        el.style.transition = 'opacity 0.5s ease';
+        el.style.opacity = '1';
+      }
     }, item.delay);
   });
 }
 
 // Inicializa animação ao carregar
-$(document).ready(function() {
+window.addEventListener('load', function() {
   animateTree();
 
   // Toggle de seções
-  $('.section-toggle').on('change', function() {
-    if ($(this).is(':checked')) {
-      selectedSections.push($(this).val());
-    } else {
-      selectedSections = selectedSections.filter(s => s !== $(this).val());
-    }
+  document.querySelectorAll('.section-toggle').forEach(function(el) {
+    el.addEventListener('change', function() {
+      if (this.checked) {
+        selectedSections.push(this.value);
+      } else {
+        selectedSections = selectedSections.filter(s => s !== this.value);
+      }
+      selectedSections = Array.from(new Set(selectedSections));
+    });
   });
 });
 
-function testTask() {
-  const modal = new bootstrap.Modal(document.getElementById('testModal'));
-  
-  // Carrega conteúdo de teste
-  $.ajax({
-    url: appUrl + '/dashboard.php?action=virtual-tasks-preview',
-    method: 'GET',
-    success: function(html) {
-      $('#testContent').html(html);
-      modal.show();
-    },
-    error: function() {
-      Swal.fire('Erro', 'Não foi possível carregar o teste', 'error');
-    }
-  });
+function safeSwal(title, text, icon) {
+  if (window.Swal && typeof Swal.fire === 'function') {
+    return Swal.fire(title, text, icon);
+  }
+
+  alert(title + ': ' + text);
+  return Promise.resolve();
 }
 
-function sendTaskToPatient() {
-  const patientId = parseInt($('#patientSelect').val());
-  const taskTitle = $('#taskTitle').val() || 'Árvore da Vida';
+function getSelectedPatientId() {
+  const select = document.getElementById('patientSelect');
+  return parseInt(select ? select.value : '', 10) || 0;
+}
 
-  if (!patientId) {
-    Swal.fire('Aviso', 'Selecione um paciente para enviar a tarefa', 'warning');
+function getTaskTitle() {
+  const input = document.getElementById('taskTitle');
+  return (input && input.value ? input.value : 'Árvore da Vida').trim();
+}
+
+function setSendButtonLoading(loading) {
+  const btn = document.getElementById('sendBtn');
+  if (!btn) {
     return;
   }
 
-  const btn = $('#sendBtn');
-  const originalText = btn.html();
-  btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-2"></i>Enviando...');
+  if (loading) {
+    btn.dataset.originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Enviando...';
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = btn.dataset.originalText || '<i class="fa-solid fa-paper-plane me-2"></i>Enviar Tarefa';
+  }
+}
 
-  $.ajax({
-    url: appUrl + '/dashboard.php?action=virtual-tasks-store',
+function testTask() {
+  const modalEl = document.getElementById('testModal');
+  const target = document.getElementById('testContent');
+  const modal = new bootstrap.Modal(modalEl);
+
+  fetch(appUrl + '/dashboard.php?action=virtual-tasks-preview', { method: 'GET' })
+    .then((res) => res.text())
+    .then((html) => {
+      if (target) {
+        target.innerHTML = html;
+      }
+      modal.show();
+    })
+    .catch(() => {
+      safeSwal('Erro', 'Não foi possível carregar o teste', 'error');
+    });
+}
+
+function sendTaskToPatient() {
+  const patientId = getSelectedPatientId();
+  const taskTitle = getTaskTitle();
+
+  if (!patientId) {
+    safeSwal('Aviso', 'Selecione um paciente para enviar a tarefa', 'warning');
+    return;
+  }
+
+  setSendButtonLoading(true);
+
+  fetch(appUrl + '/dashboard.php?action=virtual-tasks-store', {
     method: 'POST',
-    contentType: 'application/json',
-    data: JSON.stringify({
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({
       patient_id: patientId,
       title: taskTitle,
       task_type: 'virtual_tree_of_life',
       sections: selectedSections
-    }),
-    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    dataType: 'json',
-    success: function(res) {
+    })
+  })
+    .then((res) => res.json())
+    .then((res) => {
       if (res.success) {
-        Swal.fire('Sucesso!', res.message, 'success').then(() => {
+        safeSwal('Sucesso!', res.message, 'success').then(() => {
           window.location.href = appUrl + '/dashboard.php?action=virtual-tasks';
         });
-      } else {
-        Swal.fire('Erro', res.message, 'error');
-        btn.prop('disabled', false).html(originalText);
+        return;
       }
-    },
-    error: function(xhr) {
-      const msg = xhr.responseJSON?.message || 'Erro ao enviar tarefa';
-      Swal.fire('Erro', msg, 'error');
-      btn.prop('disabled', false).html(originalText);
-    }
-  });
+
+      safeSwal('Erro', res.message || 'Erro ao enviar tarefa', 'error');
+      setSendButtonLoading(false);
+    })
+    .catch(() => {
+      safeSwal('Erro', 'Erro ao enviar tarefa', 'error');
+      setSendButtonLoading(false);
+    });
 }
 </script>
 

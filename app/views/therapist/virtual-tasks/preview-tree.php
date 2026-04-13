@@ -176,11 +176,11 @@ function animateTreeProgress(progress) {
   const ratio = (progress + 1) / sections.length;
 
   // Anima opacidade das partes da árvore
-  $('#previewRoots').css('opacity', ratio >= 0.2 ? 1 : 0);
-  $('#previewTrunk').css('opacity', ratio >= 0.4 ? 1 : 0);
-  $('#previewBranches').css('opacity', ratio >= 0.6 ? 1 : 0);
-  $('#previewLeaves').css('opacity', ratio >= 0.8 ? 1 : 0);
-  $('#previewFruits').css('opacity', ratio >= 1 ? 1 : 0);
+  document.getElementById('previewRoots').style.opacity = ratio >= 0.2 ? '1' : '0';
+  document.getElementById('previewTrunk').style.opacity = ratio >= 0.4 ? '1' : '0';
+  document.getElementById('previewBranches').style.opacity = ratio >= 0.6 ? '1' : '0';
+  document.getElementById('previewLeaves').style.opacity = ratio >= 0.8 ? '1' : '0';
+  document.getElementById('previewFruits').style.opacity = ratio >= 1 ? '1' : '0';
 }
 
 function nextSection() {
@@ -229,7 +229,11 @@ function showFinalReflection() {
   document.getElementById('nextBtn').style.display = 'none';
 
   // Anima completamente
-  $('#previewRoots, #previewTrunk, #previewBranches, #previewLeaves, #previewFruits').css('opacity', 1);
+  document.getElementById('previewRoots').style.opacity = '1';
+  document.getElementById('previewTrunk').style.opacity = '1';
+  document.getElementById('previewBranches').style.opacity = '1';
+  document.getElementById('previewLeaves').style.opacity = '1';
+  document.getElementById('previewFruits').style.opacity = '1';
 }
 
 function completePreview() {
@@ -244,7 +248,17 @@ function completePreview() {
 }
 
 // Inicializa
-$(document).ready(function() {
+window.addEventListener('load', function() {
+  if (!Array.isArray(sections) || sections.length === 0) {
+    document.getElementById('questionsContainer').innerHTML = `
+      <div class="alert alert-warning mb-0">
+        <strong>Estrutura indisponível:</strong> nenhuma seção foi carregada para o preview.
+      </div>
+    `;
+    document.getElementById('nextBtn').disabled = true;
+    return;
+  }
+
   showSection(0);
 });
 </script>
