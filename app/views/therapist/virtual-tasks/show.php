@@ -26,63 +26,20 @@ include __DIR__ . '/../../partials/header.php';
         <strong>Concluído em:</strong> <?php echo date('d/m/Y H:i', strtotime($task['responded_at'])); ?>
       </div>
 
-      <!-- Abas de seções -->
-      <ul class="nav nav-tabs mb-4" role="tablist">
-        <?php foreach ($responses as $index => $resp): ?>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link <?php echo $index === 0 ? 'active' : ''; ?>" 
-                    id="tab_<?php echo $resp['section_name']; ?>" 
-                    data-bs-toggle="tab" 
-                    data-bs-target="#content_<?php echo $resp['section_name']; ?>" 
-                    type="button">
-              <?php echo ucfirst(str_replace('_', ' ', $resp['section_name'])); ?>
-            </button>
-          </li>
-        <?php endforeach; ?>
-        <?php if (!empty($task['patient_response_html'])): ?>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tabReflection" data-bs-toggle="tab" data-bs-target="#contentReflection" type="button">
-              Reflexão Final
-            </button>
-          </li>
-        <?php endif; ?>
-      </ul>
-
-      <!-- Conteúdo das abas -->
-      <div class="tab-content">
-        <?php foreach ($responses as $index => $resp): 
-          $answers = json_decode($resp['answers_json'], true) ?? [];
-        ?>
-          <div class="tab-pane fade <?php echo $index === 0 ? 'show active' : ''; ?>" 
-               id="content_<?php echo $resp['section_name']; ?>" 
-               role="tabpanel">
-            <div class="card border-0 shadow-sm">
-              <div class="card-body">
-                <?php foreach ($answers as $qIndex => $answer): ?>
-                  <div class="mb-4 pb-4" style="border-bottom: 1px solid #f0f0f0;">
-                    <h6 class="text-muted small mb-2">
-                      <i class="fa-solid fa-question-circle me-1"></i>
-                      Pergunta <?php echo $qIndex + 1; ?>
-                    </h6>
-                    <p class="card-text"><?php echo htmlspecialchars($answer); ?></p>
-                  </div>
-                <?php endforeach; ?>
-              </div>
-            </div>
-          </div>
-        <?php endforeach; ?>
-
-        <?php if (!empty($task['patient_response_html'])): ?>
-          <div class="tab-pane fade" id="contentReflection" role="tabpanel">
-            <div class="card border-0 shadow-sm">
-              <div class="card-body">
-                <div class="ql-editor" style="padding: 0;">
-                  <?php echo $task['patient_response_html']; ?>
-                </div>
-              </div>
-            </div>
-          </div>
-        <?php endif; ?>
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <strong>Resposta formatada</strong>
+          <button class="btn btn-outline-primary btn-sm" type="button" onclick="printResponses()">
+            <i class="fa-solid fa-print me-1"></i>Imprimir HTML
+          </button>
+        </div>
+        <div class="card-body">
+          <?php if (!empty($formattedResponseHtml)): ?>
+            <?php echo $formattedResponseHtml; ?>
+          <?php else: ?>
+            <div class="text-muted">Nenhuma resposta formatada disponível.</div>
+          <?php endif; ?>
+        </div>
       </div>
 
       <!-- Ações -->

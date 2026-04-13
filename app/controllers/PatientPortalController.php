@@ -1638,6 +1638,13 @@ class PatientPortalController extends Controller
         }
 
         $reflectionHtml = $this->sanitizeRichText($reflectionHtml);
+        $contentJson = (string) ($task['content_json'] ?? '');
+        $structure = $contentJson !== '' ? json_decode($contentJson, true) : [];
+        if (!is_array($structure) || $structure === []) {
+            $structure = VirtualTask::getTreeOfLifeStructure();
+        }
+
+        $answersBySection = [];
 
         // Salva respostas por seção na tabela virtual_task_responses
         if (is_array($answers) && $answers !== []) {
@@ -1663,19 +1670,28 @@ class PatientPortalController extends Controller
                     trim($sectionName),
                     json_encode($normalizedAnswers, JSON_UNESCAPED_UNICODE)
                 );
+
+                $answersBySection[trim($sectionName)] = $normalizedAnswers;
             }
         }
+
+        $formattedResponseHtml = $this->virtualTaskModel->formatResponseHtml($structure, $answersBySection, $reflectionHtml);
 
         $updated = $this->taskModel->updateById($taskId, [
             'status' => 'done',
             'is_active' => 0,
-            'patient_response_html' => $reflectionHtml,
+            'patient_response_html' => $formattedResponseHtml,
             'responded_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
         if (!$updated) {
             $this->error('Falha ao completar tarefa', 500);
+        }
+
+        $therapist = $this->userModel->findById((int) ($task['therapist_id'] ?? 0));
+        if ($therapist) {
+            $this->dispatchTaskAlertSafely($therapist, (string) ($task['title'] ?? 'Tarefa dinâmica'), ['email']);
         }
 
         $this->json([

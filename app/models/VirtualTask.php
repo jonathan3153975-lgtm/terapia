@@ -258,6 +258,85 @@ class VirtualTask extends Model
         return $stmt->fetchAll();
     }
 
+    public function formatResponseHtml(array $structure, array $answersBySection, string $reflectionHtml = ''): string
+    {
+        $sections = $structure['sections'] ?? [];
+        $htmlParts = [
+            '<div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; color: #243746; line-height: 1.6;">',
+            '<h2 style="margin: 0 0 16px; color: #16486b;">Árvore da Vida</h2>',
+        ];
+
+        if (is_array($sections) && $sections !== []) {
+            foreach ($sections as $section) {
+                $sectionKey = (string) ($section['key'] ?? '');
+                $sectionTitle = (string) ($section['title'] ?? 'Seção');
+                $questions = is_array($section['questions'] ?? null) ? $section['questions'] : [];
+                $answers = is_array($answersBySection[$sectionKey] ?? null) ? $answersBySection[$sectionKey] : [];
+
+                if ($sectionKey === '' || $answers === []) {
+                    continue;
+                }
+
+                $htmlParts[] = '<section style="margin: 0 0 18px; padding: 16px; border: 1px solid #dbe9f4; border-radius: 12px; background: #f9fcff;">';
+                $htmlParts[] = '<h3 style="margin: 0 0 12px; font-size: 18px; color: #123d5a;">' . $this->escapeHtml($sectionTitle) . '</h3>';
+
+                foreach ($answers as $index => $answer) {
+                    $questionText = (string) ($questions[$index] ?? ('Pergunta ' . ($index + 1)));
+                    $answerText = trim((string) $answer);
+                    if ($answerText === '') {
+                        continue;
+                    }
+
+                    $htmlParts[] = '<div style="margin-bottom: 14px;">';
+                    $htmlParts[] = '<div style="font-weight: 600; color: #35576f; margin-bottom: 4px;">' . $this->escapeHtml($questionText) . '</div>';
+                    $htmlParts[] = '<div style="padding: 10px 12px; background: #ffffff; border: 1px solid #e2edf5; border-radius: 10px;">' . nl2br($this->escapeHtml($answerText)) . '</div>';
+                    $htmlParts[] = '</div>';
+                }
+
+                $htmlParts[] = '</section>';
+            }
+        } else {
+            foreach ($answersBySection as $sectionKey => $answers) {
+                if (!is_array($answers) || $answers === []) {
+                    continue;
+                }
+
+                $htmlParts[] = '<section style="margin: 0 0 18px; padding: 16px; border: 1px solid #dbe9f4; border-radius: 12px; background: #f9fcff;">';
+                $htmlParts[] = '<h3 style="margin: 0 0 12px; font-size: 18px; color: #123d5a;">' . $this->escapeHtml((string) $sectionKey) . '</h3>';
+
+                foreach ($answers as $index => $answer) {
+                    $answerText = trim((string) $answer);
+                    if ($answerText === '') {
+                        continue;
+                    }
+
+                    $htmlParts[] = '<div style="margin-bottom: 14px;">';
+                    $htmlParts[] = '<div style="font-weight: 600; color: #35576f; margin-bottom: 4px;">Pergunta ' . ($index + 1) . '</div>';
+                    $htmlParts[] = '<div style="padding: 10px 12px; background: #ffffff; border: 1px solid #e2edf5; border-radius: 10px;">' . nl2br($this->escapeHtml($answerText)) . '</div>';
+                    $htmlParts[] = '</div>';
+                }
+
+                $htmlParts[] = '</section>';
+            }
+        }
+
+        if (trim(strip_tags($reflectionHtml)) !== '') {
+            $htmlParts[] = '<section style="margin: 0 0 18px; padding: 16px; border: 1px solid #dbe9f4; border-radius: 12px; background: #f9fcff;">';
+            $htmlParts[] = '<h3 style="margin: 0 0 12px; font-size: 18px; color: #123d5a;">Reflexão final</h3>';
+            $htmlParts[] = '<div style="padding: 10px 12px; background: #ffffff; border: 1px solid #e2edf5; border-radius: 10px;">' . $reflectionHtml . '</div>';
+            $htmlParts[] = '</section>';
+        }
+
+        $htmlParts[] = '</div>';
+
+        return implode('', $htmlParts);
+    }
+
+    private function escapeHtml(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+
     /**
      * Obtém a estrutura JSON de uma tarefa dinâmica
      */

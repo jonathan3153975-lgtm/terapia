@@ -7,6 +7,8 @@ use App\Models\VirtualTask;
 use Classes\Controller;
 use Config\Config;
 use Helpers\Auth;
+use Helpers\EmailTemplate;
+use Helpers\MailService;
 
 class VirtualTaskController extends Controller
 {
@@ -139,6 +141,20 @@ class VirtualTaskController extends Controller
                 throw new \RuntimeException('Não foi possível salvar a tarefa dinâmica.');
             }
 
+            $patientEmail = (string) ($patient['email'] ?? '');
+            if (filter_var($patientEmail, FILTER_VALIDATE_EMAIL)) {
+                try {
+                    $mailService = new MailService();
+                    $patientName = (string) ($patient['name'] ?? 'Paciente');
+                    $taskDescription = (string) $data['description'];
+                    $dueDate = (string) $data['due_date'];
+                    $html = EmailTemplate::taskAssigned($patientName, (string) $title, $taskDescription, $dueDate);
+                    $mailService->send($patientEmail, $patientName, 'Nova Tarefa Recebida', $html);
+                } catch (\Throwable $e) {
+                    error_log('[virtual-task-patient-email] ' . $e->getMessage());
+                }
+            }
+
             $this->json([
                 'success' => true,
                 'message' => 'Tarefa dinâmica enviada com sucesso!',
@@ -190,12 +206,27 @@ class VirtualTaskController extends Controller
         // Busca respostas
         $responses = $this->virtualTaskModel->getTaskResponses($taskId);
         $structure = json_decode($task['content_json'] ?? '{}', true);
+        $answersBySection = [];
+        foreach ($responses as $response) {
+            $sectionName = (string) ($response['section_name'] ?? '');
+            $answersBySection[$sectionName] = json_decode((string) ($response['answers_json'] ?? '[]'), true) ?? [];
+        }
+
+        $formattedResponseHtml = (string) ($task['patient_response_html'] ?? '');
+        if ($formattedResponseHtml === '') {
+            $formattedResponseHtml = $this->virtualTaskModel->formatResponseHtml(
+                is_array($structure) ? $structure : [],
+                $answersBySection,
+                ''
+            );
+        }
 
         $this->view('therapist/virtual-tasks/show', [
             'appUrl' => Config::get('APP_URL', ''),
             'task' => $task,
             'responses' => $responses ?? [],
             'structure' => $structure,
+            'formattedResponseHtml' => $formattedResponseHtml,
             'therapistId' => $therapistId
         ]);
     }

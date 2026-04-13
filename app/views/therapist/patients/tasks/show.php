@@ -24,6 +24,13 @@
         <div class="col-md-6"><strong>Título:</strong> <?php echo htmlspecialchars((string) ($task['title'] ?? '-')); ?></div>
         <div class="col-md-3"><strong>Status:</strong> <span class="badge <?php echo $taskStatusClass; ?>"><?php echo $taskStatusLabel; ?></span></div>
         <div class="col-md-3"><strong>Tipo de envio:</strong> <?php echo (($task['delivery_kind'] ?? 'task') === 'material') ? 'Material' : 'Tarefa'; ?></div>
+        <?php if (($task['task_type'] ?? 'regular') === 'virtual_tree_of_life'): ?>
+        <div class="col-12">
+          <a class="btn btn-outline-primary btn-sm" href="<?php echo $appUrl; ?>/dashboard.php?action=virtual-tasks-show&id=<?php echo (int) ($task['id'] ?? 0); ?>" target="_blank" rel="noopener noreferrer">
+            <i class="fa-solid fa-code me-1"></i>Acessar HTML da resposta dinâmica
+          </a>
+        </div>
+        <?php endif; ?>
         <div class="col-12">
           <strong>Descrição:</strong>
           <div class="mt-2 border rounded p-3 bg-light-subtle" style="max-height: 52vh; overflow: auto;">
