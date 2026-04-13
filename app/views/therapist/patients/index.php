@@ -33,14 +33,6 @@
         </div>
       <?php endif; ?>
 
-      <?php if (!empty($signupLinks)): ?>
-        <div class="mt-3 small text-muted">
-          Últimos links:
-          <?php foreach ($signupLinks as $link): ?>
-            <div>#<?php echo (int) ($link['id'] ?? 0); ?> | expira em <?php echo !empty($link['expires_at']) ? date('d/m/Y H:i', strtotime((string) $link['expires_at'])) : '-'; ?> | uso <?php echo (int) ($link['used_count'] ?? 0); ?>/<?php echo (int) ($link['max_uses'] ?? 0); ?></div>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
     </div>
   </div>
 
