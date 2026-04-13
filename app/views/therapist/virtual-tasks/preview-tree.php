@@ -121,9 +121,9 @@ include __DIR__ . '/../../partials/header.php';
 </style>
 
 <script>
-const structure = <?php echo json_encode($structure); ?>;
+const structure = <?php echo isset($structure) ? json_encode($structure) : 'null'; ?>;
 let currentSectionIndex = 0;
-const sections = structure.sections;
+const sections = (structure && Array.isArray(structure.sections)) ? structure.sections : [];
 const answers = {};
 
 function showSection(index) {
@@ -160,8 +160,8 @@ function showSection(index) {
   // Atualiza botões
   document.getElementById('prevBtn').style.display = index === 0 ? 'none' : 'block';
   document.getElementById('nextBtn').textContent = index === sections.length - 1 
-    ? 'Finalizar <i class="fa-solid fa-check ms-2"></i>' 
-    : 'Próxima <i class="fa-solid fa-arrow-right ms-2"></i>';
+    ? 'Finalizar' 
+    : 'Próxima';
 
   // Salva respostas ao mudar
   document.querySelectorAll('textarea').forEach(ta => {

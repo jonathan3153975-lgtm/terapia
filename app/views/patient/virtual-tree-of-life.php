@@ -4,8 +4,8 @@ include __DIR__ . '/../../partials/header.php';
 ?>
 <?php include __DIR__ . '/../../partials/nav.php'; ?>
 
-<div class="page-wrap" style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: calc(100vh - 40px); border-radius: 16px;">
-  <div class="container" style="max-width: 1000px;">
+<div class="container page-wrap" style="max-width: 1100px;">
+  <div class="virtual-tree-shell" style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px;">
     <!-- Cabeçalho -->
     <div class="mb-4">
       <button class="btn btn-light btn-sm mb-3" onclick="window.history.back()">
@@ -15,7 +15,7 @@ include __DIR__ . '/../../partials/header.php';
       <p class="text-white-50">Explore sua história a partir de diferentes perspectivas da sua vida</p>
     </div>
 
-    <div class="row gap-3">
+    <div class="row g-3">
       <!-- Árvore Animada (lado esquerdo) -->
       <div class="col-lg-4 order-lg-2">
         <div class="card border-0 shadow-lg" style="border-radius: 16px; overflow: hidden; position: sticky; top: 20px;">
@@ -175,8 +175,8 @@ include __DIR__ . '/../../partials/header.php';
 <script>
 const appUrl = '<?php echo $appUrl; ?>';
 const taskId = new URLSearchParams(window.location.search).get('id');
-const structure = <?php echo isset($structure) ? json_encode($structure) : '{}'; ?>;
-const sections = structure.sections || [];
+const structure = <?php echo isset($structure) ? json_encode($structure) : 'null'; ?>;
+const sections = (structure && Array.isArray(structure.sections)) ? structure.sections : [];
 
 let currentSectionIndex = 0;
 const sectionAnswers = {};
@@ -230,7 +230,7 @@ function showPatientSection(index) {
 
   // Atualiza botões
   document.getElementById('prevSectionBtn').style.display = index === 0 ? 'none' : 'block';
-  document.getElementById('nextSectionBtn').textContent = index === sections.length - 1
+  document.getElementById('nextSectionBtn').innerHTML = index === sections.length - 1
     ? 'Próxima: Reflexão Final <i class="fa-solid fa-arrow-right ms-2"></i>'
     : 'Próxima <i class="fa-solid fa-arrow-right ms-2"></i>';
 
