@@ -24,7 +24,7 @@ class VirtualTaskController extends Controller
      */
     public function index()
     {
-        Auth::checkRole('therapist');
+        Auth::requireRoles(['therapist']);
         $therapistId = (int) Auth::therapistId();
 
         $tasks = $this->virtualTaskModel->getVirtualTasksByTherapist($therapistId);
@@ -41,7 +41,7 @@ class VirtualTaskController extends Controller
      */
     public function create(): void
     {
-        Auth::checkRole('therapist');
+        Auth::requireRoles(['therapist']);
         $therapistId = (int) Auth::therapistId();
 
         // Lista de templates disponíveis
@@ -65,7 +65,7 @@ class VirtualTaskController extends Controller
      */
     public function editor(): void
     {
-        Auth::checkRole('therapist');
+        Auth::requireRoles(['therapist']);
         $therapistId = (int) Auth::therapistId();
 
         // Carrega estrutura padrão
@@ -87,7 +87,7 @@ class VirtualTaskController extends Controller
      */
     public function store(): void
     {
-        Auth::checkRole('therapist');
+        Auth::requireRoles(['therapist']);
         $therapistId = (int) Auth::therapistId();
 
         $postData = json_decode(file_get_contents('php://input'), true) ?? $_POST;
@@ -154,7 +154,7 @@ class VirtualTaskController extends Controller
      */
     public function preview(): void
     {
-        Auth::checkRole('therapist');
+        Auth::requireRoles(['therapist']);
         $therapistId = (int) Auth::therapistId();
 
         $structure = VirtualTask::getTreeOfLifeStructure();
@@ -172,7 +172,7 @@ class VirtualTaskController extends Controller
      */
     public function show(): void
     {
-        Auth::checkRole('therapist');
+        Auth::requireRoles(['therapist']);
         $therapistId = (int) Auth::therapistId();
 
         $taskId = (int) ($_GET['id'] ?? 0);
@@ -205,7 +205,7 @@ class VirtualTaskController extends Controller
      */
     public function delete(): void
     {
-        Auth::checkRole('therapist');
+        Auth::requireRoles(['therapist']);
         $therapistId = (int) Auth::therapistId();
 
         $taskId = (int) ($_POST['id'] ?? 0);
@@ -233,7 +233,7 @@ class VirtualTaskController extends Controller
      */
     public function saveResponse(): void
     {
-        Auth::checkRole('patient');
+        Auth::requireRoles(['patient']);
         $patientId = (int) Auth::patientId();
         $therapistId = (int) Auth::therapistId();
 
@@ -267,7 +267,7 @@ class VirtualTaskController extends Controller
      */
     public function complete(): void
     {
-        Auth::checkRole('patient');
+        Auth::requireRoles(['patient']);
         $patientId = (int) Auth::patientId();
 
         $postData = json_decode(file_get_contents('php://input'), true) ?? $_POST;
