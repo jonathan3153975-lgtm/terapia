@@ -2,8 +2,9 @@
 $title = 'Árvore da Vida - Minha Jornada | Tera-Tech';
 include __DIR__ . '/../../partials/header.php';
 ?>
+<?php include __DIR__ . '/../../partials/nav.php'; ?>
 
-<div style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
+<div class="page-wrap" style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: calc(100vh - 40px); border-radius: 16px;">
   <div class="container" style="max-width: 1000px;">
     <!-- Cabeçalho -->
     <div class="mb-4">
