@@ -1,11 +1,11 @@
 <?php
 $title = 'Árvore da Vida | Jornada do Paciente';
-include __DIR__ . '/../../partials/header.php';
+include __DIR__ . '/../partials/header.php';
 ?>
-<?php include __DIR__ . '/../../partials/nav.php'; ?>
+<?php include __DIR__ . '/../partials/nav.php'; ?>
 
-<div class="container page-wrap" style="max-width: 1120px;">
-  <section class="preview-sky">
+<div class="container page-wrap">
+  <section class="preview-sky mx-auto" style="max-width: 1120px; width: 100%;">
     <header class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
       <div>
         <h1 class="h4 text-white mb-1">Árvore da Vida</h1>
@@ -393,4 +393,4 @@ include __DIR__ . '/../../partials/header.php';
 })();
 </script>
 
-<?php include __DIR__ . '/../../partials/footer.php'; ?>
+<?php include __DIR__ . '/../partials/footer.php'; ?>

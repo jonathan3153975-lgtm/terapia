@@ -1,9 +1,12 @@
-<?php $title = 'Responder Tarefa'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
+<?php $title = 'Visualizar Tarefa'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
 <div class="container page-wrap">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
+  <?php $isVirtualTask = (bool) ($isVirtualTask ?? false); ?>
+  <?php $isDone = (($task['status'] ?? '') === 'done'); ?>
+
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h3 class="mb-0">Responder tarefa</h3>
+    <h3 class="mb-0">Visualizar tarefa</h3>
     <a class="btn btn-outline-dark" href="<?php echo $appUrl; ?>/patient.php?action=tasks"><i class="fa-solid fa-arrow-left me-1"></i>Voltar</a>
   </div>
 
@@ -17,6 +20,23 @@
           <strong>Descrição:</strong>
           <div class="border rounded p-3 mt-2 bg-light-subtle"><?php echo (string) ($task['description'] ?? ''); ?></div>
         </div>
+        <?php if ($isVirtualTask): ?>
+          <div class="col-12">
+            <strong>Tarefa dinâmica:</strong>
+            <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+              <?php if ($isDone): ?>
+                <button class="btn btn-outline-secondary" type="button" disabled>
+                  <i class="fa-solid fa-tree me-1"></i>Módulo dinâmico já concluído
+                </button>
+                <span class="text-muted small">Após responder, o módulo permanece apenas para consulta nesta tela.</span>
+              <?php else: ?>
+                <a class="btn btn-success" href="<?php echo $appUrl; ?>/patient.php?action=virtual-tree-of-life&id=<?php echo (int) ($task['id'] ?? 0); ?>">
+                  <i class="fa-solid fa-tree me-1"></i>Acessar tarefa específica
+                </a>
+              <?php endif; ?>
+            </div>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>
@@ -43,49 +63,73 @@
   <div class="card">
     <div class="card-header bg-transparent"><strong>Minha devolutiva</strong></div>
     <div class="card-body">
-      <form id="taskResponseForm" method="POST" action="<?php echo $appUrl; ?>/patient.php?action=task-respond-submit" enctype="multipart/form-data">
-        <input type="hidden" name="task_id" value="<?php echo (int) ($task['id'] ?? 0); ?>">
-        <input type="hidden" name="response_html" id="responseHtmlInput" value="<?php echo htmlspecialchars((string) ($task['patient_response_html'] ?? '')); ?>">
-
-        <div class="task-response-layout">
-          <div class="task-form-shell">
-            <div class="task-form-section">
-              <div class="task-form-section-title">Texto da devolutiva</div>
-              <label class="form-label">Resposta</label>
-              <div id="responseEditor" class="task-description-editor"></div>
-            </div>
+      <?php if ($isVirtualTask): ?>
+        <?php if ($isDone): ?>
+          <div class="border rounded p-3 bg-light-subtle">
+            <?php if (!empty($task['patient_response_html'])): ?>
+              <?php echo (string) $task['patient_response_html']; ?>
+            <?php else: ?>
+              <span class="text-muted">Nenhuma resposta registrada.</span>
+            <?php endif; ?>
           </div>
+        <?php else: ?>
+          <div class="alert alert-info mb-0">
+            Abra a tarefa específica para responder no módulo dinâmico da Árvore da Vida.
+          </div>
+        <?php endif; ?>
+      <?php elseif ($isDone): ?>
+        <div class="border rounded p-3 bg-light-subtle mb-3">
+          <?php if (!empty($task['patient_response_html'])): ?>
+            <?php echo (string) $task['patient_response_html']; ?>
+          <?php else: ?>
+            <span class="text-muted">Nenhuma resposta registrada.</span>
+          <?php endif; ?>
+        </div>
+      <?php else: ?>
+        <form id="taskResponseForm" method="POST" action="<?php echo $appUrl; ?>/patient.php?action=task-respond-submit" enctype="multipart/form-data">
+          <input type="hidden" name="task_id" value="<?php echo (int) ($task['id'] ?? 0); ?>">
+          <input type="hidden" name="response_html" id="responseHtmlInput" value="<?php echo htmlspecialchars((string) ($task['patient_response_html'] ?? '')); ?>">
 
-          <div class="task-response-actions">
-            <div class="task-form-section">
-              <div class="task-form-section-title">Arquivos e links</div>
-              <div class="mb-3">
-                <label class="form-label">Anexos da devolutiva (PDF e imagens)</label>
-                <input class="form-control" type="file" name="task_attachments[]" accept=".pdf,image/*" multiple>
-              </div>
-              <div>
-                <label class="form-label">Link adicional</label>
-                <input class="form-control" type="url" name="attachment_link" placeholder="https://...">
+          <div class="task-response-layout">
+            <div class="task-form-shell">
+              <div class="task-form-section">
+                <div class="task-form-section-title">Texto da devolutiva</div>
+                <label class="form-label">Resposta</label>
+                <div id="responseEditor" class="task-description-editor"></div>
               </div>
             </div>
 
-            <div class="task-form-section">
-              <div class="task-form-section-title">Notificações</div>
-              <label class="form-label d-block mb-2">Alertar terapeuta por</label>
-              <div class="task-checkbox-panel d-grid gap-2">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" name="notify_channels[]" id="notify_email" value="email" checked>
-                  <label class="form-check-label" for="notify_email">E-mail</label>
+            <div class="task-response-actions">
+              <div class="task-form-section">
+                <div class="task-form-section-title">Arquivos e links</div>
+                <div class="mb-3">
+                  <label class="form-label">Anexos da devolutiva (PDF e imagens)</label>
+                  <input class="form-control" type="file" name="task_attachments[]" accept=".pdf,image/*" multiple>
+                </div>
+                <div>
+                  <label class="form-label">Link adicional</label>
+                  <input class="form-control" type="url" name="attachment_link" placeholder="https://...">
                 </div>
               </div>
 
-              <div class="mt-3 d-grid">
-                <button class="btn btn-primary" type="submit"><i class="fa-solid fa-paper-plane me-1"></i>Enviar resposta</button>
+              <div class="task-form-section">
+                <div class="task-form-section-title">Notificações</div>
+                <label class="form-label d-block mb-2">Alertar terapeuta por</label>
+                <div class="task-checkbox-panel d-grid gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="notify_channels[]" id="notify_email" value="email" checked>
+                    <label class="form-check-label" for="notify_email">E-mail</label>
+                  </div>
+                </div>
+
+                <div class="mt-3 d-grid">
+                  <button class="btn btn-primary" type="submit"><i class="fa-solid fa-paper-plane me-1"></i>Enviar resposta</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </form>
+        </form>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -111,6 +155,10 @@
 
 <script>
 window.addEventListener('load', function() {
+  if (!document.getElementById('responseEditor')) {
+    return;
+  }
+
   var quill = new Quill('#responseEditor', {
     theme: 'snow',
     modules: {

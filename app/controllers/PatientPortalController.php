@@ -1521,17 +1521,13 @@ class PatientPortalController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa não encontrada.'));
         }
 
-        // Tarefas dinâmicas possuem fluxo de resposta dedicado.
-        if ((string) ($task['task_type'] ?? 'regular') === 'virtual_tree_of_life') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=virtual-tree-of-life&id=' . (int) $task['id']);
-        }
-
         $therapistFiles = $this->fileModel->listByTaskAndSourceRole($taskId, 'therapist');
         $patientFiles = $this->fileModel->listByTaskAndSourceRole($taskId, 'patient');
 
         $this->view('patient/task-respond', [
             'appUrl' => Config::get('APP_URL', ''),
             'task' => $task,
+            'isVirtualTask' => ((string) ($task['task_type'] ?? 'regular') === 'virtual_tree_of_life'),
             'therapistFiles' => $therapistFiles,
             'patientFiles' => $patientFiles,
         ]);
@@ -1593,6 +1589,10 @@ class PatientPortalController extends Controller
         $taskType = (string) ($task['task_type'] ?? 'regular');
         if ($taskType !== 'virtual_tree_of_life') {
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tipo de tarefa inválido.'));
+        }
+
+        if ((string) ($task['status'] ?? '') === 'done' || (int) ($task['is_active'] ?? 1) === 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=task-respond&id=' . (int) $task['id']);
         }
 
         $contentJson = (string) ($task['content_json'] ?? '');

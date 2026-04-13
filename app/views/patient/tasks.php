@@ -22,10 +22,10 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table mb-0">
-        <thead><tr><th>Data</th><th>Título</th><th>Status</th><th>Descrição</th><th>Material</th><th>Ação</th></tr></thead>
+        <thead><tr><th>Data</th><th>Título</th><th>Status</th><th>Material</th><th>Ação</th></tr></thead>
         <tbody>
           <?php if (empty($tasks)): ?>
-          <tr><td colspan="6" class="text-center py-4 text-muted">Nenhuma tarefa recebida.</td></tr>
+          <tr><td colspan="5" class="text-center py-4 text-muted">Nenhuma tarefa recebida.</td></tr>
           <?php else: foreach ($tasks as $task): ?>
           <?php $linkedMaterials = $taskLinkedMaterials[(int) $task['id']] ?? []; ?>
           <tr>
@@ -38,7 +38,6 @@
                 <span class="badge text-bg-warning">Pendente</span>
               <?php endif; ?>
             </td>
-            <td><?php echo strip_tags((string)($task['description'] ?? '')); ?></td>
             <td>
               <?php if (!empty($linkedMaterials) && !empty($task['send_to_patient'])): ?>
                 <a class="btn btn-sm btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=task-material&id=<?php echo (int) $task['id']; ?>"><i class="fa-solid fa-link me-1"></i><?php echo count($linkedMaterials); ?> material(is)</a>
@@ -47,15 +46,9 @@
               <?php endif; ?>
             </td>
             <td>
-              <?php if (($task['task_type'] ?? 'regular') === 'virtual_tree_of_life'): ?>
-                <a class="btn btn-sm btn-success" href="<?php echo $appUrl; ?>/patient.php?action=virtual-tree-of-life&id=<?php echo (int) $task['id']; ?>">
-                  <i class="fa-solid fa-tree me-1"></i><?php echo (($task['status'] ?? '') === 'done') ? 'Ver Árvore da Vida' : 'Iniciar Árvore da Vida'; ?>
-                </a>
-              <?php else: ?>
-                <a class="btn btn-sm btn-primary" href="<?php echo $appUrl; ?>/patient.php?action=task-respond&id=<?php echo (int) $task['id']; ?>">
-                  <i class="fa-solid fa-reply me-1"></i><?php echo (($task['status'] ?? '') === 'done') ? 'Editar resposta' : 'Responder'; ?>
-                </a>
-              <?php endif; ?>
+              <a class="btn btn-sm btn-primary" href="<?php echo $appUrl; ?>/patient.php?action=task-respond&id=<?php echo (int) $task['id']; ?>">
+                <i class="fa-solid fa-eye me-1"></i>Acessar tarefa
+              </a>
             </td>
           </tr>
           <?php endforeach; endif; ?>
