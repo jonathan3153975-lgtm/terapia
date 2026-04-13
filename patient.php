@@ -76,5 +76,7 @@ match ($action) {
     'task-material' => $portal->showTaskMaterial(),
     'task-respond' => $portal->respondTask(),
     'task-respond-submit' => $portal->submitTaskResponse(),
+    'virtual-tree-of-life' => $portal->showVirtualTask('tree_of_life'),
+    'virtual-task-complete' => $portal->completeVirtualTask(),
     default => $portal->dashboard(),
 };

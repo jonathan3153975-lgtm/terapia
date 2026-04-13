@@ -30,6 +30,7 @@ use Helpers\EmailTemplate;
 use Helpers\MailService;
 use Helpers\MercadoPagoGateway;
 use Helpers\PatientSubscriptionPaymentSync;
+use App\Models\VirtualTask;
 
 class PatientPortalController extends Controller
 {
@@ -54,6 +55,7 @@ class PatientPortalController extends Controller
     private Payment $paymentModel;
     private PatientSubscription $patientSubscriptionModel;
     private MercadoPagoGateway $mercadoPagoGateway;
+    private VirtualTask $virtualTaskModel;
 
     public function __construct()
     {
@@ -79,6 +81,7 @@ class PatientPortalController extends Controller
         $this->paymentModel = new Payment();
         $this->patientSubscriptionModel = new PatientSubscription();
         $this->mercadoPagoGateway = new MercadoPagoGateway();
+        $this->virtualTaskModel = new VirtualTask();
 
         $this->enforceActiveSubscription();
     }
@@ -1566,5 +1569,86 @@ class PatientPortalController extends Controller
         }
 
         $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=success&msg=' . urlencode('Resposta enviada com sucesso.'));
+    }
+
+    public function showVirtualTask(string $type = 'tree_of_life'): void
+    {
+        $patientId = (int) Auth::patientId();
+        $taskId = (int) ($_GET['id'] ?? 0);
+
+        if ($taskId <= 0) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa inválida.'));
+        }
+
+        $task = $this->taskModel->findInboxTaskByPatientAndId($patientId, $taskId, 'task');
+        if (!$task) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa não encontrada.'));
+        }
+
+        $taskType = (string) ($task['task_type'] ?? 'regular');
+        if ($taskType !== 'virtual_tree_of_life') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tipo de tarefa inválido.'));
+        }
+
+        $contentJson = (string) ($task['content_json'] ?? '');
+        $structure = $contentJson !== '' ? json_decode($contentJson, true) : [];
+        if (!is_array($structure) || $structure === []) {
+            $structure = VirtualTask::getTreeOfLifeStructure();
+        }
+
+        $this->view('patient/virtual-tree-of-life', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'task' => $task,
+            'structure' => $structure,
+        ]);
+    }
+
+    public function completeVirtualTask(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->error('Método não permitido', 405);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!is_array($input)) {
+            $this->error('Entrada inválida', 400);
+        }
+
+        $patientId = (int) Auth::patientId();
+        $taskId = (int) ($input['task_id'] ?? 0);
+        $reflectionHtml = (string) ($input['reflection'] ?? '');
+
+        if ($taskId <= 0) {
+            $this->error('Tarefa inválida', 422);
+        }
+
+        $task = $this->taskModel->findInboxTaskByPatientAndId($patientId, $taskId, 'task');
+        if (!$task) {
+            $this->error('Tarefa não encontrada', 404);
+        }
+
+        if ((string) ($task['task_type'] ?? 'regular') !== 'virtual_tree_of_life') {
+            $this->error('Tipo de tarefa inválido', 422);
+        }
+
+        $reflectionHtml = $this->sanitizeRichText($reflectionHtml);
+
+        $updated = $this->taskModel->updateById($taskId, [
+            'status' => 'done',
+            'is_active' => 0,
+            'patient_response_html' => $reflectionHtml,
+            'responded_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->error('Falha ao completar tarefa', 500);
+        }
+
+        $this->json([
+            'success' => true,
+            'message' => 'Tarefa virtual concluída com sucesso',
+            'redirect' => Config::get('APP_URL', '') . '/patient.php?action=tasks&status=success&msg=' . urlencode('Tarefa concluída!'),
+        ]);
     }
 }

@@ -41,6 +41,7 @@ use App\Controllers\AdminController;
 use App\Controllers\TherapistController;
 use Config\Config;
 use Helpers\Session;
+use App\Controllers\VirtualTaskController;
 
 Config::loadEnv();
 Session::start();
@@ -104,6 +105,13 @@ match ($action) {
     'therapist-healing-letters-bulk' => (new TherapistController())->bulkHealingLetters(),
     'therapist-healing-letters-update' => (new TherapistController())->updateHealingLetter(),
     'therapist-healing-letters-delete' => (new TherapistController())->deleteHealingLetter(),
+    'virtual-tasks' => (new VirtualTaskController())->index(),
+    'virtual-tasks-create' => (new VirtualTaskController())->create(),
+    'virtual-tasks-editor' => (new VirtualTaskController())->editor(),
+    'virtual-tasks-preview' => (new VirtualTaskController())->preview(),
+    'virtual-tasks-store' => (new VirtualTaskController())->store(),
+    'virtual-tasks-show' => (new VirtualTaskController())->show(),
+    'virtual-tasks-delete' => (new VirtualTaskController())->delete(),
     'patients' => (new TherapistController())->patients(),
     'patients-preview-menu' => (new TherapistController())->patientPreviewMenu(),
     'patients-signup-link-create' => (new TherapistController())->createPatientSignupLink(),
