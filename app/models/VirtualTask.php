@@ -165,15 +165,19 @@ class VirtualTask extends Model
      */
     public function getVirtualTasksByTherapist(int $therapistId, ?string $taskType = null): array
     {
-        $sql = "SELECT * FROM tasks WHERE therapist_id = ? AND task_type != 'regular'";
+        $sql = "SELECT t.*, p.name AS patient_name
+                FROM tasks t
+                LEFT JOIN patients p ON p.id = t.patient_id
+                WHERE t.therapist_id = ?
+                  AND t.task_type != 'regular'";
         $params = [$therapistId];
 
         if ($taskType) {
-            $sql .= " AND task_type = ?";
+            $sql .= " AND t.task_type = ?";
             $params[] = $taskType;
         }
 
-        $sql .= " ORDER BY created_at DESC";
+        $sql .= " ORDER BY t.created_at DESC";
 
         $stmt = $this->query($sql, $params);
         if (!$stmt) {
