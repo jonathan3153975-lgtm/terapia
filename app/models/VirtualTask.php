@@ -19,6 +19,7 @@ class VirtualTask extends Model
                     'key' => 'tempestades',
                     'title' => '🌪️ TEMPESTADES (Desafios)',
                     'color' => '#e74c3c',
+                    'helper_text' => 'As tempestades podem incluir: problemas de saúde mental, conflitos com amigos ou familiares e falta de recursos e apoio.',
                     'questions' => [
                         'Quais tempestades você já enfrentou no passado?',
                         'Quais obstáculos você precisa superar?',

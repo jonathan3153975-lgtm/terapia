@@ -121,6 +121,25 @@ include __DIR__ . '/../partials/header.php';
   margin-bottom: 10px;
 }
 
+.section-reference {
+  border: 1px solid #ffd996;
+  border-left: 4px solid #f39c12;
+  border-radius: 10px;
+  background: #fff8eb;
+  color: #6b4a07;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.section-reference strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
 .preview-question label {
   display: block;
   font-weight: 600;
@@ -234,8 +253,30 @@ include __DIR__ . '/../partials/header.php';
     refs.count.textContent = 'Texto livre';
 
     const reflection = state.answers.final_reflection || '';
+    const defaultReflectionPrompts = [
+      'Qual é a história do meu passado?',
+      'Quais desafios eu tive que superar?',
+      'Quais forças eu ganhei com minhas experiências passadas?'
+    ];
+    const reflectionPrompts = (structure
+      && structure.final_section
+      && Array.isArray(structure.final_section.blocks)
+      && structure.final_section.blocks[0]
+      && Array.isArray(structure.final_section.blocks[0].questions)
+      && structure.final_section.blocks[0].questions.length > 0)
+      ? structure.final_section.blocks[0].questions
+      : defaultReflectionPrompts;
+
+    const promptsHtml = reflectionPrompts
+      .map((prompt) => '<div>' + escapeHtml(prompt) + '</div>')
+      .join('');
+
     refs.container.innerHTML = ''
       + '<div class="preview-question">'
+      + '  <div class="section-reference">'
+      + '    <strong>Guia de reflexão</strong>'
+      +      promptsHtml
+      + '  </div>'
       + '  <label>Reflexão final</label>'
       + '  <textarea id="finalReflection" placeholder="Compartilhe a sua síntese final da jornada...">' + escapeHtml(reflection) + '</textarea>'
       + '</div>';
@@ -262,7 +303,17 @@ include __DIR__ . '/../partials/header.php';
 
     const existing = Array.isArray(state.answers[section.key]) ? state.answers[section.key] : [];
 
-    refs.container.innerHTML = (section.questions || []).map((q, i) => {
+    const helperText = (section && typeof section.helper_text === 'string' && section.helper_text.trim() !== '')
+      ? section.helper_text.trim()
+      : (section.key === 'tempestades'
+        ? 'As tempestades podem incluir: problemas de saúde mental, conflitos com amigos ou familiares e falta de recursos e apoio.'
+        : '');
+
+    const helperHtml = helperText !== ''
+      ? '<div class="section-reference"><strong>Referência para responder</strong>' + escapeHtml(helperText) + '</div>'
+      : '';
+
+    refs.container.innerHTML = helperHtml + (section.questions || []).map((q, i) => {
       const value = existing[i] || '';
       return '<div class="preview-question">'
         + '<label>' + (i + 1) + '. ' + escapeHtml(q) + '</label>'
