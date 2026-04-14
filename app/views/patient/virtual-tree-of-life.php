@@ -168,11 +168,42 @@ include __DIR__ . '/../partials/header.php';
   const taskId = <?php echo (int) ($task['id'] ?? 0); ?>;
   const structure = <?php echo isset($structure) ? json_encode($structure) : 'null'; ?>;
   const sections = (structure && Array.isArray(structure.sections)) ? structure.sections : [];
+  const defaultFinalBlocks = [
+    {
+      key: 'passado',
+      title: 'Reflexão sobre meu passado',
+      questions: [
+        'Qual é a história do meu passado?',
+        'Quais desafios eu tive que superar?',
+        'Quais forças eu ganhei com minhas experiências passadas?'
+      ]
+    },
+    {
+      key: 'presente',
+      title: 'Reflexão sobre meu presente',
+      questions: [
+        'Como eu descreveria minha vida atual e o tipo de pessoa que sou?',
+        'Eu sou diferente da pessoa que fui no passado?',
+        'Estou enfrentando algum novo desafio atualmente?'
+      ]
+    },
+    {
+      key: 'futuro',
+      title: 'Reflexão sobre meu futuro',
+      questions: [
+        'Como é o meu futuro ideal?',
+        'Ele seria diferente de como é agora? Se sim, como?',
+        'Quem está no meu futuro?'
+      ]
+    }
+  ];
+  const finalBlocks = (structure && structure.final_section && Array.isArray(structure.final_section.blocks) && structure.final_section.blocks.length > 0)
+    ? structure.final_section.blocks
+    : defaultFinalBlocks;
 
   const state = {
     current: 0,
     answers: {},
-    isFinal: false,
   };
 
   const refs = {
@@ -220,10 +251,29 @@ include __DIR__ . '/../partials/header.php';
     });
   }
 
+  function totalSteps() {
+    return sections.length + finalBlocks.length;
+  }
+
+  function isFinalStage() {
+    return state.current >= sections.length;
+  }
+
   function persistCurrent() {
-    if (state.isFinal) {
-      const finalEl = document.getElementById('finalReflection');
-      state.answers.final_reflection = finalEl ? finalEl.value : '';
+    if (isFinalStage()) {
+      const finalIndex = state.current - sections.length;
+      const block = finalBlocks[finalIndex];
+      if (!block || !block.key) {
+        return;
+      }
+
+      const finalEl = document.getElementById('finalReflectionInput');
+      const currentFinal = state.answers.final_reflections && typeof state.answers.final_reflections === 'object'
+        ? state.answers.final_reflections
+        : {};
+
+      currentFinal[block.key] = finalEl ? finalEl.value : '';
+      state.answers.final_reflections = currentFinal;
       return;
     }
 
@@ -245,27 +295,24 @@ include __DIR__ . '/../partials/header.php';
     setTree(step / total);
   }
 
-  function renderFinal() {
-    state.isFinal = true;
+  function renderFinal(finalIndex) {
+    const block = finalBlocks[finalIndex];
+    if (!block) {
+      return;
+    }
 
-    refs.tag.textContent = 'Etapa final';
-    refs.title.textContent = 'Reflexão de fechamento';
+    const step = sections.length + finalIndex + 1;
+    state.current = sections.length + finalIndex;
+
+    refs.tag.textContent = 'Etapa ' + step;
+    refs.title.textContent = block.title || 'Reflexão final';
     refs.count.textContent = 'Texto livre';
 
-    const reflection = state.answers.final_reflection || '';
-    const defaultReflectionPrompts = [
-      'Qual é a história do meu passado?',
-      'Quais desafios eu tive que superar?',
-      'Quais forças eu ganhei com minhas experiências passadas?'
-    ];
-    const reflectionPrompts = (structure
-      && structure.final_section
-      && Array.isArray(structure.final_section.blocks)
-      && structure.final_section.blocks[0]
-      && Array.isArray(structure.final_section.blocks[0].questions)
-      && structure.final_section.blocks[0].questions.length > 0)
-      ? structure.final_section.blocks[0].questions
-      : defaultReflectionPrompts;
+    const currentFinal = state.answers.final_reflections && typeof state.answers.final_reflections === 'object'
+      ? state.answers.final_reflections
+      : {};
+    const reflection = currentFinal[block.key] || '';
+    const reflectionPrompts = Array.isArray(block.questions) ? block.questions : [];
 
     const promptsHtml = reflectionPrompts
       .map((prompt) => '<div>' + escapeHtml(prompt) + '</div>')
@@ -277,15 +324,18 @@ include __DIR__ . '/../partials/header.php';
       + '    <strong>Guia de reflexão</strong>'
       +      promptsHtml
       + '  </div>'
-      + '  <label>Reflexão final</label>'
-      + '  <textarea id="finalReflection" placeholder="Compartilhe a sua síntese final da jornada...">' + escapeHtml(reflection) + '</textarea>'
+      + '  <label>' + escapeHtml(block.title || 'Reflexão final') + '</label>'
+      + '  <textarea id="finalReflectionInput" placeholder="Compartilhe sua reflexão desta etapa...">' + escapeHtml(reflection) + '</textarea>'
       + '</div>';
 
-    refs.prev.style.display = 'inline-block';
-    refs.next.innerHTML = '<i class="fa-solid fa-check me-2"></i>Concluir tarefa';
+    refs.prev.style.display = state.current === 0 ? 'none' : 'inline-block';
+    if (finalIndex === finalBlocks.length - 1) {
+      refs.next.innerHTML = '<i class="fa-solid fa-check me-2"></i>Concluir tarefa';
+    } else {
+      refs.next.textContent = 'Próxima reflexão';
+    }
 
-    const total = sections.length + 1;
-    updateProgress(total, total);
+    updateProgress(step, totalSteps());
   }
 
   function renderSection(index) {
@@ -294,7 +344,6 @@ include __DIR__ . '/../partials/header.php';
       return;
     }
 
-    state.isFinal = false;
     state.current = index;
 
     refs.tag.textContent = 'Etapa ' + (index + 1);
@@ -322,10 +371,9 @@ include __DIR__ . '/../partials/header.php';
     }).join('');
 
     refs.prev.style.display = index === 0 ? 'none' : 'inline-block';
-    refs.next.textContent = index === sections.length - 1 ? 'Ir para reflexão final' : 'Próxima';
+    refs.next.textContent = index === sections.length - 1 ? 'Ir para reflexão sobre meu passado' : 'Próxima';
 
-    const total = sections.length + 1;
-    updateProgress(index + 1, total);
+    updateProgress(index + 1, totalSteps());
   }
 
   function buildPayload() {
@@ -334,32 +382,73 @@ include __DIR__ . '/../partials/header.php';
       mappedAnswers[section.key] = Array.isArray(state.answers[section.key]) ? state.answers[section.key] : [];
     });
 
-    const reflectionRaw = (state.answers.final_reflection || '').trim();
-    const reflectionHtml = reflectionRaw
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .map((line) => '<p>' + escapeHtml(line) + '</p>')
+    const finalReflectionsRaw = (state.answers.final_reflections && typeof state.answers.final_reflections === 'object')
+      ? state.answers.final_reflections
+      : {};
+    const finalReflectionsHtml = {};
+
+    finalBlocks.forEach((block) => {
+      if (!block || !block.key) {
+        return;
+      }
+
+      const reflectionRaw = String(finalReflectionsRaw[block.key] || '').trim();
+      const reflectionHtml = reflectionRaw
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .map((line) => '<p>' + escapeHtml(line) + '</p>')
+        .join('');
+
+      finalReflectionsHtml[block.key] = reflectionHtml;
+    });
+
+    const reflectionHtml = finalBlocks
+      .map((block) => String(finalReflectionsHtml[block.key] || '').trim())
+      .filter((value) => value.length > 0)
       .join('');
 
     return {
       task_id: taskId,
       reflection: reflectionHtml,
-      answers: mappedAnswers,
-      prompts: {
-        passado: '',
-        presente: '',
-        futuro: ''
-      }
+      final_reflections: finalReflectionsHtml,
+      answers: mappedAnswers
     };
+  }
+
+  function renderCurrentStep() {
+    if (state.current < sections.length) {
+      renderSection(state.current);
+      return;
+    }
+
+    renderFinal(state.current - sections.length);
+  }
+
+  function validateFinalReflections() {
+    const finalReflectionsRaw = (state.answers.final_reflections && typeof state.answers.final_reflections === 'object')
+      ? state.answers.final_reflections
+      : {};
+
+    for (const block of finalBlocks) {
+      if (!block || !block.key) {
+        continue;
+      }
+
+      const plain = String(finalReflectionsRaw[block.key] || '').trim();
+      if (plain.length < 10) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   async function concludeTask() {
     persistCurrent();
 
-    const plain = (state.answers.final_reflection || '').trim();
-    if (plain.length < 10) {
-      await swal('warning', 'Reflexão incompleta', 'Escreva ao menos algumas linhas no texto final para concluir.');
+    if (!validateFinalReflections()) {
+      await swal('warning', 'Reflexão incompleta', 'Preencha as reflexões de passado, presente e futuro para concluir.');
       return;
     }
 
@@ -391,42 +480,36 @@ include __DIR__ . '/../partials/header.php';
   }
 
   function onPrev() {
-    if (state.isFinal) {
-      renderSection(sections.length - 1);
+    persistCurrent();
+    if (state.current <= 0) {
       return;
     }
 
-    persistCurrent();
-    if (state.current > 0) {
-      renderSection(state.current - 1);
-    }
+    state.current -= 1;
+    renderCurrentStep();
   }
 
   function onNext() {
-    if (sections.length === 0) {
+    if (totalSteps() === 0) {
       return;
     }
 
     persistCurrent();
 
-    if (state.isFinal) {
+    if (state.current >= totalSteps() - 1) {
       concludeTask();
       return;
     }
 
-    if (state.current < sections.length - 1) {
-      renderSection(state.current + 1);
-      return;
-    }
-
-    renderFinal();
+    state.current += 1;
+    renderCurrentStep();
   }
 
   function boot() {
     refs.prev.addEventListener('click', onPrev);
     refs.next.addEventListener('click', onNext);
 
-    if (!taskId || !Array.isArray(sections) || sections.length === 0) {
+    if (!taskId || totalSteps() === 0) {
       refs.tag.textContent = 'Indisponível';
       refs.title.textContent = 'Estrutura não carregada';
       refs.count.textContent = '0 perguntas';
@@ -437,7 +520,7 @@ include __DIR__ . '/../partials/header.php';
       return;
     }
 
-    renderSection(0);
+    renderCurrentStep();
   }
 
   window.addEventListener('load', boot);

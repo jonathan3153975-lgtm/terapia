@@ -1622,6 +1622,7 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $taskId = (int) ($input['task_id'] ?? 0);
         $reflectionHtml = (string) ($input['reflection'] ?? '');
+        $finalReflectionsInput = $input['final_reflections'] ?? [];
         $answers = $input['answers'] ?? [];
 
         if ($taskId <= 0) {
@@ -1642,6 +1643,36 @@ class PatientPortalController extends Controller
         $structure = $contentJson !== '' ? json_decode($contentJson, true) : [];
         if (!is_array($structure) || $structure === []) {
             $structure = VirtualTask::getTreeOfLifeStructure();
+        }
+
+        $finalBlocks = is_array($structure['final_section']['blocks'] ?? null) ? $structure['final_section']['blocks'] : [];
+        $finalReflections = [];
+        if (is_array($finalReflectionsInput)) {
+            foreach ($finalReflectionsInput as $blockKey => $blockValue) {
+                if (!is_string($blockKey) || trim($blockKey) === '') {
+                    continue;
+                }
+                if (!is_scalar($blockValue)) {
+                    continue;
+                }
+
+                $cleanHtml = $this->sanitizeRichText((string) $blockValue);
+                $finalReflections[trim($blockKey)] = $cleanHtml;
+            }
+        }
+
+        if ($finalBlocks !== []) {
+            foreach ($finalBlocks as $block) {
+                $blockKey = (string) ($block['key'] ?? '');
+                if ($blockKey === '') {
+                    continue;
+                }
+
+                $plainAnswer = trim(strip_tags((string) ($finalReflections[$blockKey] ?? '')));
+                if (strlen($plainAnswer) < 10) {
+                    $this->error('Preencha as reflexões de passado, presente e futuro para concluir.', 422);
+                }
+            }
         }
 
         $answersBySection = [];
@@ -1675,7 +1706,7 @@ class PatientPortalController extends Controller
             }
         }
 
-        $formattedResponseHtml = $this->virtualTaskModel->formatResponseHtml($structure, $answersBySection, $reflectionHtml);
+        $formattedResponseHtml = $this->virtualTaskModel->formatResponseHtml($structure, $answersBySection, $reflectionHtml, $finalReflections);
 
         $updated = $this->taskModel->updateById($taskId, [
             'status' => 'done',

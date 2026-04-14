@@ -101,7 +101,7 @@ class VirtualTask extends Model
                     [
                         'key' => 'passado',
                         'icon' => '🔙',
-                        'title' => 'Passado',
+                        'title' => 'Reflexão sobre meu passado',
                         'questions' => [
                             'Qual é a história do meu passado?',
                             'Quais desafios eu tive que superar?',
@@ -111,7 +111,7 @@ class VirtualTask extends Model
                     [
                         'key' => 'presente',
                         'icon' => '📍',
-                        'title' => 'Presente',
+                        'title' => 'Reflexão sobre meu presente',
                         'questions' => [
                             'Como eu descreveria minha vida atual e o tipo de pessoa que sou?',
                             'Eu sou diferente da pessoa que fui no passado?',
@@ -121,7 +121,7 @@ class VirtualTask extends Model
                     [
                         'key' => 'futuro',
                         'icon' => '🔮',
-                        'title' => 'Futuro',
+                        'title' => 'Reflexão sobre meu futuro',
                         'questions' => [
                             'Como é o meu futuro ideal?',
                             'Ele seria diferente de como é agora? Se sim, como?',
@@ -259,9 +259,10 @@ class VirtualTask extends Model
         return $stmt->fetchAll();
     }
 
-    public function formatResponseHtml(array $structure, array $answersBySection, string $reflectionHtml = ''): string
+    public function formatResponseHtml(array $structure, array $answersBySection, string $reflectionHtml = '', array $finalReflections = []): string
     {
         $sections = $structure['sections'] ?? [];
+        $finalBlocks = is_array($structure['final_section']['blocks'] ?? null) ? $structure['final_section']['blocks'] : [];
         $htmlParts = [
             '<div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; color: #243746; line-height: 1.6;">',
             '<div style="padding: 18px 20px; border-radius: 14px; background: linear-gradient(135deg, #0f6aa1 0%, #3da9e4 55%, #9edcff 100%); color: #ffffff; margin-bottom: 16px;">',
@@ -327,9 +328,43 @@ class VirtualTask extends Model
             }
         }
 
-        if (trim(strip_tags($reflectionHtml)) !== '') {
+        if ($finalBlocks !== [] && $finalReflections !== []) {
             $htmlParts[] = '<section style="margin: 0 0 18px; padding: 16px; border: 1px solid #dbe9f4; border-radius: 14px; background: #f9fcff; box-shadow: 0 4px 14px rgba(20, 69, 99, 0.05);">';
-            $htmlParts[] = '<h3 style="margin: 0 0 12px; font-size: 18px; color: #123d5a;">Reflexão final</h3>';
+            $htmlParts[] = '<h3 style="margin: 0 0 12px; font-size: 18px; color: #123d5a;">Encerramento da jornada</h3>';
+
+            foreach ($finalBlocks as $block) {
+                $blockKey = (string) ($block['key'] ?? '');
+                if ($blockKey === '') {
+                    continue;
+                }
+
+                $blockTitle = (string) ($block['title'] ?? 'Reflexão final');
+                $blockQuestions = is_array($block['questions'] ?? null) ? $block['questions'] : [];
+                $answerHtml = trim((string) ($finalReflections[$blockKey] ?? ''));
+
+                $htmlParts[] = '<div style="margin: 0 0 12px; padding: 12px; border: 1px solid #e2edf5; border-radius: 10px; background: #ffffff;">';
+                $htmlParts[] = '<h4 style="margin: 0 0 8px; font-size: 16px; color: #1f4f6a;">' . $this->escapeHtml($blockTitle) . '</h4>';
+
+                if ($blockQuestions !== []) {
+                    $htmlParts[] = '<div style="margin: 0 0 8px; font-size: 13px; color: #577489;">';
+                    foreach ($blockQuestions as $question) {
+                        $htmlParts[] = '<div>' . $this->escapeHtml((string) $question) . '</div>';
+                    }
+                    $htmlParts[] = '</div>';
+                }
+
+                $htmlParts[] = '<div style="padding: 10px 12px; background: #fdfefe; border: 1px solid ' . ($answerHtml !== '' ? '#d5e7f3' : '#f0d9b2') . '; border-radius: 10px;">';
+                $htmlParts[] = $answerHtml !== ''
+                    ? $answerHtml
+                    : '<span style="color: #8b6b2c; font-style: italic;">Não respondida.</span>';
+                $htmlParts[] = '</div>';
+                $htmlParts[] = '</div>';
+            }
+
+            $htmlParts[] = '</section>';
+        } elseif (trim(strip_tags($reflectionHtml)) !== '') {
+            $htmlParts[] = '<section style="margin: 0 0 18px; padding: 16px; border: 1px solid #dbe9f4; border-radius: 14px; background: #f9fcff; box-shadow: 0 4px 14px rgba(20, 69, 99, 0.05);">';
+            $htmlParts[] = '<h3 style="margin: 0 0 12px; font-size: 18px; color: #123d5a;">Reflexão sobre meu passado</h3>';
             $htmlParts[] = '<div style="padding: 10px 12px; background: #ffffff; border: 1px solid #e2edf5; border-radius: 10px;">' . $reflectionHtml . '</div>';
             $htmlParts[] = '</section>';
         }

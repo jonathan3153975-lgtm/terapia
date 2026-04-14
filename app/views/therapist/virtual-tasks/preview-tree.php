@@ -166,6 +166,38 @@ include __DIR__ . '/../../partials/header.php';
 (function() {
   const structure = <?php echo isset($structure) ? json_encode($structure) : 'null'; ?>;
   const sections = (structure && Array.isArray(structure.sections)) ? structure.sections : [];
+  const defaultFinalBlocks = [
+    {
+      key: 'passado',
+      title: 'Reflexão sobre meu passado',
+      questions: [
+        'Qual é a história do meu passado?',
+        'Quais desafios eu tive que superar?',
+        'Quais forças eu ganhei com minhas experiências passadas?'
+      ]
+    },
+    {
+      key: 'presente',
+      title: 'Reflexão sobre meu presente',
+      questions: [
+        'Como eu descreveria minha vida atual e o tipo de pessoa que sou?',
+        'Eu sou diferente da pessoa que fui no passado?',
+        'Estou enfrentando algum novo desafio atualmente?'
+      ]
+    },
+    {
+      key: 'futuro',
+      title: 'Reflexão sobre meu futuro',
+      questions: [
+        'Como é o meu futuro ideal?',
+        'Ele seria diferente de como é agora? Se sim, como?',
+        'Quem está no meu futuro?'
+      ]
+    }
+  ];
+  const finalBlocks = (structure && structure.final_section && Array.isArray(structure.final_section.blocks) && structure.final_section.blocks.length > 0)
+    ? structure.final_section.blocks
+    : defaultFinalBlocks;
   let current = 0;
 
   const refs = {
@@ -195,6 +227,14 @@ include __DIR__ . '/../../partials/header.php';
     });
   }
 
+  function totalSteps() {
+    return sections.length + finalBlocks.length;
+  }
+
+  function isFinalStage() {
+    return current >= sections.length;
+  }
+
   function escapeHtml(value) {
     return String(value)
       .replace(/&/g, '&amp;')
@@ -204,24 +244,20 @@ include __DIR__ . '/../../partials/header.php';
       .replace(/'/g, '&#039;');
   }
 
-  function renderFinal() {
-    refs.tag.textContent = 'Etapa final';
-    refs.title.textContent = 'Reflexão de fechamento';
+  function renderFinal(finalIndex) {
+    const block = finalBlocks[finalIndex];
+    if (!block) {
+      return;
+    }
+
+    const step = sections.length + finalIndex + 1;
+    current = sections.length + finalIndex;
+
+    refs.tag.textContent = 'Etapa ' + step;
+    refs.title.textContent = block.title || 'Reflexão final';
     refs.count.textContent = 'Texto livre';
 
-    const defaultReflectionPrompts = [
-      'Qual é a história do meu passado?',
-      'Quais desafios eu tive que superar?',
-      'Quais forças eu ganhei com minhas experiências passadas?'
-    ];
-    const reflectionPrompts = (structure
-      && structure.final_section
-      && Array.isArray(structure.final_section.blocks)
-      && structure.final_section.blocks[0]
-      && Array.isArray(structure.final_section.blocks[0].questions)
-      && structure.final_section.blocks[0].questions.length > 0)
-      ? structure.final_section.blocks[0].questions
-      : defaultReflectionPrompts;
+    const reflectionPrompts = Array.isArray(block.questions) ? block.questions : [];
 
     const promptsHtml = reflectionPrompts
       .map((prompt) => '<div>' + escapeHtml(prompt) + '</div>')
@@ -233,19 +269,18 @@ include __DIR__ . '/../../partials/header.php';
       + '    <strong>Guia de reflexão</strong>'
       +      promptsHtml
       + '  </div>'
-      + '  <label>Reflexão final</label>'
+      + '  <label>' + escapeHtml(block.title || 'Reflexão final') + '</label>'
       + '  <textarea placeholder="Simulação da etapa final...\"></textarea>'
       + '</div>';
 
-    refs.prev.style.display = 'inline-block';
-    refs.next.textContent = 'Concluir teste';
+    refs.prev.style.display = current === 0 ? 'none' : 'inline-block';
+    refs.next.textContent = finalIndex === finalBlocks.length - 1 ? 'Concluir teste' : 'Próxima reflexão';
 
-    const total = sections.length + 1;
-    const step = total;
+    const total = totalSteps();
     refs.step.textContent = step + ' / ' + total;
     const pct = (step / total) * 100;
     refs.progress.style.width = pct.toFixed(0) + '%';
-    setTree(1);
+    setTree(step / total);
   }
 
   function renderSection(index) {
@@ -276,9 +311,9 @@ include __DIR__ . '/../../partials/header.php';
     }).join('');
 
     refs.prev.style.display = index === 0 ? 'none' : 'inline-block';
-    refs.next.textContent = index === sections.length - 1 ? 'Ir para reflexão final' : 'Próxima';
+    refs.next.textContent = index === sections.length - 1 ? 'Ir para reflexão sobre meu passado' : 'Próxima';
 
-    const total = sections.length + 1;
+    const total = totalSteps();
     const step = index + 1;
     refs.step.textContent = step + ' / ' + total;
     const pct = (step / total) * 100;
@@ -286,42 +321,48 @@ include __DIR__ . '/../../partials/header.php';
     setTree(step / total);
   }
 
-  function onPrev() {
-    if (current > 0) {
-      current -= 1;
-      renderSection(current);
+  function renderCurrentStep() {
+    if (isFinalStage()) {
+      renderFinal(current - sections.length);
+      return;
     }
+
+    renderSection(current);
+  }
+
+  function onPrev() {
+    if (current <= 0) {
+      return;
+    }
+
+    current -= 1;
+    renderCurrentStep();
   }
 
   function onNext() {
-    if (sections.length === 0) {
+    if (totalSteps() === 0) {
       return;
     }
 
-    if (current < sections.length - 1) {
+    if (current < totalSteps() - 1) {
       current += 1;
-      renderSection(current);
+      renderCurrentStep();
       return;
     }
 
-    if (refs.next.textContent === 'Concluir teste') {
-      if (window.Swal && typeof Swal.fire === 'function') {
-        Swal.fire('Teste concluído', 'Fluxo validado com sucesso.', 'success').then(() => window.close());
-      } else {
-        alert('Teste concluído com sucesso.');
-        window.close();
-      }
-      return;
+    if (window.Swal && typeof Swal.fire === 'function') {
+      Swal.fire('Teste concluído', 'Fluxo validado com sucesso.', 'success').then(() => window.close());
+    } else {
+      alert('Teste concluído com sucesso.');
+      window.close();
     }
-
-    renderFinal();
   }
 
   function boot() {
     refs.prev.addEventListener('click', onPrev);
     refs.next.addEventListener('click', onNext);
 
-    if (!Array.isArray(sections) || sections.length === 0) {
+    if (totalSteps() === 0) {
       refs.tag.textContent = 'Indisponível';
       refs.title.textContent = 'Estrutura não carregada';
       refs.count.textContent = '0 perguntas';
@@ -331,7 +372,7 @@ include __DIR__ . '/../../partials/header.php';
       return;
     }
 
-    renderSection(0);
+    renderCurrentStep();
   }
 
   window.addEventListener('load', boot);
