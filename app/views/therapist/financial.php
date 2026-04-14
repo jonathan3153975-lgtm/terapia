@@ -4,6 +4,11 @@
     <h3 class="mb-0">Financeiro do terapeuta</h3>
     <form method="GET" action="<?php echo $appUrl; ?>/dashboard.php" class="d-flex gap-2 align-items-center">
       <input type="hidden" name="action" value="therapist-financial">
+      <select class="form-select" name="payment_status" style="max-width: 170px;">
+        <option value="all" <?php echo (($paymentStatus ?? 'all') === 'all') ? 'selected' : ''; ?>>Todos os status</option>
+        <option value="pending" <?php echo (($paymentStatus ?? 'all') === 'pending') ? 'selected' : ''; ?>>Pendentes</option>
+        <option value="paid" <?php echo (($paymentStatus ?? 'all') === 'paid') ? 'selected' : ''; ?>>Pagos</option>
+      </select>
       <select class="form-select" name="month" style="max-width: 130px;">
         <?php for ($m = 1; $m <= 12; $m++): ?>
           <option value="<?php echo $m; ?>" <?php echo ((int) $month === $m) ? 'selected' : ''; ?>><?php echo str_pad((string) $m, 2, '0', STR_PAD_LEFT); ?></option>
@@ -109,6 +114,7 @@
                       <form class="row g-2" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial-update">
                         <input type="hidden" name="month" value="<?php echo (int) $month; ?>">
                         <input type="hidden" name="year" value="<?php echo (int) $year; ?>">
+                        <input type="hidden" name="payment_status" value="<?php echo htmlspecialchars((string) ($paymentStatus ?? 'all')); ?>">
                         <input type="hidden" name="appointment_id" value="<?php echo (int) $row['appointment_id']; ?>">
                         <input type="hidden" name="patient_id" value="<?php echo htmlspecialchars((string) ($row['patient_id'] ?? '')); ?>">
                         <div class="col-12 col-xl-4">
@@ -132,6 +138,7 @@
                         <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial-confirm">
                           <input type="hidden" name="month" value="<?php echo (int) $month; ?>">
                           <input type="hidden" name="year" value="<?php echo (int) $year; ?>">
+                          <input type="hidden" name="payment_status" value="<?php echo htmlspecialchars((string) ($paymentStatus ?? 'all')); ?>">
                           <input type="hidden" name="appointment_id" value="<?php echo (int) $row['appointment_id']; ?>">
                           <button class="btn btn-sm btn-success" type="submit">Confirmar pagamento</button>
                         </form>
@@ -141,6 +148,7 @@
                         <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial-delete" onsubmit="return confirm('Tem certeza que deseja excluir este registro de pagamento? Esta ação não pode ser desfeita.');">
                           <input type="hidden" name="month" value="<?php echo (int) $month; ?>">
                           <input type="hidden" name="year" value="<?php echo (int) $year; ?>">
+                          <input type="hidden" name="payment_status" value="<?php echo htmlspecialchars((string) ($paymentStatus ?? 'all')); ?>">
                           <input type="hidden" name="appointment_id" value="<?php echo (int) $row['appointment_id']; ?>">
                           <button class="btn btn-sm btn-outline-danger w-100" type="submit"><i class="fa-solid fa-trash-can me-1"></i>Excluir pagamento</button>
                         </form>
