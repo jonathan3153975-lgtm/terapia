@@ -110,6 +110,12 @@ class AdminController extends Controller
 
     public function dashboard(): void
     {
+        $uploadsBasePath = dirname(__DIR__, 2) . '/uploads';
+        $materialsBasePath = $uploadsBasePath . '/materials';
+
+        $uploadsStats = $this->fileModel->diskUsageStats($uploadsBasePath);
+        $materialsStats = $this->fileModel->diskUsageStats($materialsBasePath);
+
         $chartLabels = [];
         $chartTherapists = [];
         $chartPatients = [];
@@ -134,8 +140,10 @@ class AdminController extends Controller
             'totalPatients' => $this->patientModel->count('1=1'),
             'activeSubscriptions' => $this->patientSubscriptionModel->countActiveAll(),
             'totalReceived' => $this->paymentModel->totalPaidAmountAll(),
-            'totalFiles' => $this->fileModel->count('1=1'),
-            'usedBytes' => $this->fileModel->totalBytes(),
+            'totalFiles' => (int) ($uploadsStats['total_files'] ?? 0),
+            'usedBytes' => (int) ($uploadsStats['total_bytes'] ?? 0),
+            'materialsFiles' => (int) ($materialsStats['total_files'] ?? 0),
+            'materialsBytes' => (int) ($materialsStats['total_bytes'] ?? 0),
             'chartLabels' => $chartLabels,
             'chartTherapists' => $chartTherapists,
             'chartPatients' => $chartPatients,

@@ -6,7 +6,16 @@
     <div class="col-md-6 col-xl-2"><div class="card card-kpi"><div class="card-body"><small><i class="fa-solid fa-users me-1"></i>Pacientes</small><h2><?php echo (int)$totalPatients; ?></h2></div></div></div>
     <div class="col-md-6 col-xl-2"><div class="card card-kpi"><div class="card-body"><small><i class="fa-solid fa-crown me-1"></i>Assinaturas ativas</small><h2><?php echo (int)$activeSubscriptions; ?></h2></div></div></div>
     <div class="col-md-6 col-xl-3"><div class="card card-kpi"><div class="card-body"><small><i class="fa-solid fa-sack-dollar me-1"></i>Total recebido</small><h2>R$ <?php echo number_format((float)$totalReceived,2,',','.'); ?></h2></div></div></div>
-    <div class="col-md-12 col-xl-3"><div class="card card-kpi"><div class="card-body"><small><i class="fa-solid fa-hard-drive me-1"></i>Espaço de materiais</small><h2><?php echo number_format($usedBytes/(1024*1024),2,',','.'); ?> MB</h2><small class="text-muted">Arquivos totais: <?php echo (int)$totalFiles; ?></small></div></div></div>
+    <div class="col-md-12 col-xl-3">
+      <div class="card card-kpi">
+        <div class="card-body">
+          <small><i class="fa-solid fa-hard-drive me-1"></i>Espaço usado (uploads)</small>
+          <h2><?php echo number_format($usedBytes / (1024 * 1024), 2, ',', '.'); ?> MB</h2>
+          <small class="text-muted d-block">Arquivos no servidor: <?php echo (int) $totalFiles; ?></small>
+          <small class="text-muted d-block">Materiais: <?php echo (int) ($materialsFiles ?? 0); ?> arquivos (<?php echo number_format(((int) ($materialsBytes ?? 0)) / (1024 * 1024), 2, ',', '.'); ?> MB)</small>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="row g-3 mb-4">

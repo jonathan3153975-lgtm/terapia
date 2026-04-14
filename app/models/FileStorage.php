@@ -8,6 +8,49 @@ class FileStorage extends Model
 {
     protected string $table = 'files';
 
+    public function diskUsageStats(string $basePath): array
+    {
+        if (!is_dir($basePath)) {
+            return [
+                'total_bytes' => 0,
+                'total_files' => 0,
+            ];
+        }
+
+        $bytes = 0;
+        $files = 0;
+
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($basePath, \FilesystemIterator::SKIP_DOTS)
+            );
+
+            foreach ($iterator as $item) {
+                if (!$item instanceof \SplFileInfo || !$item->isFile()) {
+                    continue;
+                }
+
+                $name = $item->getFilename();
+                if ($name === '.gitkeep') {
+                    continue;
+                }
+
+                $files++;
+                $bytes += (int) $item->getSize();
+            }
+        } catch (\Throwable $e) {
+            return [
+                'total_bytes' => 0,
+                'total_files' => 0,
+            ];
+        }
+
+        return [
+            'total_bytes' => $bytes,
+            'total_files' => $files,
+        ];
+    }
+
     public function countByTherapist(int $therapistId): int
     {
         return $this->count('therapist_id = ?', [$therapistId]);
