@@ -96,6 +96,7 @@
                 <?php
                   $status = (string) ($row['payment_status'] ?? 'pending');
                   $badge = $status === 'paid' ? 'bg-success-subtle text-success-emphasis' : 'bg-warning-subtle text-warning-emphasis';
+                  $statusLabel = $status === 'paid' ? 'Pago' : 'Pendente';
                   $patientName = trim((string) ($row['patient_name'] ?? ''));
                   if ($patientName === '') {
                       $patientName = trim((string) ($row['guest_patient_name'] ?? ''));
@@ -103,13 +104,17 @@
                   if ($patientName === '') {
                       $patientName = 'Paciente sem cadastro';
                   }
+                  $sessionDate = date('d/m/Y H:i', strtotime((string) $row['session_date']));
+                  $description = (string) ($row['description'] ?? '-');
+                  $amountLabel = 'R$ ' . number_format((float) ($row['amount'] ?? 0), 2, ',', '.');
+                  $searchBlob = strtolower(trim($sessionDate . ' ' . $patientName . ' ' . $description . ' ' . $statusLabel . ' ' . $amountLabel));
                 ?>
-                <tr class="financial-data-row">
-                  <td><?php echo date('d/m/Y H:i', strtotime((string) $row['session_date'])); ?></td>
+                <tr class="financial-data-row" data-search="<?php echo htmlspecialchars($searchBlob, ENT_QUOTES, 'UTF-8'); ?>">
+                  <td><?php echo $sessionDate; ?></td>
                   <td><?php echo htmlspecialchars($patientName); ?></td>
-                  <td><?php echo htmlspecialchars((string) ($row['description'] ?? '-')); ?></td>
-                  <td><span class="badge rounded-pill <?php echo $badge; ?>"><?php echo $status === 'paid' ? 'Pago' : 'Pendente'; ?></span></td>
-                  <td>R$ <?php echo number_format((float) ($row['amount'] ?? 0), 2, ',', '.'); ?></td>
+                  <td><?php echo htmlspecialchars($description); ?></td>
+                  <td><span class="badge rounded-pill <?php echo $badge; ?>"><?php echo $statusLabel; ?></span></td>
+                  <td><?php echo $amountLabel; ?></td>
                   <td>
                     <div class="d-grid gap-2">
                       <form class="row g-2" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial-update">
@@ -282,7 +287,7 @@ window.addEventListener('load', function () {
   var applyFiltersAndPagination = function () {
     var term = searchInput ? searchInput.value.toLowerCase().trim() : '';
     var filteredRows = dataRows.filter(function (row) {
-      var text = (row.innerText || row.textContent || '').toLowerCase();
+      var text = (row.getAttribute('data-search') || (row.innerText || row.textContent || '')).toLowerCase();
       return term === '' || text.indexOf(term) !== -1;
     });
 

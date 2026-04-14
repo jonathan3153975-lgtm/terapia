@@ -1516,7 +1516,10 @@ class TherapistController extends Controller
             $this->redirect($redirectWithStatus($redirectBase, 'error', 'Agendamento não encontrado.'));
         }
 
-        $this->paymentModel->deletePaymentByAppointment($therapistId, $appointmentId);
+        $deletedCount = $this->paymentModel->deletePaymentsByAppointment($therapistId, $appointmentId);
+        if ($deletedCount <= 0) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Nenhum registro de pagamento foi encontrado para exclusão.'));
+        }
 
         $this->redirect($redirectWithStatus($redirectBase, 'success', 'Registro de pagamento excluído com sucesso.'));
     }

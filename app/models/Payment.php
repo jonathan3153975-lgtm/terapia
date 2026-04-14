@@ -111,12 +111,18 @@ class Payment extends Model
         ]);
     }
 
-    public function deletePaymentByAppointment(int $therapistId, int $appointmentId): bool
+    public function deletePaymentsByAppointment(int $therapistId, int $appointmentId): int
     {
-        return (bool) $this->query(
-            'DELETE FROM payments WHERE appointment_id = ? AND therapist_id = ? LIMIT 1',
+        $stmt = $this->query(
+            'DELETE FROM payments WHERE appointment_id = ? AND therapist_id = ?',
             [$appointmentId, $therapistId]
         );
+
+        if (!$stmt) {
+            return 0;
+        }
+
+        return (int) $stmt->rowCount();
     }
 
     public function listAppointmentFinancialMonthly(int $therapistId, int $month, int $year): array
