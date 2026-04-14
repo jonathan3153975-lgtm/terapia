@@ -69,7 +69,7 @@
       <div class="row g-2 align-items-center mb-3">
         <div class="col-12 col-lg-6">
           <label class="form-label mb-1" for="financialSearchInput">Buscar na tabela</label>
-          <input id="financialSearchInput" class="form-control" type="search" placeholder="Digite paciente, descrição, data, status ou valor...">
+          <input id="financialSearchInput" class="form-control" type="search" placeholder="Digite paciente, data, status ou valor...">
         </div>
       </div>
     </div>
@@ -80,7 +80,6 @@
             <tr>
               <th>Data/Hora</th>
               <th>Paciente</th>
-              <th>Descrição</th>
               <th>Status</th>
               <th>Valor</th>
               <th>Ações</th>
@@ -89,7 +88,7 @@
           <tbody id="financialTableBody">
             <?php if (empty($financialRows)): ?>
               <tr id="financialEmptyRow">
-                <td colspan="6" class="text-center text-muted py-4">Nenhuma consulta encontrada para o período.</td>
+                <td colspan="5" class="text-center text-muted py-4">Nenhuma consulta encontrada para o período.</td>
               </tr>
             <?php else: ?>
               <?php foreach ($financialRows as $row): ?>
@@ -104,15 +103,15 @@
                   if ($patientName === '') {
                       $patientName = 'Paciente sem cadastro';
                   }
+                  $patientNameUpper = strtoupper($patientName);
                   $sessionDate = date('d/m/Y H:i', strtotime((string) $row['session_date']));
                   $description = (string) ($row['description'] ?? '-');
                   $amountLabel = 'R$ ' . number_format((float) ($row['amount'] ?? 0), 2, ',', '.');
-                  $searchBlob = strtolower(trim($sessionDate . ' ' . $patientName . ' ' . $description . ' ' . $statusLabel . ' ' . $amountLabel));
+                  $searchBlob = strtolower(trim($sessionDate . ' ' . $patientNameUpper . ' ' . $statusLabel . ' ' . $amountLabel));
                 ?>
                 <tr class="financial-data-row" data-search="<?php echo htmlspecialchars($searchBlob, ENT_QUOTES, 'UTF-8'); ?>">
                   <td><?php echo $sessionDate; ?></td>
-                  <td><?php echo htmlspecialchars($patientName); ?></td>
-                  <td><?php echo htmlspecialchars($description); ?></td>
+                  <td><?php echo htmlspecialchars($patientNameUpper); ?></td>
                   <td><span class="badge rounded-pill <?php echo $badge; ?>"><?php echo $statusLabel; ?></span></td>
                   <td><?php echo $amountLabel; ?></td>
                   <td>
@@ -305,7 +304,7 @@ window.addEventListener('load', function () {
     if (totalItems === 0 && tableBody) {
       var tr = document.createElement('tr');
       tr.id = 'financialNoSearchMatchRow';
-      tr.innerHTML = '<td colspan="6" class="text-center text-muted py-4">Nenhum registro encontrado para a busca.</td>';
+      tr.innerHTML = '<td colspan="5" class="text-center text-muted py-4">Nenhum registro encontrado para a busca.</td>';
       tableBody.appendChild(tr);
       if (emptyRow) {
         emptyRow.style.display = 'none';
