@@ -1345,14 +1345,6 @@ class TherapistController extends Controller
         $financialPage = $this->normalizeFinancialPage((int) ($_GET['financial_page'] ?? 1));
 
         $rows = $this->paymentModel->listAppointmentFinancialMonthly($therapistId, $month, $year);
-        foreach ($rows as &$row) {
-            if (empty($row['payment_id'])) {
-                $row['payment_id'] = null;
-                $row['payment_status'] = 'pending';
-                $row['amount'] = 0.00;
-            }
-        }
-        unset($row);
 
         if ($paymentStatus !== 'all') {
             $rows = array_values(array_filter($rows, static function (array $row) use ($paymentStatus): bool {
@@ -1420,6 +1412,7 @@ class TherapistController extends Controller
         $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
         $patientIdRaw = $_POST['patient_id'] ?? null;
         $patientId = ($patientIdRaw === '' || $patientIdRaw === null) ? null : (int) $patientIdRaw;
+        $actionType = (string) ($_POST['action_type'] ?? 'save');
         $status = (string) ($_POST['status'] ?? 'pending');
         $amount = $this->parseMoneyInput((string) ($_POST['amount'] ?? '0'));
 
@@ -1447,6 +1440,15 @@ class TherapistController extends Controller
         $appointment = $this->appointmentModel->findByTherapistAndId($therapistId, $appointmentId);
         if (!$appointment) {
             $this->redirect($redirectWithStatus($redirectBase, 'error', 'Agendamento não encontrado.'));
+        }
+
+        if ($actionType === 'delete') {
+            $deletedCount = $this->paymentModel->deletePaymentsByAppointment($therapistId, $appointmentId);
+            if ($deletedCount <= 0) {
+                $this->redirect($redirectWithStatus($redirectBase, 'error', 'Nenhum registro de pagamento foi encontrado para exclusão.'));
+            }
+
+            $this->redirect($redirectWithStatus($redirectBase, 'success', 'Registro de pagamento excluído com sucesso.'));
         }
 
         $ok = $this->paymentModel->upsertAppointmentPayment($therapistId, $appointmentId, $patientId, $amount, $status);

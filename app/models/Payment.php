@@ -141,7 +141,7 @@ class Payment extends Model
                 pay.paid_at
              FROM appointments a
              LEFT JOIN patients p ON p.id = a.patient_id
-             LEFT JOIN payments pay ON pay.appointment_id = a.id
+                         INNER JOIN payments pay ON pay.appointment_id = a.id
              WHERE a.therapist_id = ?
                AND MONTH(a.session_date) = ?
                AND YEAR(a.session_date) = ?

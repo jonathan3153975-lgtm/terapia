@@ -117,7 +117,7 @@
                   <td><?php echo $amountLabel; ?></td>
                   <td>
                     <div class="d-grid gap-2">
-                      <form class="row g-2" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial-update">
+                      <form class="row g-2 js-financial-update-form" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial-update">
                         <input type="hidden" name="month" value="<?php echo (int) $month; ?>">
                         <input type="hidden" name="year" value="<?php echo (int) $year; ?>">
                         <input type="hidden" name="payment_status" value="<?php echo htmlspecialchars((string) ($paymentStatus ?? 'all')); ?>">
@@ -136,8 +136,9 @@
                             <option value="paid" <?php echo $status === 'paid' ? 'selected' : ''; ?>>Pago</option>
                           </select>
                         </div>
-                        <div class="col-12 col-xl-4">
-                          <button class="btn btn-sm btn-outline-primary w-100" type="submit">Salvar</button>
+                        <div class="col-12 col-xl-4 d-flex gap-2">
+                          <button class="btn btn-sm btn-outline-primary flex-fill" type="submit" name="action_type" value="save" title="Salvar" aria-label="Salvar"><i class="fa-solid fa-floppy-disk"></i></button>
+                          <button class="btn btn-sm btn-outline-danger flex-fill" type="submit" name="action_type" value="delete" title="Excluir" aria-label="Excluir"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                       </form>
 
@@ -148,18 +149,7 @@
                           <input type="hidden" name="payment_status" value="<?php echo htmlspecialchars((string) ($paymentStatus ?? 'all')); ?>">
                           <input type="hidden" name="financial_page" value="<?php echo (int) ($financialPage ?? 1); ?>">
                           <input type="hidden" name="appointment_id" value="<?php echo (int) $row['appointment_id']; ?>">
-                          <button class="btn btn-sm btn-success" type="submit">Confirmar pagamento</button>
-                        </form>
-                      <?php endif; ?>
-
-                      <?php if (!empty($row['payment_id'])): ?>
-                        <form class="js-financial-delete-form" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial-delete">
-                          <input type="hidden" name="month" value="<?php echo (int) $month; ?>">
-                          <input type="hidden" name="year" value="<?php echo (int) $year; ?>">
-                          <input type="hidden" name="payment_status" value="<?php echo htmlspecialchars((string) ($paymentStatus ?? 'all')); ?>">
-                          <input type="hidden" name="financial_page" value="<?php echo (int) ($financialPage ?? 1); ?>">
-                          <input type="hidden" name="appointment_id" value="<?php echo (int) $row['appointment_id']; ?>">
-                          <button class="btn btn-sm btn-outline-danger w-100" type="submit"><i class="fa-solid fa-trash-can me-1"></i>Excluir pagamento</button>
+                          <button class="btn btn-sm btn-success" type="submit" title="Confirmar pagamento" aria-label="Confirmar pagamento"><i class="fa-solid fa-circle-check"></i></button>
                         </form>
                       <?php endif; ?>
                     </div>
@@ -185,7 +175,7 @@ window.addEventListener('load', function () {
   var dataRows = Array.prototype.slice.call(document.querySelectorAll('.financial-data-row'));
   var tableBody = document.getElementById('financialTableBody');
   var emptyRow = document.getElementById('financialEmptyRow');
-  var deleteForms = document.querySelectorAll('.js-financial-delete-form');
+  var updateForms = document.querySelectorAll('.js-financial-update-form');
   var filterPageInput = document.getElementById('financialPageFilterInput');
   var paginationInfo = document.getElementById('financialPaginationInfo');
   var paginationControls = document.getElementById('financialPaginationControls');
@@ -348,8 +338,13 @@ window.addEventListener('load', function () {
     });
   }
 
-  deleteForms.forEach(function (form) {
+  updateForms.forEach(function (form) {
     form.addEventListener('submit', function (event) {
+      var submitter = event.submitter;
+      if (!submitter || submitter.name !== 'action_type' || submitter.value !== 'delete') {
+        return;
+      }
+
       event.preventDefault();
       updateCurrentPageInputs();
 
