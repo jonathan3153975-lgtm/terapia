@@ -78,10 +78,26 @@
         <table class="table table-hover align-middle mb-0" id="financialTable">
           <thead>
             <tr>
-              <th>Data/Hora</th>
-              <th>Paciente</th>
-              <th>Status</th>
-              <th>Valor</th>
+              <th>
+                <button class="btn btn-link btn-sm text-decoration-none p-0 text-body js-financial-sort" type="button" data-sort-key="date" title="Ordenar por Data/Hora">
+                  Data/Hora <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i>
+                </button>
+              </th>
+              <th>
+                <button class="btn btn-link btn-sm text-decoration-none p-0 text-body js-financial-sort" type="button" data-sort-key="patient" title="Ordenar por Paciente">
+                  Paciente <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i>
+                </button>
+              </th>
+              <th>
+                <button class="btn btn-link btn-sm text-decoration-none p-0 text-body js-financial-sort" type="button" data-sort-key="status" title="Ordenar por Status">
+                  Status <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i>
+                </button>
+              </th>
+              <th>
+                <button class="btn btn-link btn-sm text-decoration-none p-0 text-body js-financial-sort" type="button" data-sort-key="amount" title="Ordenar por Valor">
+                  Valor <i class="fa-solid fa-sort ms-1" aria-hidden="true"></i>
+                </button>
+              </th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -104,12 +120,18 @@
                       $patientName = 'Paciente sem cadastro';
                   }
                   $patientNameUpper = strtoupper($patientName);
-                  $sessionDate = date('d/m/Y H:i', strtotime((string) $row['session_date']));
-                  $description = (string) ($row['description'] ?? '-');
-                  $amountLabel = 'R$ ' . number_format((float) ($row['amount'] ?? 0), 2, ',', '.');
+                  $sessionTs = strtotime((string) $row['session_date']) ?: 0;
+                  $sessionDate = date('d/m/Y H:i', $sessionTs);
+                  $amount = (float) ($row['amount'] ?? 0);
+                  $amountLabel = 'R$ ' . number_format($amount, 2, ',', '.');
                   $searchBlob = strtolower(trim($sessionDate . ' ' . $patientNameUpper . ' ' . $statusLabel . ' ' . $amountLabel));
                 ?>
-                <tr class="financial-data-row" data-search="<?php echo htmlspecialchars($searchBlob, ENT_QUOTES, 'UTF-8'); ?>">
+                <tr class="financial-data-row"
+                    data-search="<?php echo htmlspecialchars($searchBlob, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-sort-date="<?php echo (int) $sessionTs; ?>"
+                    data-sort-patient="<?php echo htmlspecialchars($patientNameUpper, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-sort-status="<?php echo htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-sort-amount="<?php echo number_format($amount, 2, '.', ''); ?>">
                   <td><?php echo $sessionDate; ?></td>
                   <td><?php echo htmlspecialchars($patientNameUpper); ?></td>
                   <td><span class="badge rounded-pill <?php echo $badge; ?>"><?php echo $statusLabel; ?></span></td>
@@ -171,6 +193,7 @@
 window.addEventListener('load', function () {
   var moneyInputs = document.querySelectorAll('.money-input');
   var searchInput = document.getElementById('financialSearchInput');
+  var sortButtons = document.querySelectorAll('.js-financial-sort');
   var dataRows = Array.prototype.slice.call(document.querySelectorAll('.financial-data-row'));
   var tableBody = document.getElementById('financialTableBody');
   var emptyRow = document.getElementById('financialEmptyRow');
@@ -181,6 +204,10 @@ window.addEventListener('load', function () {
   var paginationWrapper = document.getElementById('financialPaginationWrapper');
   var rowsPerPage = 10;
   var currentPage = Math.max(1, parseInt('<?php echo (int) ($financialPage ?? 1); ?>', 10) || 1);
+  var sortState = {
+    key: null,
+    direction: 'asc'
+  };
 
   var formatMoney = function (rawValue) {
     var digits = rawValue.replace(/\D/g, '');
@@ -227,6 +254,63 @@ window.addEventListener('load', function () {
     if (existingDynamicEmpty) {
       existingDynamicEmpty.remove();
     }
+  };
+
+  var getSortValue = function (row, key) {
+    if (key === 'date') {
+      return parseInt(row.getAttribute('data-sort-date') || '0', 10);
+    }
+
+    if (key === 'amount') {
+      return parseFloat(row.getAttribute('data-sort-amount') || '0');
+    }
+
+    if (key === 'patient') {
+      return (row.getAttribute('data-sort-patient') || '').toLowerCase();
+    }
+
+    if (key === 'status') {
+      return (row.getAttribute('data-sort-status') || '').toLowerCase();
+    }
+
+    return '';
+  };
+
+  var applySorting = function (rows) {
+    if (!sortState.key) {
+      return rows;
+    }
+
+    var directionMultiplier = sortState.direction === 'asc' ? 1 : -1;
+    return rows.slice().sort(function (a, b) {
+      var aValue = getSortValue(a, sortState.key);
+      var bValue = getSortValue(b, sortState.key);
+
+      if (aValue < bValue) {
+        return -1 * directionMultiplier;
+      }
+      if (aValue > bValue) {
+        return 1 * directionMultiplier;
+      }
+      return 0;
+    });
+  };
+
+  var renderSortIndicators = function () {
+    sortButtons.forEach(function (button) {
+      var icon = button.querySelector('i');
+      if (!icon) {
+        return;
+      }
+
+      var key = button.getAttribute('data-sort-key');
+      icon.className = 'fa-solid ms-1';
+      if (sortState.key === key) {
+        icon.classList.add(sortState.direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+      } else {
+        icon.classList.add('fa-sort');
+      }
+    });
   };
 
   var renderPagination = function (totalItems, totalPages) {
@@ -279,6 +363,7 @@ window.addEventListener('load', function () {
       var text = (row.getAttribute('data-search') || (row.innerText || row.textContent || '')).toLowerCase();
       return term === '' || text.indexOf(term) !== -1;
     });
+    filteredRows = applySorting(filteredRows);
 
     clearDynamicEmptyRow();
 
@@ -327,6 +412,7 @@ window.addEventListener('load', function () {
   };
 
   updateCurrentPageInputs();
+  renderSortIndicators();
   applyFiltersAndPagination();
 
   if (searchInput && dataRows.length > 0) {
@@ -336,6 +422,27 @@ window.addEventListener('load', function () {
       applyFiltersAndPagination();
     });
   }
+
+  sortButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var key = button.getAttribute('data-sort-key');
+      if (!key) {
+        return;
+      }
+
+      if (sortState.key === key) {
+        sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortState.key = key;
+        sortState.direction = 'asc';
+      }
+
+      currentPage = 1;
+      updateCurrentPageInputs();
+      renderSortIndicators();
+      applyFiltersAndPagination();
+    });
+  });
 
   updateForms.forEach(function (form) {
     form.addEventListener('submit', function (event) {
