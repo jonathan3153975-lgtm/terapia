@@ -4,6 +4,7 @@
     <h3 class="mb-0">Financeiro do terapeuta</h3>
     <form method="GET" action="<?php echo $appUrl; ?>/dashboard.php" class="d-flex gap-2 align-items-center">
       <input type="hidden" name="action" value="therapist-financial">
+      <input type="hidden" id="financialPageFilterInput" name="financial_page" value="<?php echo (int) ($financialPage ?? 1); ?>">
       <select class="form-select" name="payment_status" style="max-width: 170px;">
         <option value="all" <?php echo (($paymentStatus ?? 'all') === 'all') ? 'selected' : ''; ?>>Todos os status</option>
         <option value="pending" <?php echo (($paymentStatus ?? 'all') === 'pending') ? 'selected' : ''; ?>>Pendentes</option>
@@ -115,6 +116,7 @@
                         <input type="hidden" name="month" value="<?php echo (int) $month; ?>">
                         <input type="hidden" name="year" value="<?php echo (int) $year; ?>">
                         <input type="hidden" name="payment_status" value="<?php echo htmlspecialchars((string) ($paymentStatus ?? 'all')); ?>">
+                        <input type="hidden" name="financial_page" value="<?php echo (int) ($financialPage ?? 1); ?>">
                         <input type="hidden" name="appointment_id" value="<?php echo (int) $row['appointment_id']; ?>">
                         <input type="hidden" name="patient_id" value="<?php echo htmlspecialchars((string) ($row['patient_id'] ?? '')); ?>">
                         <div class="col-12 col-xl-4">
@@ -139,16 +141,18 @@
                           <input type="hidden" name="month" value="<?php echo (int) $month; ?>">
                           <input type="hidden" name="year" value="<?php echo (int) $year; ?>">
                           <input type="hidden" name="payment_status" value="<?php echo htmlspecialchars((string) ($paymentStatus ?? 'all')); ?>">
+                          <input type="hidden" name="financial_page" value="<?php echo (int) ($financialPage ?? 1); ?>">
                           <input type="hidden" name="appointment_id" value="<?php echo (int) $row['appointment_id']; ?>">
                           <button class="btn btn-sm btn-success" type="submit">Confirmar pagamento</button>
                         </form>
                       <?php endif; ?>
 
                       <?php if (!empty($row['payment_id'])): ?>
-                        <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial-delete" onsubmit="return confirm('Tem certeza que deseja excluir este registro de pagamento? Esta ação não pode ser desfeita.');">
+                        <form class="js-financial-delete-form" method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial-delete">
                           <input type="hidden" name="month" value="<?php echo (int) $month; ?>">
                           <input type="hidden" name="year" value="<?php echo (int) $year; ?>">
                           <input type="hidden" name="payment_status" value="<?php echo htmlspecialchars((string) ($paymentStatus ?? 'all')); ?>">
+                          <input type="hidden" name="financial_page" value="<?php echo (int) ($financialPage ?? 1); ?>">
                           <input type="hidden" name="appointment_id" value="<?php echo (int) $row['appointment_id']; ?>">
                           <button class="btn btn-sm btn-outline-danger w-100" type="submit"><i class="fa-solid fa-trash-can me-1"></i>Excluir pagamento</button>
                         </form>
@@ -162,6 +166,10 @@
         </table>
       </div>
     </div>
+    <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2" id="financialPaginationWrapper">
+      <small class="text-muted mb-0" id="financialPaginationInfo"></small>
+      <div class="btn-group" role="group" id="financialPaginationControls"></div>
+    </div>
   </div>
 </div>
 
@@ -169,9 +177,16 @@
 window.addEventListener('load', function () {
   var moneyInputs = document.querySelectorAll('.money-input');
   var searchInput = document.getElementById('financialSearchInput');
-  var dataRows = document.querySelectorAll('.financial-data-row');
+  var dataRows = Array.prototype.slice.call(document.querySelectorAll('.financial-data-row'));
   var tableBody = document.getElementById('financialTableBody');
   var emptyRow = document.getElementById('financialEmptyRow');
+  var deleteForms = document.querySelectorAll('.js-financial-delete-form');
+  var filterPageInput = document.getElementById('financialPageFilterInput');
+  var paginationInfo = document.getElementById('financialPaginationInfo');
+  var paginationControls = document.getElementById('financialPaginationControls');
+  var paginationWrapper = document.getElementById('financialPaginationWrapper');
+  var rowsPerPage = 10;
+  var currentPage = Math.max(1, parseInt('<?php echo (int) ($financialPage ?? 1); ?>', 10) || 1);
 
   var formatMoney = function (rawValue) {
     var digits = rawValue.replace(/\D/g, '');
@@ -203,39 +218,158 @@ window.addEventListener('load', function () {
     });
   });
 
-  if (searchInput && dataRows.length > 0) {
-    searchInput.addEventListener('input', function () {
-      var term = searchInput.value.toLowerCase().trim();
-      var visibleCount = 0;
+  var updateCurrentPageInputs = function () {
+    document.querySelectorAll('input[name="financial_page"]').forEach(function (input) {
+      input.value = String(currentPage);
+    });
 
-      dataRows.forEach(function (row) {
-        var text = (row.innerText || row.textContent || '').toLowerCase();
-        var match = term === '' || text.indexOf(term) !== -1;
-        row.style.display = match ? '' : 'none';
-        if (match) {
-          visibleCount++;
-        }
-      });
+    if (filterPageInput) {
+      filterPageInput.value = String(currentPage);
+    }
+  };
 
-      if (tableBody) {
-        var existingDynamicEmpty = document.getElementById('financialNoSearchMatchRow');
-        if (existingDynamicEmpty) {
-          existingDynamicEmpty.remove();
-        }
+  var clearDynamicEmptyRow = function () {
+    var existingDynamicEmpty = document.getElementById('financialNoSearchMatchRow');
+    if (existingDynamicEmpty) {
+      existingDynamicEmpty.remove();
+    }
+  };
 
-        if (visibleCount === 0) {
-          var tr = document.createElement('tr');
-          tr.id = 'financialNoSearchMatchRow';
-          tr.innerHTML = '<td colspan="6" class="text-center text-muted py-4">Nenhum registro encontrado para a busca.</td>';
-          tableBody.appendChild(tr);
-        }
+  var renderPagination = function (totalItems, totalPages) {
+    if (!paginationControls || !paginationInfo || !paginationWrapper) {
+      return;
+    }
+
+    paginationControls.innerHTML = '';
+    if (totalItems === 0 || totalPages <= 1) {
+      paginationWrapper.style.display = 'none';
+      paginationInfo.textContent = totalItems === 0 ? 'Nenhum registro para exibir.' : '1 página.';
+      return;
+    }
+
+    paginationWrapper.style.display = '';
+    paginationInfo.textContent = 'Página ' + currentPage + ' de ' + totalPages + ' (' + totalItems + ' registros)';
+
+    var prevButton = document.createElement('button');
+    prevButton.type = 'button';
+    prevButton.className = 'btn btn-sm btn-outline-secondary';
+    prevButton.textContent = 'Anterior';
+    prevButton.disabled = currentPage <= 1;
+    prevButton.addEventListener('click', function () {
+      if (currentPage > 1) {
+        currentPage--;
+        updateCurrentPageInputs();
+        applyFiltersAndPagination();
       }
+    });
+    paginationControls.appendChild(prevButton);
 
+    var nextButton = document.createElement('button');
+    nextButton.type = 'button';
+    nextButton.className = 'btn btn-sm btn-outline-secondary';
+    nextButton.textContent = 'Próxima';
+    nextButton.disabled = currentPage >= totalPages;
+    nextButton.addEventListener('click', function () {
+      if (currentPage < totalPages) {
+        currentPage++;
+        updateCurrentPageInputs();
+        applyFiltersAndPagination();
+      }
+    });
+    paginationControls.appendChild(nextButton);
+  };
+
+  var applyFiltersAndPagination = function () {
+    var term = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    var filteredRows = dataRows.filter(function (row) {
+      var text = (row.innerText || row.textContent || '').toLowerCase();
+      return term === '' || text.indexOf(term) !== -1;
+    });
+
+    clearDynamicEmptyRow();
+
+    var totalItems = filteredRows.length;
+    var totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+    if (currentPage > totalPages) {
+      currentPage = totalPages;
+      updateCurrentPageInputs();
+    }
+
+    dataRows.forEach(function (row) {
+      row.style.display = 'none';
+    });
+
+    if (dataRows.length === 0) {
+      if (emptyRow) {
+        emptyRow.style.display = '';
+      }
+      renderPagination(0, 1);
+      return;
+    }
+
+    if (totalItems === 0 && tableBody) {
+      var tr = document.createElement('tr');
+      tr.id = 'financialNoSearchMatchRow';
+      tr.innerHTML = '<td colspan="6" class="text-center text-muted py-4">Nenhum registro encontrado para a busca.</td>';
+      tableBody.appendChild(tr);
       if (emptyRow) {
         emptyRow.style.display = 'none';
       }
+      renderPagination(0, 1);
+      return;
+    }
+
+    var start = (currentPage - 1) * rowsPerPage;
+    var end = start + rowsPerPage;
+    filteredRows.slice(start, end).forEach(function (row) {
+      row.style.display = '';
+    });
+
+    if (emptyRow) {
+      emptyRow.style.display = 'none';
+    }
+
+    renderPagination(totalItems, totalPages);
+  };
+
+  updateCurrentPageInputs();
+  applyFiltersAndPagination();
+
+  if (searchInput && dataRows.length > 0) {
+    searchInput.addEventListener('input', function () {
+      currentPage = 1;
+      updateCurrentPageInputs();
+      applyFiltersAndPagination();
     });
   }
+
+  deleteForms.forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      updateCurrentPageInputs();
+
+      if (window.Swal && typeof Swal.fire === 'function') {
+        Swal.fire({
+          title: 'Excluir registro?',
+          text: 'Esta ação não pode ser desfeita.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sim, excluir',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#dc3545'
+        }).then(function (result) {
+          if (result.isConfirmed) {
+            form.submit();
+          }
+        });
+        return;
+      }
+
+      if (window.confirm('Tem certeza que deseja excluir este registro de pagamento? Esta ação não pode ser desfeita.')) {
+        form.submit();
+      }
+    });
+  });
 });
 </script>
 <?php include __DIR__ . '/../partials/footer.php'; ?>

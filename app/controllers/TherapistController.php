@@ -1297,17 +1297,23 @@ class TherapistController extends Controller
         $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-healing-letters&status=success&msg=' . urlencode('Carta excluída com sucesso.'));
     }
 
-    private function financialRedirectBase(int $month, int $year, string $paymentStatus = 'all'): string
+    private function financialRedirectBase(int $month, int $year, string $paymentStatus = 'all', int $financialPage = 1): string
     {
         return Config::get('APP_URL', '')
             . '/dashboard.php?action=therapist-financial&month=' . $month
             . '&year=' . $year
-            . '&payment_status=' . urlencode($paymentStatus);
+            . '&payment_status=' . urlencode($paymentStatus)
+            . '&financial_page=' . $financialPage;
     }
 
     private function normalizeFinancialStatus(string $status): string
     {
         return in_array($status, ['all', 'pending', 'paid'], true) ? $status : 'all';
+    }
+
+    private function normalizeFinancialPage(int $page): int
+    {
+        return $page > 0 ? $page : 1;
     }
 
     private function parseMoneyInput(string $value): float
@@ -1336,16 +1342,12 @@ class TherapistController extends Controller
         $month = $this->normalizeMonth((int) ($_GET['month'] ?? date('n')));
         $year = $this->normalizeYear((int) ($_GET['year'] ?? date('Y')));
         $paymentStatus = $this->normalizeFinancialStatus((string) ($_GET['payment_status'] ?? 'all'));
+        $financialPage = $this->normalizeFinancialPage((int) ($_GET['financial_page'] ?? 1));
 
         $rows = $this->paymentModel->listAppointmentFinancialMonthly($therapistId, $month, $year);
         foreach ($rows as &$row) {
             if (empty($row['payment_id'])) {
-                $newId = $this->paymentModel->ensurePendingForAppointment(
-                    $therapistId,
-                    (int) $row['appointment_id'],
-                    isset($row['patient_id']) ? (int) $row['patient_id'] : null
-                );
-                $row['payment_id'] = $newId ?: null;
+                $row['payment_id'] = null;
                 $row['payment_status'] = 'pending';
                 $row['amount'] = 0.00;
             }
@@ -1401,6 +1403,7 @@ class TherapistController extends Controller
             'month' => $month,
             'year' => $year,
             'paymentStatus' => $paymentStatus,
+            'financialPage' => $financialPage,
             'monthLabel' => ($monthNames[$month] ?? '') . ' de ' . $year,
             'financialRows' => $rows,
             'receivedTotal' => $received,
@@ -1423,7 +1426,8 @@ class TherapistController extends Controller
         $month = $this->normalizeMonth((int) ($_POST['month'] ?? date('n')));
         $year = $this->normalizeYear((int) ($_POST['year'] ?? date('Y')));
         $paymentStatus = $this->normalizeFinancialStatus((string) ($_POST['payment_status'] ?? 'all'));
-        $redirectBase = $this->financialRedirectBase($month, $year, $paymentStatus);
+        $financialPage = $this->normalizeFinancialPage((int) ($_POST['financial_page'] ?? 1));
+        $redirectBase = $this->financialRedirectBase($month, $year, $paymentStatus, $financialPage);
         $redirectWithStatus = static function (string $baseUrl, string $type, string $message): string {
             return $baseUrl . '&status=' . urlencode($type) . '&msg=' . urlencode($message);
         };
@@ -1460,8 +1464,9 @@ class TherapistController extends Controller
         $month = $this->normalizeMonth((int) ($_POST['month'] ?? date('n')));
         $year = $this->normalizeYear((int) ($_POST['year'] ?? date('Y')));
         $paymentStatus = $this->normalizeFinancialStatus((string) ($_POST['payment_status'] ?? 'all'));
+        $financialPage = $this->normalizeFinancialPage((int) ($_POST['financial_page'] ?? 1));
 
-        $redirectBase = $this->financialRedirectBase($month, $year, $paymentStatus);
+        $redirectBase = $this->financialRedirectBase($month, $year, $paymentStatus, $financialPage);
         $redirectWithStatus = static function (string $baseUrl, string $type, string $message): string {
             return $baseUrl . '&status=' . urlencode($type) . '&msg=' . urlencode($message);
         };
@@ -1495,8 +1500,9 @@ class TherapistController extends Controller
         $month = $this->normalizeMonth((int) ($_POST['month'] ?? date('n')));
         $year = $this->normalizeYear((int) ($_POST['year'] ?? date('Y')));
         $paymentStatus = $this->normalizeFinancialStatus((string) ($_POST['payment_status'] ?? 'all'));
+        $financialPage = $this->normalizeFinancialPage((int) ($_POST['financial_page'] ?? 1));
 
-        $redirectBase = $this->financialRedirectBase($month, $year, $paymentStatus);
+        $redirectBase = $this->financialRedirectBase($month, $year, $paymentStatus, $financialPage);
         $redirectWithStatus = static function (string $baseUrl, string $type, string $message): string {
             return $baseUrl . '&status=' . urlencode($type) . '&msg=' . urlencode($message);
         };
