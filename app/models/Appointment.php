@@ -167,22 +167,44 @@ class Appointment extends Model
         return (int) ($row['total'] ?? 0);
     }
 
-    public function findNextByPatient(int $patientId): ?array
+    public function findNextByPatient(int $patientId, ?string $referenceDateTime = null): ?array
     {
+        $reference = $referenceDateTime ?: date('Y-m-d H:i:s');
+
         $stmt = $this->query(
             'SELECT *
              FROM appointments
              WHERE patient_id = ?
-               AND session_date >= NOW()
+               AND session_date >= ?
              ORDER BY session_date ASC
              LIMIT 1',
-            [$patientId]
+            [$patientId, $reference]
         );
-        if (!$stmt) {
+
+        if ($stmt) {
+            $row = $stmt->fetch();
+            if ($row) {
+                return $row;
+            }
+        }
+
+        // Fallback para evitar falso negativo quando há pequena diferença de relógio/fuso.
+        $fallbackReference = date('Y-m-d H:i:s', strtotime('-6 hours'));
+        $fallbackStmt = $this->query(
+            'SELECT *
+             FROM appointments
+             WHERE patient_id = ?
+               AND session_date >= ?
+             ORDER BY session_date ASC
+             LIMIT 1',
+            [$patientId, $fallbackReference]
+        );
+        if (!$fallbackStmt) {
             return null;
         }
-        $row = $stmt->fetch();
-        return $row ?: null;
+
+        $fallbackRow = $fallbackStmt->fetch();
+        return $fallbackRow ?: null;
     }
 
     public function findByTherapistPatientAndId(int $therapistId, int $patientId, int $appointmentId): ?array

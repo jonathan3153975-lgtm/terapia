@@ -813,7 +813,7 @@ class PatientPortalController extends Controller
     {
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
-        $nextAppointment = $this->appointmentModel->findNextByPatient($patientId);
+        $nextAppointment = $this->appointmentModel->findNextByPatient($patientId, date('Y-m-d H:i:s'));
         $activeSubscription = $this->patientSubscriptionModel->findActiveByPatient($patientId);
 
         $chartLabels = [];
