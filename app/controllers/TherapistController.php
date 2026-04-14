@@ -1470,6 +1470,32 @@ class TherapistController extends Controller
         $this->redirect($redirectWithStatus($redirectBase, 'success', 'Pagamento confirmado como pago.'));
     }
 
+    public function financialDeletePayment(): void
+    {
+        $therapistId = (int) Auth::id();
+        $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
+        $month = $this->normalizeMonth((int) ($_POST['month'] ?? date('n')));
+        $year = $this->normalizeYear((int) ($_POST['year'] ?? date('Y')));
+
+        $redirectBase = $this->financialRedirectBase($month, $year);
+        $redirectWithStatus = static function (string $baseUrl, string $type, string $message): string {
+            return $baseUrl . '&status=' . urlencode($type) . '&msg=' . urlencode($message);
+        };
+
+        if ($appointmentId <= 0) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Agendamento inválido.'));
+        }
+
+        $appointment = $this->appointmentModel->findByTherapistAndId($therapistId, $appointmentId);
+        if (!$appointment) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Agendamento não encontrado.'));
+        }
+
+        $this->paymentModel->deletePaymentByAppointment($therapistId, $appointmentId);
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Registro de pagamento excluído com sucesso.'));
+    }
+
     private function normalizeMaterialType(string $type): string
     {
         return in_array($type, ['support', 'exercise'], true) ? $type : 'support';

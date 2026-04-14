@@ -136,6 +136,15 @@
                           <button class="btn btn-sm btn-success" type="submit">Confirmar pagamento</button>
                         </form>
                       <?php endif; ?>
+
+                      <?php if (!empty($row['payment_id'])): ?>
+                        <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-financial-delete" onsubmit="return confirm('Tem certeza que deseja excluir este registro de pagamento? Esta ação não pode ser desfeita.');">
+                          <input type="hidden" name="month" value="<?php echo (int) $month; ?>">
+                          <input type="hidden" name="year" value="<?php echo (int) $year; ?>">
+                          <input type="hidden" name="appointment_id" value="<?php echo (int) $row['appointment_id']; ?>">
+                          <button class="btn btn-sm btn-outline-danger w-100" type="submit"><i class="fa-solid fa-trash-can me-1"></i>Excluir pagamento</button>
+                        </form>
+                      <?php endif; ?>
                     </div>
                   </td>
                 </tr>

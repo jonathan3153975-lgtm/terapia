@@ -74,6 +74,7 @@ match ($action) {
     'therapist-financial' => (new TherapistController())->financial(),
     'therapist-financial-update' => (new TherapistController())->financialUpdate(),
     'therapist-financial-confirm' => (new TherapistController())->financialConfirmPayment(),
+    'therapist-financial-delete' => (new TherapistController())->financialDeletePayment(),
     'therapist-materials' => (new TherapistController())->materials(),
     'therapist-materials-create' => (new TherapistController())->createMaterial(),
     'therapist-materials-store' => (new TherapistController())->storeMaterial(),
