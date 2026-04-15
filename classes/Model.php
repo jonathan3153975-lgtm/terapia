@@ -48,7 +48,11 @@ abstract class Model
         $vals = array_values($data);
         $vals[] = $id;
         $set = implode(',', array_map(fn($c) => "{$c} = ?", $cols));
-        return (bool) $this->query("UPDATE {$this->table} SET {$set} WHERE id = ?", $vals);
+        $stmt = $this->query("UPDATE {$this->table} SET {$set} WHERE id = ?", $vals);
+        if (!$stmt) {
+            return false;
+        }
+        return $stmt->rowCount() > 0;
     }
 
     public function count(string $where = '1=1', array $params = []): int
