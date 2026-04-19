@@ -42,7 +42,7 @@
                   <td><?php echo !empty($book['favorited_at']) ? date('d/m/Y H:i', strtotime((string) $book['favorited_at'])) : '-'; ?></td>
                   <td>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                      <a class="btn btn-sm btn-outline-secondary" href="<?php echo $appUrl; ?>/patient.php?action=book-show&id=<?php echo (int) ($book['id'] ?? 0); ?>"><i class="fa-solid fa-eye me-1"></i>Visualizar</a>
+                      <a class="btn btn-sm btn-outline-secondary" href="<?php echo $appUrl; ?>/patient.php?action=book-view&id=<?php echo (int) ($book['id'] ?? 0); ?>#toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-eye me-1"></i>Visualizar</a>
                       <form method="POST" action="<?php echo $appUrl; ?>/patient.php?action=book-toggle-favorite" class="m-0">
                         <input type="hidden" name="book_id" value="<?php echo (int) ($book['id'] ?? 0); ?>">
                         <input type="hidden" name="redirect_action" value="my-contents">

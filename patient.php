@@ -55,7 +55,6 @@ match ($action) {
     'tasks' => $portal->tasks(),
     'materials' => $portal->materials(),
     'books' => $portal->books(),
-    'book-show' => $portal->showBook(),
     'book-view' => $portal->streamBookPdf(),
     'book-toggle-favorite' => $portal->toggleBookFavorite(),
     'my-contents' => $portal->myContents(),

@@ -933,25 +933,6 @@ class PatientPortalController extends Controller
         ]);
     }
 
-    public function showBook(): void
-    {
-        $patientId = (int) Auth::patientId();
-        $bookId = (int) ($_GET['id'] ?? 0);
-        $book = $this->bookModel->findPublishedByPatientAndId($patientId, $bookId);
-
-        if (!$book) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=books&status=error&msg=' . urlencode('Livro não encontrado ou indisponível.'));
-        }
-
-        $isFavorite = $this->patientBookFavoriteModel->exists($patientId, $bookId);
-
-        $this->view('patient/book-show', [
-            'appUrl' => Config::get('APP_URL', ''),
-            'book' => $book,
-            'isFavorite' => $isFavorite,
-        ]);
-    }
-
     public function streamBookPdf(): void
     {
         $patientId = (int) Auth::patientId();
@@ -978,7 +959,7 @@ class PatientPortalController extends Controller
         $bookId = (int) ($_POST['book_id'] ?? 0);
         $book = $this->bookModel->findPublishedByPatientAndId($patientId, $bookId);
         $redirectAction = (string) ($_POST['redirect_action'] ?? 'books');
-        if (!in_array($redirectAction, ['books', 'book-show', 'my-contents'], true)) {
+        if (!in_array($redirectAction, ['books', 'my-contents'], true)) {
             $redirectAction = 'books';
         }
 
@@ -1003,9 +984,6 @@ class PatientPortalController extends Controller
         }
 
         $query = 'action=' . urlencode($redirectAction);
-        if ($redirectAction === 'book-show') {
-            $query .= '&id=' . $bookId;
-        }
         $query .= '&status=success&msg=' . urlencode($message);
 
         $this->redirect(Config::get('APP_URL', '') . '/patient.php?' . $query);
