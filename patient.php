@@ -74,6 +74,7 @@ match ($action) {
     'guided-meditation-show' => $portal->guidedMeditationShow(),
     'guided-meditation-draw-letter' => $portal->drawGuidedMeditationLetter(),
     'guided-meditation-save' => $portal->saveGuidedMeditationEntry(),
+    'breathing-game' => $portal->breathingGame(),
     'prayers' => $portal->prayers(),
     'prayer-show' => $portal->prayerShow(),
     'prayer-save' => $portal->savePrayerEntry(),

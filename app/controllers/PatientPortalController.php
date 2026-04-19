@@ -1184,6 +1184,13 @@ class PatientPortalController extends Controller
         ]);
     }
 
+    public function breathingGame(): void
+    {
+        $this->view('patient/breathing-game', [
+            'appUrl' => Config::get('APP_URL', ''),
+        ]);
+    }
+
     public function guidedMeditationShow(): void
     {
         $patientId = (int) Auth::patientId();
