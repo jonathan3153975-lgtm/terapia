@@ -9,39 +9,40 @@
         <span id="breathing-cycle-counter" class="badge text-bg-primary">Ciclo 0/3</span>
       </div>
 
-      <div class="breathing-stage" id="breathing-stage" role="application" aria-label="Jogo de respiração guiada">
+      <div class="breathing-stage" role="application" aria-label="Jogo de respiração guiada">
         <div class="breathing-phone">
-          <div class="breathing-track" aria-hidden="true"></div>
+          <div class="breathing-screen breathing-screen--intro is-active" id="breathing-intro-screen">
+            <div class="breathing-intro-copy">
+              <p>
+                A respiração é fundamental não apenas para manter a vida, mas também para regular o corpo e a mente.
+                Respirar corretamnte ajuda a reduzir o estresse, melhorar o sono, fortalecer os pulmões e otimizar a
+                produção de energia. Respire comigo!
+              </p>
+            </div>
 
-          <div class="breathing-modules">
-            <div class="breathing-module">
-              <small>Fase</small>
-              <strong id="breathing-phase-label">Preparar</strong>
-            </div>
-            <div class="breathing-module">
-              <small>Tempo</small>
-              <strong id="breathing-time-label">3s</strong>
-            </div>
+            <button class="breathing-start-button" id="breathing-start-button" type="button">
+              Iniciar
+            </button>
           </div>
 
-          <div class="breathing-image" id="breathing-image" aria-hidden="true">
-            <svg viewBox="0 0 180 120" xmlns="http://www.w3.org/2000/svg" focusable="false">
-              <defs>
-                <linearGradient id="lungsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#e9f6ff"/>
-                  <stop offset="100%" stop-color="#b3deff"/>
-                </linearGradient>
-              </defs>
-              <path d="M90 62 L90 18" stroke="#7dc7ff" stroke-width="8" stroke-linecap="round" fill="none"/>
-              <path d="M86 28 C70 20, 45 30, 40 52 C34 76, 49 98, 69 102 C83 104, 90 91, 90 78 Z" fill="url(#lungsGradient)" stroke="#7dc7ff" stroke-width="4"/>
-              <path d="M94 28 C110 20, 135 30, 140 52 C146 76, 131 98, 111 102 C97 104, 90 91, 90 78 Z" fill="url(#lungsGradient)" stroke="#7dc7ff" stroke-width="4"/>
-            </svg>
-          </div>
+          <div class="breathing-screen breathing-screen--game" id="breathing-game-screen" aria-hidden="true">
+            <div class="breathing-track" aria-hidden="true"></div>
 
-          <div class="breathing-message" id="breathing-message">Inspire profundamente por 5 segundos...</div>
-          <div class="breathing-timer" id="breathing-timer" aria-live="polite">3</div>
-          <div class="breathing-ball" id="breathing-ball" aria-hidden="true"></div>
-          <div class="breathing-end" id="breathing-end" aria-live="polite"></div>
+            <div class="breathing-modules">
+              <div class="breathing-module">
+                <small>Fase</small>
+                <strong id="breathing-phase-label">Preparar</strong>
+              </div>
+              <div class="breathing-module">
+                <small>Tempo</small>
+                <strong id="breathing-time-label">0s</strong>
+              </div>
+            </div>
+
+            <div class="breathing-message" id="breathing-message">Inspire por 5 segundos</div>
+            <div class="breathing-timer" id="breathing-timer" aria-live="polite">3</div>
+            <div class="breathing-ball breathing-ball--bottom" id="breathing-ball" aria-hidden="true"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -82,6 +83,75 @@
     background: linear-gradient(180deg, #ffffff 0%, #5ea9ff 100%);
     box-shadow: 0 22px 48px rgba(15, 53, 84, 0.25);
     overflow: hidden;
+  }
+
+  .breathing-screen {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+
+  .breathing-screen.is-active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .breathing-screen.is-leaving {
+    opacity: 0;
+  }
+
+  .breathing-screen--intro {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 10% 9%;
+    text-align: center;
+  }
+
+  .breathing-intro-copy {
+    max-width: 28rem;
+    padding: 1.4rem 1.2rem;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.42);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 18px 40px rgba(18, 66, 103, 0.12);
+  }
+
+  .breathing-intro-copy p {
+    margin: 0;
+    color: #114163;
+    font-size: clamp(1rem, 2.5vw, 1.1rem);
+    font-weight: 600;
+    line-height: 1.75;
+  }
+
+  .breathing-start-button {
+    border: 1px solid rgba(44, 131, 212, 0.44);
+    border-radius: 999px;
+    background: rgba(74, 156, 231, 0.18);
+    color: #0f4f7d;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.9rem 2.6rem;
+    box-shadow: 0 14px 30px rgba(18, 96, 154, 0.16);
+    backdrop-filter: blur(4px);
+    transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .breathing-start-button:hover,
+  .breathing-start-button:focus-visible {
+    transform: translateY(-1px);
+    background: rgba(74, 156, 231, 0.3);
+    border-color: rgba(15, 79, 125, 0.4);
+    outline: none;
+  }
+
+  .breathing-screen--game {
+    display: block;
   }
 
   .breathing-modules {
@@ -133,60 +203,17 @@
     inset: 22% 8% auto 8%;
     text-align: center;
     color: #0c2f48;
-    font-size: clamp(1rem, 2.4vw, 1.1rem);
+    font-size: clamp(1rem, 2.5vw, 1.1rem);
     font-weight: 700;
     line-height: 1.4;
     opacity: 1;
-    transition: opacity 0.8s ease;
+    transition: opacity 0.35s ease;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+    z-index: 3;
   }
 
-  .breathing-image {
-    position: absolute;
-    left: 50%;
-    top: 32%;
-    width: min(44vw, 176px);
-    transform: translateX(-50%);
+  .breathing-message.fade {
     opacity: 0;
-    transition: opacity 1s ease;
-    filter: drop-shadow(0 10px 24px rgba(18, 93, 148, 0.22));
-    z-index: 2;
-  }
-
-  .breathing-image.show {
-    opacity: 1;
-  }
-
-  .breathing-ball {
-    position: absolute;
-    left: 50%;
-    width: min(18vw, 72px);
-    height: min(18vw, 72px);
-    border-radius: 999px;
-    transform: translateX(-50%);
-    bottom: 8%;
-    background: #ffffff;
-    box-shadow: 0 12px 24px rgba(30, 77, 114, 0.3);
-    z-index: 2;
-    transition: bottom 5s linear, background-color 5s linear;
-  }
-
-  .breathing-ball.rise {
-    bottom: 78%;
-    background: #bde5ff;
-    transition: bottom 5s linear, background-color 5s linear;
-  }
-
-  .breathing-ball.fall {
-    bottom: 8%;
-    background: #ffffff;
-    transition: bottom 7s linear, background-color 7s linear;
-  }
-
-  .breathing-ball.hold {
-    bottom: 78%;
-    background: #bde5ff;
-    transition: none;
   }
 
   .breathing-timer {
@@ -208,23 +235,33 @@
     z-index: 3;
   }
 
-  .breathing-message.fade {
-    opacity: 0;
-    transition-duration: 0.35s;
-  }
-
-  .breathing-end {
+  .breathing-ball {
     position: absolute;
-    inset: auto 8% 7% 8%;
-    text-align: center;
-    color: #06345a;
-    font-weight: 700;
-    opacity: 0;
-    transition: opacity 0.7s ease;
+    left: 50%;
+    width: min(18vw, 72px);
+    height: min(18vw, 72px);
+    border-radius: 999px;
+    transform: translateX(-50%);
+    background: #ffffff;
+    box-shadow: 0 12px 24px rgba(30, 77, 114, 0.3);
+    z-index: 2;
   }
 
-  .breathing-end.show {
-    opacity: 1;
+  .breathing-ball--bottom {
+    bottom: 4%;
+  }
+
+  .breathing-ball--top {
+    bottom: 78%;
+    background: #bde5ff;
+  }
+
+  .breathing-ball.rise {
+    transition: bottom 5s linear, background-color 5s linear;
+  }
+
+  .breathing-ball.fall {
+    transition: bottom 7s linear, background-color 7s linear;
   }
 
   @media (min-width: 1200px) {
@@ -300,31 +337,36 @@
       border-width: 8px;
       border-radius: 30px;
     }
+
+    .breathing-intro-copy {
+      padding: 1.15rem 1rem;
+    }
+
+    .breathing-start-button {
+      width: 100%;
+      max-width: 18rem;
+    }
   }
 </style>
 
 <script>
   (function () {
-    const dashboardUrl = <?php echo json_encode(rtrim((string) ($appUrl ?? ''), '/') . '/patient.php?action=dashboard'); ?>;
     const TOTAL_CYCLES = 3;
-    const PRE_START_SECONDS = 3;
-    const INHALE_SECONDS = 5;
-    const HOLD_SECONDS = 4;
-    const EXHALE_SECONDS = 7;
+    const PREPARE_DELAY = 300;
 
+    const introScreen = document.getElementById('breathing-intro-screen');
+    const gameScreen = document.getElementById('breathing-game-screen');
+    const startButton = document.getElementById('breathing-start-button');
     const ball = document.getElementById('breathing-ball');
     const message = document.getElementById('breathing-message');
-    const image = document.getElementById('breathing-image');
-    const endMessage = document.getElementById('breathing-end');
     const cycleCounter = document.getElementById('breathing-cycle-counter');
     const phaseLabel = document.getElementById('breathing-phase-label');
     const timeLabel = document.getElementById('breathing-time-label');
     const centerTimer = document.getElementById('breathing-timer');
 
-    let cycle = 0;
-    let stopped = false;
-
+    let sessionToken = 0;
     const timeoutIds = [];
+
     function later(fn, delay) {
       const id = window.setTimeout(fn, delay);
       timeoutIds.push(id);
@@ -342,7 +384,7 @@
       document.body.classList.toggle('breathing-game-mobile', window.innerWidth <= 820);
     }
 
-    function setCounter(value) {
+    function setCycle(value) {
       cycleCounter.textContent = `Ciclo ${value}/${TOTAL_CYCLES}`;
     }
 
@@ -350,9 +392,9 @@
       phaseLabel.textContent = value;
     }
 
-    function setTime(seconds) {
-      timeLabel.textContent = `${seconds}s`;
-      centerTimer.textContent = String(seconds);
+    function setTimer(value) {
+      timeLabel.textContent = `${value}s`;
+      centerTimer.textContent = String(value);
     }
 
     function showMessage(text) {
@@ -364,121 +406,175 @@
       message.classList.add('fade');
     }
 
-    function holdBallTop() {
-      void ball.offsetWidth;
-      ball.classList.remove('rise', 'fall');
-      ball.classList.add('hold');
+    function resetBall() {
+      ball.classList.remove('rise', 'fall', 'breathing-ball--top');
+      ball.classList.add('breathing-ball--bottom');
+      ball.style.bottom = '';
+      ball.style.backgroundColor = '';
     }
 
-    function moveBallUp() {
+    function moveBallToTop() {
+      ball.classList.remove('fall', 'breathing-ball--bottom');
       void ball.offsetWidth;
-      ball.classList.remove('hold', 'fall');
       ball.classList.add('rise');
+      ball.style.bottom = '78%';
+      ball.style.backgroundColor = '#bde5ff';
     }
 
-    function moveBallDown() {
+    function pinBallTop() {
+      ball.classList.remove('rise', 'fall', 'breathing-ball--bottom');
+      ball.classList.add('breathing-ball--top');
+      ball.style.bottom = '78%';
+      ball.style.backgroundColor = '#bde5ff';
+    }
+
+    function moveBallToBottom() {
+      ball.classList.remove('rise', 'breathing-ball--top');
       void ball.offsetWidth;
-      ball.classList.remove('hold', 'rise');
       ball.classList.add('fall');
+      ball.style.bottom = '4%';
+      ball.style.backgroundColor = '#ffffff';
     }
 
-    async function countdown(seconds, onTick) {
-      for (let remaining = seconds; remaining >= 1; remaining -= 1) {
-        if (stopped) {
-          return;
+    function pinBallBottom() {
+      ball.classList.remove('rise', 'fall', 'breathing-ball--top');
+      ball.classList.add('breathing-ball--bottom');
+      ball.style.bottom = '4%';
+      ball.style.backgroundColor = '#ffffff';
+    }
+
+    function switchScreen(showIntro) {
+      const activate = showIntro ? introScreen : gameScreen;
+      const deactivate = showIntro ? gameScreen : introScreen;
+
+      deactivate.classList.remove('is-active');
+      deactivate.classList.add('is-leaving');
+      deactivate.setAttribute('aria-hidden', 'true');
+
+      later(() => {
+        deactivate.classList.remove('is-leaving');
+        activate.classList.add('is-active');
+        activate.setAttribute('aria-hidden', 'false');
+      }, 220);
+    }
+
+    async function tickSequence(values, token, onTick) {
+      for (const value of values) {
+        if (token !== sessionToken) {
+          return false;
         }
 
-        setTime(remaining);
+        setTimer(value);
         if (typeof onTick === 'function') {
-          onTick(remaining);
+          onTick(value);
         }
 
         await new Promise((resolve) => later(resolve, 1000));
       }
+
+      return token === sessionToken;
     }
 
-    async function runCycle(currentCycle) {
-      setPhase('Inspiração');
-      showMessage('Inspire profundamente por 5 segundos...');
-      image.classList.remove('show');
-      moveBallUp();
+    async function runCycle(cycleIndex, token) {
+      setCycle(cycleIndex);
 
-      await countdown(INHALE_SECONDS, (remaining) => {
-        if (remaining === 3) {
-          hideMessage();
-          later(() => showMessage('Continue inspirando...'), 220);
-        }
-      });
-
-      if (stopped) {
-        return;
-      }
-
-      setPhase('Segure');
-      holdBallTop();
-      showMessage('Segure por 4 segundos...');
-
-      await countdown(HOLD_SECONDS, (remaining) => {
-        if (remaining === 2) {
-          image.classList.add('show');
-          showMessage('Espire por 7 segundos...');
-        }
-      });
-
-      if (stopped) {
-        return;
-      }
-
-      setPhase('Expiração');
-      moveBallDown();
-      showMessage('Espire por 7 segundos...');
-
-      await countdown(EXHALE_SECONDS, (remaining) => {
-        if (remaining === 2 && currentCycle < TOTAL_CYCLES) {
-          hideMessage();
-          later(() => showMessage('Inspire profundamente por 5 segundos...'), 220);
-        }
-      });
-    }
-
-    async function runSession() {
-      setCounter(0);
       setPhase('Preparar');
-      showMessage('Inspire profundamente por 5 segundos...');
+      showMessage('Inspire por 5 segundos');
+      pinBallBottom();
+      let ok = await tickSequence([3, 2, 1, 0], token);
+      if (!ok) {
+        return false;
+      }
 
-      await countdown(PRE_START_SECONDS);
+      setPhase('Inspirar');
+      showMessage('Inspire por 5 segundos');
+      moveBallToTop();
+      ok = await tickSequence([1, 2, 3, 4, 5], token, (value) => {
+        if (value === 3) {
+          showMessage('Segure por 4 segundos');
+        }
+      });
+      if (!ok) {
+        return false;
+      }
 
-      for (let currentCycle = 1; currentCycle <= TOTAL_CYCLES; currentCycle += 1) {
-        if (stopped) {
+      setPhase('Segure no topo');
+      pinBallTop();
+      ok = await tickSequence([1, 2, 3, 4], token, (value) => {
+        if (value === 2) {
+          showMessage('Espire por 7 segundos');
+        }
+      });
+      if (!ok) {
+        return false;
+      }
+
+      setPhase('Expirar');
+      showMessage('Espire por 7 segundos');
+      moveBallToBottom();
+      ok = await tickSequence([7, 6, 5, 4, 3, 2, 1, 0], token, (value) => {
+        if (value === 5) {
+          showMessage('Segure por 4 segundos');
+        }
+      });
+      if (!ok) {
+        return false;
+      }
+
+      setPhase('Segure embaixo');
+      pinBallBottom();
+      ok = await tickSequence([4, 3, 2, 1, 0], token, (value) => {
+        if (value === 2) {
+          showMessage('Inspire por 5 segundos');
+        }
+      });
+
+      return ok;
+    }
+
+    async function startSession() {
+      sessionToken += 1;
+      const token = sessionToken;
+
+      startButton.disabled = true;
+      clearTimers();
+      setCycle(0);
+      setPhase('Preparar');
+      setTimer(0);
+      resetBall();
+      hideMessage();
+      switchScreen(false);
+
+      await new Promise((resolve) => later(resolve, PREPARE_DELAY));
+      if (token !== sessionToken) {
+        return;
+      }
+
+      showMessage('Inspire por 5 segundos');
+
+      for (let cycleIndex = 1; cycleIndex <= TOTAL_CYCLES; cycleIndex += 1) {
+        const ok = await runCycle(cycleIndex, token);
+        if (!ok) {
           return;
         }
-
-        cycle = currentCycle;
-        setCounter(cycle);
-        await runCycle(currentCycle);
       }
 
-      finalize();
-    }
-
-    function finalize() {
-      stopped = true;
-      clearTimers();
-      image.classList.remove('show');
-      hideMessage();
-      setPhase('Finalizado');
-      setTime(0);
-      endMessage.textContent = 'Sessão finalizada. Excelente trabalho.';
-      endMessage.classList.add('show');
-      later(() => {
-        window.location.assign(dashboardUrl);
-      }, 1200);
+      setCycle(0);
+      setPhase('Preparar');
+      setTimer(0);
+      resetBall();
+      switchScreen(true);
+      startButton.disabled = false;
     }
 
     syncViewportMode();
-    window.addEventListener('resize', syncViewportMode);
-    runSession();
+    resetBall();
+    setCycle(0);
+    setPhase('Preparar');
+    setTimer(0);
 
+    startButton.addEventListener('click', startSession);
+    window.addEventListener('resize', syncViewportMode);
     window.addEventListener('beforeunload', () => {
       clearTimers();
       document.body.classList.remove('breathing-game-mobile', 'breathing-game-page');
