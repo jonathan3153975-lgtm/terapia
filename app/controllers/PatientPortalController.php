@@ -8,8 +8,10 @@ use App\Models\FaithWord;
 use App\Models\FileStorage;
 use App\Models\GuidedMeditation;
 use App\Models\HealingLetter;
+use App\Models\Book;
 use App\Models\Material;
 use App\Models\MaterialDelivery;
+use App\Models\PatientBookFavorite;
 use App\Models\Patient;
 use App\Models\PatientFaithEntry;
 use App\Models\PatientGratitudeEntry;
@@ -30,6 +32,7 @@ use Helpers\EmailTemplate;
 use Helpers\MailService;
 use Helpers\MercadoPagoGateway;
 use Helpers\PatientSubscriptionPaymentSync;
+use Helpers\Utils;
 use App\Models\VirtualTask;
 
 class PatientPortalController extends Controller
@@ -38,6 +41,8 @@ class PatientPortalController extends Controller
     private Appointment $appointmentModel;
     private Material $materialModel;
     private MaterialDelivery $materialDeliveryModel;
+    private Book $bookModel;
+    private PatientBookFavorite $patientBookFavoriteModel;
     private FileStorage $fileModel;
     private Patient $patientModel;
     private User $userModel;
@@ -64,6 +69,8 @@ class PatientPortalController extends Controller
         $this->appointmentModel = new Appointment();
         $this->materialModel = new Material();
         $this->materialDeliveryModel = new MaterialDelivery();
+        $this->bookModel = new Book();
+        $this->patientBookFavoriteModel = new PatientBookFavorite();
         $this->fileModel = new FileStorage();
         $this->patientModel = new Patient();
         $this->userModel = new User();
@@ -883,6 +890,137 @@ class PatientPortalController extends Controller
             'deliveries' => $deliveries,
             'taskLinkedMaterials' => $taskLinkedMaterials,
             'assetsByMaterial' => $assetsByMaterial,
+        ]);
+    }
+
+    private function streamPdfFile(string $relativePath, string $downloadName): void
+    {
+        $absolutePath = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        if (!is_file($absolutePath)) {
+            http_response_code(404);
+            echo 'Arquivo não encontrado.';
+            exit;
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Length: ' . (string) filesize($absolutePath));
+        header('Content-Disposition: inline; filename="' . rawurlencode($downloadName) . '"');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: SAMEORIGIN');
+        readfile($absolutePath);
+        exit;
+    }
+
+    public function books(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $search = Utils::sanitize($_GET['search'] ?? '');
+        $books = $therapistId > 0 ? $this->bookModel->listPublishedByTherapist($therapistId, $search) : [];
+        $favorites = $this->patientBookFavoriteModel->listBookIdsByPatient($patientId);
+        $favoriteMap = array_fill_keys($favorites, true);
+
+        $this->view('patient/books', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'books' => $books,
+            'favoriteMap' => $favoriteMap,
+            'search' => $search,
+        ]);
+    }
+
+    public function showBook(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $bookId = (int) ($_GET['id'] ?? 0);
+        $book = $this->bookModel->findPublishedByPatientAndId($patientId, $bookId);
+
+        if (!$book) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=books&status=error&msg=' . urlencode('Livro não encontrado ou indisponível.'));
+        }
+
+        $isFavorite = $this->patientBookFavoriteModel->exists($patientId, $bookId);
+
+        $this->view('patient/book-show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'book' => $book,
+            'isFavorite' => $isFavorite,
+        ]);
+    }
+
+    public function streamBookPdf(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $bookId = (int) ($_GET['id'] ?? 0);
+        $book = $this->bookModel->findPublishedByPatientAndId($patientId, $bookId);
+
+        if (!$book || empty($book['pdf_path'])) {
+            http_response_code(404);
+            echo 'Livro não encontrado.';
+            exit;
+        }
+
+        $downloadName = (string) ($book['pdf_original_name'] ?? ($book['title'] ?? 'livro') . '.pdf');
+        $this->streamPdfFile((string) $book['pdf_path'], $downloadName);
+    }
+
+    public function toggleBookFavorite(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=books&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $bookId = (int) ($_POST['book_id'] ?? 0);
+        $book = $this->bookModel->findPublishedByPatientAndId($patientId, $bookId);
+        $redirectAction = (string) ($_POST['redirect_action'] ?? 'books');
+        if (!in_array($redirectAction, ['books', 'book-show', 'my-contents'], true)) {
+            $redirectAction = 'books';
+        }
+
+        if (!$book) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=books&status=error&msg=' . urlencode('Livro não encontrado ou indisponível.'));
+        }
+
+        $wasFavorite = $this->patientBookFavoriteModel->exists($patientId, $bookId);
+        if ($wasFavorite) {
+            $this->patientBookFavoriteModel->deleteByPatientAndBook($patientId, $bookId);
+            $message = 'Livro removido de Meus conteúdos.';
+        } else {
+            $patient = $this->patientModel->findById($patientId);
+            $therapistId = (int) ($patient['therapist_id'] ?? 0);
+            $this->patientBookFavoriteModel->insertIgnore([
+                'patient_id' => $patientId,
+                'book_id' => $bookId,
+                'therapist_id' => $therapistId,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+            $message = 'Livro salvo em Meus conteúdos.';
+        }
+
+        $query = 'action=' . urlencode($redirectAction);
+        if ($redirectAction === 'book-show') {
+            $query .= '&id=' . $bookId;
+        }
+        $query .= '&status=success&msg=' . urlencode($message);
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?' . $query);
+    }
+
+    public function myContents(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $search = Utils::sanitize($_GET['search'] ?? '');
+        $favoriteBooks = $this->bookModel->listFavoriteBooksByPatient($patientId, $search);
+
+        $this->view('patient/my-contents', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'favoriteBooks' => $favoriteBooks,
+            'search' => $search,
         ]);
     }
 

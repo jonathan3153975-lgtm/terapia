@@ -8,6 +8,7 @@ use App\Models\FaithWord;
 use App\Models\FileStorage;
 use App\Models\GuidedMeditation;
 use App\Models\HealingLetter;
+use App\Models\Book;
 use App\Models\Material;
 use App\Models\MaterialDelivery;
 use App\Models\Patient;
@@ -37,6 +38,7 @@ class TherapistController extends Controller
     private Appointment $appointmentModel;
     private Material $materialModel;
     private MaterialDelivery $materialDeliveryModel;
+    private Book $bookModel;
     private Payment $paymentModel;
     private Task $taskModel;
     private FileStorage $fileModel;
@@ -61,6 +63,7 @@ class TherapistController extends Controller
         $this->appointmentModel = new Appointment();
         $this->materialModel = new Material();
         $this->materialDeliveryModel = new MaterialDelivery();
+        $this->bookModel = new Book();
         $this->paymentModel = new Payment();
         $this->taskModel = new Task();
         $this->fileModel = new FileStorage();
@@ -1651,6 +1654,103 @@ class TherapistController extends Controller
         }
     }
 
+    private function bookUploadBasePath(): string
+    {
+        $uploadBase = dirname(__DIR__, 2) . '/uploads/books';
+        if (!is_dir($uploadBase)) {
+            @mkdir($uploadBase, 0777, true);
+        }
+
+        return $uploadBase;
+    }
+
+    private function uploadBookPdfFromRequest(?array $existingBook = null): array
+    {
+        $file = $_FILES['pdf_file'] ?? null;
+        if (!is_array($file) || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return [
+                'ok' => $existingBook !== null,
+                'message' => 'O arquivo PDF é obrigatório.',
+                'data' => $existingBook,
+            ];
+        }
+
+        if ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return [
+                'ok' => false,
+                'message' => 'Falha no upload do PDF.',
+                'data' => $existingBook,
+            ];
+        }
+
+        $tmpName = (string) ($file['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            return [
+                'ok' => false,
+                'message' => 'Arquivo enviado é inválido.',
+                'data' => $existingBook,
+            ];
+        }
+
+        $originalName = (string) ($file['name'] ?? 'livro.pdf');
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $mimeType = strtolower((string) ($file['type'] ?? ''));
+
+        if ($extension !== 'pdf' && !str_contains($mimeType, 'pdf')) {
+            return [
+                'ok' => false,
+                'message' => 'Anexe um arquivo em PDF.',
+                'data' => $existingBook,
+            ];
+        }
+
+        $safeFile = uniqid('book_', true) . '.pdf';
+        $target = $this->bookUploadBasePath() . '/' . $safeFile;
+        if (!@move_uploaded_file($tmpName, $target)) {
+            return [
+                'ok' => false,
+                'message' => 'Não foi possível salvar o PDF enviado.',
+                'data' => $existingBook,
+            ];
+        }
+
+        if ($existingBook && !empty($existingBook['pdf_path'])) {
+            $oldPath = dirname(__DIR__, 2) . '/' . ltrim((string) $existingBook['pdf_path'], '/');
+            if (is_file($oldPath)) {
+                @unlink($oldPath);
+            }
+        }
+
+        return [
+            'ok' => true,
+            'message' => '',
+            'data' => [
+                'pdf_original_name' => $originalName,
+                'pdf_path' => 'uploads/books/' . $safeFile,
+                'pdf_mime_type' => 'application/pdf',
+                'pdf_size' => (int) ($file['size'] ?? 0),
+            ],
+        ];
+    }
+
+    private function streamPdfFile(string $relativePath, string $downloadName): void
+    {
+        $absolutePath = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        if (!is_file($absolutePath)) {
+            http_response_code(404);
+            echo 'Arquivo não encontrado.';
+            exit;
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Length: ' . (string) filesize($absolutePath));
+        header('Content-Disposition: inline; filename="' . rawurlencode($downloadName) . '"');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: SAMEORIGIN');
+        readfile($absolutePath);
+        exit;
+    }
+
     public function materials(): void
     {
         $therapistId = (int) Auth::id();
@@ -1893,7 +1993,242 @@ class TherapistController extends Controller
             $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao encaminhar material.'));
         }
 
-        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Material encaminhado para ' . $sent . ' paciente(s).'));
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Material encaminhado com sucesso.'));
+    }
+
+    public function books(): void
+    {
+        $therapistId = (int) Auth::id();
+        $term = Utils::sanitize($_GET['search'] ?? '');
+        $books = $this->bookModel->listByTherapist($therapistId, $term);
+
+        $this->view('therapist/books/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'books' => $books,
+            'search' => $term,
+        ]);
+    }
+
+    public function createBook(): void
+    {
+        $this->view('therapist/books/create', ['appUrl' => Config::get('APP_URL', '')]);
+    }
+
+    public function storeBook(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-books&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $publishValue = (string) ($_POST['is_published'] ?? '');
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-books';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if ($title === '') {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Título é obrigatório.'));
+        }
+
+        if (!in_array($publishValue, ['0', '1'], true)) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Informe se o livro deve ser publicado.'));
+        }
+
+        $upload = $this->uploadBookPdfFromRequest(null);
+        if (!($upload['ok'] ?? false)) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', (string) ($upload['message'] ?? 'Falha ao enviar PDF.')));
+        }
+
+        $uploadData = (array) ($upload['data'] ?? []);
+        $saved = $this->bookModel->insert([
+            'therapist_id' => $therapistId,
+            'title' => $title,
+            'pdf_original_name' => (string) ($uploadData['pdf_original_name'] ?? ''),
+            'pdf_path' => (string) ($uploadData['pdf_path'] ?? ''),
+            'pdf_mime_type' => (string) ($uploadData['pdf_mime_type'] ?? 'application/pdf'),
+            'pdf_size' => (int) ($uploadData['pdf_size'] ?? 0),
+            'is_published' => (int) $publishValue,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao cadastrar livro.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Livro cadastrado com sucesso.'));
+    }
+
+    public function showBook(): void
+    {
+        $therapistId = (int) Auth::id();
+        $bookId = (int) ($_GET['id'] ?? 0);
+        $book = $this->bookModel->findByTherapistAndId($therapistId, $bookId);
+
+        if (!$book) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-books&status=error&msg=' . urlencode('Livro não encontrado.'));
+        }
+
+        $this->view('therapist/books/show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'book' => $book,
+        ]);
+    }
+
+    public function editBook(): void
+    {
+        $therapistId = (int) Auth::id();
+        $bookId = (int) ($_GET['id'] ?? 0);
+        $book = $this->bookModel->findByTherapistAndId($therapistId, $bookId);
+
+        if (!$book) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-books&status=error&msg=' . urlencode('Livro não encontrado.'));
+        }
+
+        $this->view('therapist/books/edit', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'book' => $book,
+        ]);
+    }
+
+    public function updateBook(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-books&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $bookId = (int) ($_POST['id'] ?? 0);
+        $book = $this->bookModel->findByTherapistAndId($therapistId, $bookId);
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-books';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$book) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Livro não encontrado.'));
+        }
+
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $publishValue = (string) ($_POST['is_published'] ?? '');
+
+        if ($title === '') {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Título é obrigatório.'));
+        }
+
+        if (!in_array($publishValue, ['0', '1'], true)) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Informe se o livro deve ser publicado.'));
+        }
+
+        $bookData = [
+            'title' => $title,
+            'is_published' => (int) $publishValue,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        $hasNewFile = isset($_FILES['pdf_file']) && (int) ($_FILES['pdf_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if ($hasNewFile) {
+            $upload = $this->uploadBookPdfFromRequest($book);
+            if (!($upload['ok'] ?? false)) {
+                $this->redirect($redirectWithStatus($redirectBase, 'error', (string) ($upload['message'] ?? 'Falha ao enviar PDF.')));
+            }
+
+            $uploadData = (array) ($upload['data'] ?? []);
+            $bookData['pdf_original_name'] = (string) ($uploadData['pdf_original_name'] ?? $book['pdf_original_name'] ?? '');
+            $bookData['pdf_path'] = (string) ($uploadData['pdf_path'] ?? $book['pdf_path'] ?? '');
+            $bookData['pdf_mime_type'] = (string) ($uploadData['pdf_mime_type'] ?? $book['pdf_mime_type'] ?? 'application/pdf');
+            $bookData['pdf_size'] = (int) ($uploadData['pdf_size'] ?? $book['pdf_size'] ?? 0);
+        }
+
+        $updated = $this->bookModel->updateById($bookId, $bookData);
+        if (!$updated && $title === (string) ($book['title'] ?? '') && (int) $publishValue === (int) ($book['is_published'] ?? 0) && !$hasNewFile) {
+            $this->redirect($redirectWithStatus($redirectBase, 'success', 'Nenhuma alteração foi necessária.'));
+        }
+
+        if (!$updated && $hasNewFile === false) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao atualizar livro.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Livro atualizado com sucesso.'));
+    }
+
+    public function deleteBook(): void
+    {
+        $therapistId = (int) Auth::id();
+        $bookId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+        $book = $this->bookModel->findByTherapistAndId($therapistId, $bookId);
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-books';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$book) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Livro não encontrado.'));
+        }
+
+        if (!empty($book['pdf_path'])) {
+            $absolutePath = dirname(__DIR__, 2) . '/' . ltrim((string) $book['pdf_path'], '/');
+            if (is_file($absolutePath)) {
+                @unlink($absolutePath);
+            }
+        }
+
+        $deleted = $this->bookModel->deleteByTherapistAndId($therapistId, $bookId);
+        if (!$deleted) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao excluir livro.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Livro excluído com sucesso.'));
+    }
+
+    public function toggleBookPublish(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-books&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $bookId = (int) ($_POST['id'] ?? 0);
+        $book = $this->bookModel->findByTherapistAndId($therapistId, $bookId);
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-books';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$book) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Livro não encontrado.'));
+        }
+
+        $nextStatus = (int) (($book['is_published'] ?? 0) === '1' || (int) ($book['is_published'] ?? 0) === 1 ? 0 : 1);
+        $updated = $this->bookModel->updateById($bookId, [
+            'is_published' => $nextStatus,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao alterar disponibilidade do livro.'));
+        }
+
+        $message = $nextStatus === 1 ? 'Livro liberado para pacientes.' : 'Livro removido do acesso dos pacientes.';
+        $this->redirect($redirectWithStatus($redirectBase, 'success', $message));
+    }
+
+    public function streamBookPdf(): void
+    {
+        $therapistId = (int) Auth::id();
+        $bookId = (int) ($_GET['id'] ?? 0);
+        $book = $this->bookModel->findByTherapistAndId($therapistId, $bookId);
+
+        if (!$book || empty($book['pdf_path'])) {
+            http_response_code(404);
+            echo 'Livro não encontrado.';
+            exit;
+        }
+
+        $downloadName = (string) ($book['pdf_original_name'] ?? ($book['title'] ?? 'livro') . '.pdf');
+        $this->streamPdfFile((string) $book['pdf_path'], $downloadName);
     }
 
     private function normalizeMonth(int $month): int
