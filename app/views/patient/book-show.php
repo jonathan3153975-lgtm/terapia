@@ -26,7 +26,10 @@
 
   <div class="card">
     <div class="card-body">
-      <iframe title="Leitor do livro" src="<?php echo $appUrl; ?>/patient.php?action=book-view&id=<?php echo (int) ($book['id'] ?? 0); ?>#toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0" sandbox="allow-same-origin allow-scripts" style="width:100%;min-height:78vh;border:1px solid #dee2e6;border-radius:.75rem;background:#f8f9fa;"></iframe>
+      <iframe title="Leitor do livro" src="<?php echo $appUrl; ?>/patient.php?action=book-view&id=<?php echo (int) ($book['id'] ?? 0); ?>#toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0" loading="lazy" style="width:100%;min-height:78vh;border:1px solid #dee2e6;border-radius:.75rem;background:#f8f9fa;">
+        Seu navegador não conseguiu exibir o PDF nesta página.
+        <a href="<?php echo $appUrl; ?>/patient.php?action=book-view&id=<?php echo (int) ($book['id'] ?? 0); ?>" target="_blank" rel="noopener noreferrer">Abrir em nova aba</a>
+      </iframe>
     </div>
   </div>
 </div>
