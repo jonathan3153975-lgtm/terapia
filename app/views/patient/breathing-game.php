@@ -207,13 +207,17 @@
     font-weight: 700;
     line-height: 1.4;
     opacity: 1;
-    transition: opacity 0.35s ease;
+    transition: opacity 1s ease;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
     z-index: 3;
   }
 
   .breathing-message.fade {
     opacity: 0;
+  }
+
+  .breathing-message.fade-in {
+    opacity: 1;
   }
 
   .breathing-timer {
@@ -366,6 +370,7 @@
 
     let sessionToken = 0;
     const timeoutIds = [];
+    let messageChangeTimeout = null;
 
     function later(fn, delay) {
       const id = window.setTimeout(fn, delay);
@@ -377,6 +382,7 @@
       while (timeoutIds.length) {
         window.clearTimeout(timeoutIds.pop());
       }
+      messageChangeTimeout = null;
     }
 
     function syncViewportMode() {
@@ -397,12 +403,33 @@
       centerTimer.textContent = String(value);
     }
 
-    function showMessage(text) {
-      message.classList.remove('fade');
-      message.textContent = text;
+    function showMessage(text, immediate = false) {
+      if (message.textContent === text && !message.classList.contains('fade')) {
+        return;
+      }
+
+      if (immediate || message.textContent === '') {
+        message.textContent = text;
+        message.classList.remove('fade-in');
+        message.classList.remove('fade');
+        void message.offsetWidth;
+        message.classList.add('fade-in');
+        return;
+      }
+
+      hideMessage();
+      messageChangeTimeout = later(() => {
+        message.textContent = text;
+        message.classList.remove('fade-in');
+        message.classList.remove('fade');
+        void message.offsetWidth;
+        message.classList.add('fade-in');
+        messageChangeTimeout = null;
+      }, 1000);
     }
 
     function hideMessage() {
+      message.classList.remove('fade-in');
       message.classList.add('fade');
     }
 
@@ -478,16 +505,19 @@
     async function runCycle(cycleIndex, token) {
       setCycle(cycleIndex);
 
-      setPhase('Preparar');
-      showMessage('Inspire por 5 segundos');
-      pinBallBottom();
-      let ok = await tickSequence([3, 2, 1, 0], token);
-      if (!ok) {
-        return false;
+      let ok = true;
+      if (cycleIndex === 1) {
+        setPhase('Preparar');
+        showMessage('Inspire por 5 segundos', true);
+        pinBallBottom();
+        ok = await tickSequence([3, 2, 1, 0], token);
+        if (!ok) {
+          return false;
+        }
       }
 
       setPhase('Inspirar');
-      showMessage('Inspire por 5 segundos');
+      showMessage('Inspire por 5 segundos', cycleIndex !== 1);
       moveBallToTop();
       ok = await tickSequence([1, 2, 3, 4, 5], token, (value) => {
         if (value === 3) {
@@ -502,7 +532,7 @@
       pinBallTop();
       ok = await tickSequence([1, 2, 3, 4], token, (value) => {
         if (value === 2) {
-          showMessage('Espire por 7 segundos');
+          showMessage('Expirar por 7 segundos');
         }
       });
       if (!ok) {
@@ -510,7 +540,7 @@
       }
 
       setPhase('Expirar');
-      showMessage('Espire por 7 segundos');
+      showMessage('Expirar por 7 segundos');
       moveBallToBottom();
       ok = await tickSequence([7, 6, 5, 4, 3, 2, 1, 0], token, (value) => {
         if (value === 5) {
