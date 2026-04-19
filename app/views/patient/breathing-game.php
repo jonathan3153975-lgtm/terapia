@@ -1,10 +1,10 @@
 <?php $title = 'Jogo da respiração'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
-<div class="container page-wrap">
+<div class="container page-wrap breathing-game-shell">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
-  <section class="card border-0 shadow-sm">
+  <section class="card border-0 shadow-sm breathing-game-card">
     <div class="card-body p-3 p-md-4">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 breathing-game-header">
         <h4 class="mb-0">Jogo da respiração</h4>
         <span id="breathing-cycle-counter" class="badge text-bg-primary">Ciclo 0/3</span>
       </div>
@@ -49,16 +49,34 @@
 </div>
 
 <style>
+  .breathing-game-shell {
+    height: calc(100dvh - 48px);
+    padding-bottom: 10px;
+  }
+
+  .breathing-game-card {
+    height: 100%;
+  }
+
+  .breathing-game-card .card-body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
   .breathing-stage {
     display: flex;
+    flex: 1;
+    min-height: 0;
+    align-items: center;
     justify-content: center;
     padding: 0.5rem 0;
   }
 
   .breathing-phone {
     position: relative;
-    width: min(92vw, 390px);
-    aspect-ratio: 9 / 18;
+    width: min(88vw, 370px);
+    height: min(78dvh, 740px);
     border-radius: 38px;
     border: 10px solid #0e2333;
     background: linear-gradient(180deg, #ffffff 0%, #5ea9ff 100%);
@@ -209,6 +227,74 @@
     opacity: 1;
   }
 
+  @media (min-width: 1200px) {
+    .breathing-game-shell {
+      height: calc(100dvh - 56px);
+    }
+
+    .breathing-phone {
+      width: min(64vw, 390px);
+      height: min(80dvh, 760px);
+    }
+  }
+
+  @media (max-width: 820px) {
+    body.breathing-game-mobile .app-sidebar,
+    body.breathing-game-mobile .sidebar-overlay,
+    body.breathing-game-mobile .mobile-topbar,
+    body.breathing-game-mobile .preview-mode-banner,
+    body.breathing-game-mobile .free-tier-notice {
+      display: none !important;
+    }
+
+    body.breathing-game-mobile .app-layout,
+    body.breathing-game-mobile .app-content {
+      height: 100dvh !important;
+      min-height: 100dvh !important;
+    }
+
+    body.breathing-game-mobile .app-content {
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    body.breathing-game-mobile .breathing-game-shell {
+      width: 100vw;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      height: 100dvh;
+    }
+
+    body.breathing-game-mobile .breathing-game-card {
+      border-radius: 0;
+      border: 0;
+      box-shadow: none !important;
+      height: 100dvh;
+    }
+
+    body.breathing-game-mobile .breathing-game-card .card-body {
+      padding: 0 !important;
+    }
+
+    body.breathing-game-mobile .breathing-game-header,
+    body.breathing-game-mobile .alert {
+      display: none !important;
+    }
+
+    body.breathing-game-mobile .breathing-stage {
+      padding: 0;
+    }
+
+    body.breathing-game-mobile .breathing-phone {
+      width: 100vw;
+      height: 100dvh;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+  }
+
   @media (max-width: 576px) {
     .breathing-phone {
       border-width: 8px;
@@ -219,6 +305,7 @@
 
 <script>
   (function () {
+    const dashboardUrl = <?php echo json_encode(rtrim((string) ($appUrl ?? ''), '/') . '/patient.php?action=dashboard'); ?>;
     const TOTAL_CYCLES = 3;
     const PRE_START_SECONDS = 3;
     const INHALE_SECONDS = 5;
@@ -248,6 +335,11 @@
       while (timeoutIds.length) {
         window.clearTimeout(timeoutIds.pop());
       }
+    }
+
+    function syncViewportMode() {
+      document.body.classList.add('breathing-game-page');
+      document.body.classList.toggle('breathing-game-mobile', window.innerWidth <= 820);
     }
 
     function setCounter(value) {
@@ -378,11 +470,19 @@
       setTime(0);
       endMessage.textContent = 'Sessão finalizada. Excelente trabalho.';
       endMessage.classList.add('show');
+      later(() => {
+        window.location.assign(dashboardUrl);
+      }, 1200);
     }
 
+    syncViewportMode();
+    window.addEventListener('resize', syncViewportMode);
     runSession();
 
-    window.addEventListener('beforeunload', clearTimers);
+    window.addEventListener('beforeunload', () => {
+      clearTimers();
+      document.body.classList.remove('breathing-game-mobile', 'breathing-game-page');
+    });
   })();
 </script>
 
