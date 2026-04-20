@@ -1290,6 +1290,10 @@ class PatientPortalController extends Controller
             exit;
         }
 
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
         header('Content-Type: application/pdf');
         header('Content-Length: ' . (string) filesize($absolutePath));
         header('Content-Disposition: inline; filename="' . rawurlencode($downloadName) . '"');
@@ -1297,6 +1301,17 @@ class PatientPortalController extends Controller
         header('X-Frame-Options: SAMEORIGIN');
         readfile($absolutePath);
         exit;
+    }
+
+    private function bookPdfExists(array $book): bool
+    {
+        $relativePath = trim((string) ($book['pdf_path'] ?? ''));
+        if ($relativePath === '') {
+            return false;
+        }
+
+        $absolutePath = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        return is_file($absolutePath);
     }
 
     private function streamVideoFile(string $relativePath, string $downloadName, string $mimeType = 'video/mp4'): void
@@ -1333,6 +1348,7 @@ class PatientPortalController extends Controller
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         $search = Utils::sanitize($_GET['search'] ?? '');
         $books = $therapistId > 0 ? $this->bookModel->listPublishedByTherapist($therapistId, $search) : [];
+        $books = array_values(array_filter($books, fn (array $book): bool => $this->bookPdfExists($book)));
         $favorites = $this->patientBookFavoriteModel->listBookIdsByPatient($patientId);
         $favoriteMap = array_fill_keys($favorites, true);
 
@@ -1603,6 +1619,7 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $search = Utils::sanitize($_GET['search'] ?? '');
         $favoriteBooks = $this->bookModel->listFavoriteBooksByPatient($patientId, $search);
+        $favoriteBooks = array_values(array_filter($favoriteBooks, fn (array $book): bool => $this->bookPdfExists($book)));
         $favoriteVideos = $this->teraTubeVideoModel->listFavoriteVideosByPatient($patientId, $search);
 
         $this->view('patient/my-contents', [

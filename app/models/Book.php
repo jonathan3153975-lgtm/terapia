@@ -56,7 +56,7 @@ class Book extends Model
 
     public function listPublishedByTherapist(int $therapistId, string $search = ''): array
     {
-        $sql = 'SELECT * FROM books WHERE therapist_id = ? AND is_published = 1';
+        $sql = 'SELECT * FROM books WHERE therapist_id = ? AND is_published = 1 AND pdf_path IS NOT NULL AND pdf_path <> ""';
         $params = [$therapistId];
 
         if ($search !== '') {
@@ -79,7 +79,7 @@ class Book extends Model
             'SELECT b.*
              FROM books b
              INNER JOIN patients p ON p.therapist_id = b.therapist_id
-             WHERE p.id = ? AND b.id = ? AND b.is_published = 1
+             WHERE p.id = ? AND b.id = ? AND b.is_published = 1 AND b.pdf_path IS NOT NULL AND b.pdf_path <> ""
              LIMIT 1',
             [$patientId, $bookId]
         );
@@ -96,7 +96,7 @@ class Book extends Model
         $sql = 'SELECT b.*, f.created_at AS favorited_at
                 FROM patient_book_favorites f
                 INNER JOIN books b ON b.id = f.book_id
-                WHERE f.patient_id = ? AND b.is_published = 1';
+            WHERE f.patient_id = ? AND b.is_published = 1 AND b.pdf_path IS NOT NULL AND b.pdf_path <> ""';
         $params = [$patientId];
 
         if ($search !== '') {
