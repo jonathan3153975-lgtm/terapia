@@ -1854,17 +1854,29 @@ body.app-body {
 }
 
 .login-signup-btn {
-	border-color: rgba(7, 18, 38, .88);
-	background: linear-gradient(135deg, #0f172a, #1e293b);
-	color: #f8fafc;
+	border-color: rgba(7, 18, 38, .88) !important;
+	background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+	color: #f8fafc !important;
 	box-shadow: 0 12px 24px rgba(15, 23, 42, .22);
+	text-decoration: none;
 }
 
 .login-signup-btn:hover,
 .login-signup-btn:focus {
-	background: linear-gradient(135deg, #111827, #0f172a);
-	border-color: rgba(7, 18, 38, 1);
-	color: #fff;
+	background: linear-gradient(135deg, #111827, #0f172a) !important;
+	border-color: rgba(7, 18, 38, 1) !important;
+	color: #fff !important;
+	text-decoration: none;
+	filter: brightness(1.05);
+}
+
+.login-signup-btn:active {
+	background: linear-gradient(135deg, #0b1220, #0f172a) !important;
+	color: #fff !important;
+}
+
+.login-signup-btn:visited {
+	color: #f8fafc !important;
 }
 
 .login-shell {
