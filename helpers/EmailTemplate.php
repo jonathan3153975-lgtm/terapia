@@ -93,15 +93,16 @@ HTML;
 </head>
 <body>
     <div class="container">
-        <div class="header"><h2 style="margin:0;">Acesso ao sistema</h2></div>
+        <div class="header"><h2 style="margin:0;">Cadastro confirmado</h2></div>
         <div class="content">
             <p>Olá, <strong>{$patientName}</strong>.</p>
-            <p>Seu cadastro foi recebido e seus dados de acesso foram gerados:</p>
+            <p>Seu cadastro foi concluído com sucesso.</p>
+            <p>Estes são seus dados de acesso:</p>
             <div class="box">
                 <div><strong>Login:</strong> {$loginEmail}</div>
                 <div><strong>Senha:</strong> {$rawPassword}</div>
             </div>
-            <p>Seu cadastro ficará <strong>pendente de revisão</strong> do terapeuta. Após aprovação, seu acesso será liberado.</p>
+            <p>Você já pode entrar na plataforma e iniciar seu acompanhamento.</p>
             <a class="btn" href="{$loginUrl}">Acessar sistema</a>
         </div>
     </div>

@@ -173,7 +173,7 @@ class PublicPatientSignupController extends Controller
             $sent = $mail->send(
                 $email,
                 $name,
-                'Acesso ao sistema de terapia',
+                'Cadastro confirmado - dados de acesso',
                 EmailTemplate::patientAccessCredentials(
                     $name,
                     $email,
