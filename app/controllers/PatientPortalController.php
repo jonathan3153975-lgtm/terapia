@@ -674,6 +674,28 @@ class PatientPortalController extends Controller
         ]);
     }
 
+    public function downloadPatientDevotionalRecord(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $id = (int) ($_GET['id'] ?? 0);
+        $record = $this->patientDevotionalReflectionModel->findByPatientAndId($patientId, $id);
+
+        if (!$record || empty($record['compiled_html'])) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=devotionals&status=error&msg=' . urlencode('Registro não encontrado.'));
+        }
+
+        $title = preg_replace('/[^a-z0-9\-]/i', '_', (string) ($record['title'] ?? 'devocional'));
+        $date  = !empty($record['entry_date']) ? date('Y-m-d', strtotime((string) $record['entry_date'])) : date('Y-m-d');
+        $filename = 'devocional_' . $date . '_' . mb_strtolower($title) . '.html';
+
+        header('Content-Type: text/html; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . strlen((string) $record['compiled_html']));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        echo $record['compiled_html'];
+        exit;
+    }
+
     private function sanitizeRichText(string $html): string
     {
         $value = trim($html);

@@ -78,6 +78,7 @@ match ($action) {
     'devotional-today' => $portal->devotionalToday(),
     'devotional-save' => $portal->saveDevotionalReflection(),
     'devotional-record-show' => $portal->showPatientDevotionalRecord(),
+    'devotional-record-download' => $portal->downloadPatientDevotionalRecord(),
     'father-word' => $portal->fatherWord(),
     'father-word-draw' => $portal->drawFatherWord(),
     'father-word-save' => $portal->saveFatherWordEntry(),

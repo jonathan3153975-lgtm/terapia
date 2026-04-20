@@ -7,7 +7,7 @@
   </div>
 
   <section class="card mb-4 overflow-hidden">
-    <img src="<?php echo $appUrl; ?>/app/images/mensageiro.png" alt="Devocional" class="w-100" style="height:220px;object-fit:cover;">
+    <img src="<?php echo $appUrl; ?>/app/images/devocional.png" alt="Devocional" class="w-100" style="height:220px;object-fit:cover;">
     <div class="card-body p-4">
       <div class="text-uppercase small text-muted mb-2">Hoje</div>
       <h5 class="mb-2"><?php echo htmlspecialchars((string) ($currentDateLabel ?? '')); ?></h5>

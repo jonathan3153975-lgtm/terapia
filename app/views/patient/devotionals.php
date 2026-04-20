@@ -2,7 +2,7 @@
 <div class="container page-wrap">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
-  <section class="messenger-hero-image mb-4" style="background-image: url('<?php echo $appUrl; ?>/app/images/mensageiro.png');">
+  <section class="messenger-hero-image mb-4" style="background-image: url('<?php echo $appUrl; ?>/app/images/devocional.png');">
     <div class="messenger-hero-overlay">
       <div class="messenger-hero-content">
         <h3 class="messenger-hero-image-title">Devocional</h3>
@@ -47,8 +47,9 @@
                   <td><?php echo htmlspecialchars((string) ($record['title'] ?? '-')); ?></td>
                   <td><?php echo htmlspecialchars((string) ($record['word_of_god'] ?? '-')); ?></td>
                   <td><?php echo !empty($record['created_at']) ? date('d/m/Y H:i', strtotime((string) $record['created_at'])) : '-'; ?></td>
-                  <td>
+                  <td class="d-flex gap-1">
                     <a class="btn btn-sm btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=devotional-record-show&id=<?php echo (int) ($record['id'] ?? 0); ?>"><i class="fa-solid fa-eye me-1"></i>Visualizar</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="<?php echo $appUrl; ?>/patient.php?action=devotional-record-download&id=<?php echo (int) ($record['id'] ?? 0); ?>" title="Baixar HTML"><i class="fa-solid fa-download"></i></a>
                   </td>
                 </tr>
               <?php endforeach; ?>
@@ -63,7 +64,10 @@
                 <div class="fw-semibold mb-1"><?php echo htmlspecialchars((string) ($record['title'] ?? '-')); ?></div>
                 <div class="small text-muted mb-1"><?php echo !empty($record['entry_date']) ? date('d/m/Y', strtotime((string) $record['entry_date'])) : '-'; ?></div>
                 <div class="small mb-2"><strong>Palavra:</strong> <?php echo htmlspecialchars((string) ($record['word_of_god'] ?? '-')); ?></div>
-                <a class="btn btn-sm btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=devotional-record-show&id=<?php echo (int) ($record['id'] ?? 0); ?>"><i class="fa-solid fa-eye me-1"></i>Visualizar</a>
+                <div class="d-flex gap-2">
+                  <a class="btn btn-sm btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=devotional-record-show&id=<?php echo (int) ($record['id'] ?? 0); ?>"><i class="fa-solid fa-eye me-1"></i>Visualizar</a>
+                  <a class="btn btn-sm btn-outline-secondary" href="<?php echo $appUrl; ?>/patient.php?action=devotional-record-download&id=<?php echo (int) ($record['id'] ?? 0); ?>" title="Baixar HTML"><i class="fa-solid fa-download me-1"></i>Baixar</a>
+                </div>
               </div>
             </article>
           <?php endforeach; ?>
