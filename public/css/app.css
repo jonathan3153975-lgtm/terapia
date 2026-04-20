@@ -572,7 +572,7 @@ body.app-body {
 	line-height: 1.65;
 }
 
-/* --- FilePond customização mínima --- */
+/* --- FilePond customizaÃ§Ã£o mÃ­nima --- */
 .filepond--root {
 	border-radius: 12px;
 	font-family: inherit;
@@ -2494,4 +2494,28 @@ body.app-body {
 	.schedule-hour-row {
 		grid-template-columns: 1fr;
 	}
+}
+
+@media (min-width: 992.01px) {
+.app-layout {
+grid-template-columns: 270px 1fr;
+height: 100vh;
+overflow: hidden;
+}
+
+.app-sidebar {
+position: sticky;
+top: 0;
+left: auto;
+width: auto;
+max-width: none;
+height: 100vh;
+transform: none;
+box-shadow: none;
+}
+
+.sidebar-overlay,
+.mobile-topbar {
+display: none !important;
+}
 }
