@@ -1854,14 +1854,16 @@ body.app-body {
 }
 
 .login-signup-btn {
-	border-color: rgba(255, 255, 255, .3);
+	border-color: rgba(7, 18, 38, .88);
+	background: linear-gradient(135deg, #0f172a, #1e293b);
 	color: #f8fafc;
+	box-shadow: 0 12px 24px rgba(15, 23, 42, .22);
 }
 
 .login-signup-btn:hover,
 .login-signup-btn:focus {
-	background: rgba(255, 255, 255, .12);
-	border-color: rgba(255, 255, 255, .48);
+	background: linear-gradient(135deg, #111827, #0f172a);
+	border-color: rgba(7, 18, 38, 1);
 	color: #fff;
 }
 
