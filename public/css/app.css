@@ -9,9 +9,91 @@
 	--accent: #1363df;
 	--accent-soft: #8ec5ff;
 	--sidebar-bg: #ffffff;
+	--scrollbar-track: linear-gradient(180deg, rgba(215, 233, 255, .55), rgba(255, 255, 255, .94));
+	--scrollbar-thumb: linear-gradient(180deg, rgba(19, 99, 223, .72), rgba(89, 161, 255, .92));
+	--scrollbar-thumb-hover: linear-gradient(180deg, rgba(10, 76, 178, .92), rgba(19, 99, 223, 1));
+	--scrollbar-thumb-border: rgba(255, 255, 255, .9);
 }
 
 * { box-sizing: border-box; }
+
+html {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(19, 99, 223, .78) rgba(215, 233, 255, .52);
+}
+
+body,
+.app-sidebar,
+.app-content,
+.table-responsive,
+.modal-body,
+.offcanvas-body,
+textarea,
+pre {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(19, 99, 223, .78) rgba(215, 233, 255, .52);
+}
+
+body::-webkit-scrollbar,
+.app-sidebar::-webkit-scrollbar,
+.app-content::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar,
+.offcanvas-body::-webkit-scrollbar,
+textarea::-webkit-scrollbar,
+pre::-webkit-scrollbar {
+	width: 12px;
+	height: 12px;
+}
+
+body::-webkit-scrollbar-track,
+.app-sidebar::-webkit-scrollbar-track,
+.app-content::-webkit-scrollbar-track,
+.table-responsive::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track,
+.offcanvas-body::-webkit-scrollbar-track,
+textarea::-webkit-scrollbar-track,
+pre::-webkit-scrollbar-track {
+	background: var(--scrollbar-track);
+	border-radius: 999px;
+	border: 1px solid rgba(220, 230, 245, .9);
+}
+
+body::-webkit-scrollbar-thumb,
+.app-sidebar::-webkit-scrollbar-thumb,
+.app-content::-webkit-scrollbar-thumb,
+.table-responsive::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb,
+.offcanvas-body::-webkit-scrollbar-thumb,
+textarea::-webkit-scrollbar-thumb,
+pre::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb);
+	border-radius: 999px;
+	border: 2px solid var(--scrollbar-thumb-border);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 4px 10px rgba(19, 99, 223, .16);
+}
+
+body::-webkit-scrollbar-thumb:hover,
+.app-sidebar::-webkit-scrollbar-thumb:hover,
+.app-content::-webkit-scrollbar-thumb:hover,
+.table-responsive::-webkit-scrollbar-thumb:hover,
+.modal-body::-webkit-scrollbar-thumb:hover,
+.offcanvas-body::-webkit-scrollbar-thumb:hover,
+textarea::-webkit-scrollbar-thumb:hover,
+pre::-webkit-scrollbar-thumb:hover {
+	background: var(--scrollbar-thumb-hover);
+}
+
+body::-webkit-scrollbar-corner,
+.app-sidebar::-webkit-scrollbar-corner,
+.app-content::-webkit-scrollbar-corner,
+.table-responsive::-webkit-scrollbar-corner,
+.modal-body::-webkit-scrollbar-corner,
+.offcanvas-body::-webkit-scrollbar-corner,
+textarea::-webkit-scrollbar-corner,
+pre::-webkit-scrollbar-corner {
+	background: rgba(255, 255, 255, .8);
+}
 
 body.app-body {
 	margin: 0;
