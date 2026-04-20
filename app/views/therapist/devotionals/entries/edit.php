@@ -27,8 +27,9 @@
             <input class="form-control" type="text" name="word_of_god" maxlength="255" value="<?php echo htmlspecialchars((string) ($entry['word_of_god'] ?? '')); ?>" required>
           </div>
           <div class="col-12">
-            <label class="form-label">Texto</label>
-            <textarea class="form-control" name="text_content" rows="8" required><?php echo htmlspecialchars((string) ($entry['text_content'] ?? '')); ?></textarea>
+            <label class="form-label">Texto do devocional</label>
+            <div id="devotionalEntryEditEditor" style="height:260px;"></div>
+            <input type="hidden" name="text_content" id="devotionalEntryEditHtml" required>
           </div>
         </div>
 
@@ -40,4 +41,38 @@
     </div>
   </div>
 </div>
+<script>
+window.addEventListener('load', function () {
+  var editorEl = document.getElementById('devotionalEntryEditEditor');
+  var htmlInput = document.getElementById('devotionalEntryEditHtml');
+  var form = document.querySelector('form[action*="therapist-devotionals-entries-update"]');
+  var quill = null;
+
+  if (editorEl && typeof Quill !== 'undefined') {
+    quill = new Quill(editorEl, {
+      theme: 'snow',
+      placeholder: 'Atualize o texto do devocional...',
+      modules: {
+        toolbar: [[{ header: [1, 2, false] }], ['bold', 'italic', 'underline', 'blockquote'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']]
+      }
+    });
+
+    quill.root.innerHTML = <?php echo json_encode((string) ($entry['text_content'] ?? '')); ?>;
+  }
+
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      if (!quill || !htmlInput) {
+        return;
+      }
+
+      htmlInput.value = quill.root.innerHTML;
+      if (!quill.getText().trim()) {
+        event.preventDefault();
+        window.alert('Escreva o texto do devocional antes de salvar.');
+      }
+    });
+  }
+});
+</script>
 <?php include __DIR__ . '/../../../partials/footer.php'; ?>

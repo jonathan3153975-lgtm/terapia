@@ -8,6 +8,44 @@ class DevotionalEntry extends Model
 {
     protected string $table = 'devotional_entries';
 
+    public function findByTherapistAndDate(int $therapistId, string $entryDate): ?array
+    {
+        $stmt = $this->query(
+            'SELECT e.*, d.theme, d.month_number, d.year_number
+             FROM devotional_entries e
+             INNER JOIN devotionals d ON d.id = e.devotional_id
+             WHERE e.therapist_id = ? AND e.entry_date = ?
+             LIMIT 1',
+            [$therapistId, $entryDate]
+        );
+
+        if (!$stmt) {
+            return null;
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function findByTherapistAndId(int $therapistId, int $entryId): ?array
+    {
+        $stmt = $this->query(
+            'SELECT e.*, d.theme, d.month_number, d.year_number
+             FROM devotional_entries e
+             INNER JOIN devotionals d ON d.id = e.devotional_id
+             WHERE e.therapist_id = ? AND e.id = ?
+             LIMIT 1',
+            [$therapistId, $entryId]
+        );
+
+        if (!$stmt) {
+            return null;
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function listByDevotional(int $therapistId, int $devotionalId): array
     {
         $stmt = $this->query(

@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\Appointment;
 use App\Models\DailyMessage;
+use App\Models\DevotionalEntry;
 use App\Models\FaithWord;
 use App\Models\FileStorage;
 use App\Models\GuidedMeditation;
@@ -14,6 +15,7 @@ use App\Models\MaterialDelivery;
 use App\Models\PatientBookFavorite;
 use App\Models\Patient;
 use App\Models\PatientFaithEntry;
+use App\Models\PatientDevotionalReflection;
 use App\Models\PatientGratitudeEntry;
 use App\Models\PatientGuidedMeditationEntry;
 use App\Models\PatientVideoComment;
@@ -60,6 +62,8 @@ class PatientPortalController extends Controller
     private PatientMessageEntry $patientMessageEntryModel;
     private FaithWord $faithWordModel;
     private PatientFaithEntry $patientFaithEntryModel;
+    private DevotionalEntry $devotionalEntryModel;
+    private PatientDevotionalReflection $patientDevotionalReflectionModel;
     private PatientGratitudeEntry $patientGratitudeEntryModel;
     private GuidedMeditation $guidedMeditationModel;
     private Prayer $prayerModel;
@@ -93,6 +97,8 @@ class PatientPortalController extends Controller
         $this->patientMessageEntryModel = new PatientMessageEntry();
         $this->faithWordModel = new FaithWord();
         $this->patientFaithEntryModel = new PatientFaithEntry();
+        $this->devotionalEntryModel = new DevotionalEntry();
+        $this->patientDevotionalReflectionModel = new PatientDevotionalReflection();
         $this->patientGratitudeEntryModel = new PatientGratitudeEntry();
         $this->guidedMeditationModel = new GuidedMeditation();
         $this->prayerModel = new Prayer();
@@ -480,6 +486,192 @@ class PatientPortalController extends Controller
         }
 
         $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=success&msg=' . urlencode('Registro excluÃ­do com sucesso.'));
+    }
+
+    private function formatDateWithoutDayNumber(string $dateYmd): string
+    {
+        $timestamp = strtotime($dateYmd . ' 12:00:00');
+        if ($timestamp === false) {
+            $timestamp = time();
+        }
+
+        $weekdays = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+        $months = [
+            1 => 'janeiro',
+            2 => 'fevereiro',
+            3 => 'março',
+            4 => 'abril',
+            5 => 'maio',
+            6 => 'junho',
+            7 => 'julho',
+            8 => 'agosto',
+            9 => 'setembro',
+            10 => 'outubro',
+            11 => 'novembro',
+            12 => 'dezembro',
+        ];
+
+        $weekday = $weekdays[(int) date('w', $timestamp)] ?? 'hoje';
+        $month = $months[(int) date('n', $timestamp)] ?? '';
+        $year = (int) date('Y', $timestamp);
+
+        return ucfirst(trim($weekday . ', ' . $month . ' de ' . $year));
+    }
+
+    private function buildPatientDevotionalCompiledHtml(array $entry, string $reflectionHtml, string $currentDateLabel): string
+    {
+        $entryDate = !empty($entry['entry_date']) ? date('d/m/Y', strtotime((string) $entry['entry_date'])) : '-';
+        $title = htmlspecialchars((string) ($entry['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $word = htmlspecialchars((string) ($entry['word_of_god'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $theme = htmlspecialchars((string) ($entry['theme'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $currentDateLabelSafe = htmlspecialchars($currentDateLabel, ENT_QUOTES, 'UTF-8');
+        $devotionalHtml = (string) ($entry['text_content'] ?? '');
+
+        return '<!doctype html>'
+            . '<html lang="pt-BR"><head><meta charset="UTF-8"><title>Registro devocional</title>'
+            . '<style>'
+            . 'body{font-family:Arial,sans-serif;line-height:1.6;color:#212529;background:#f7f7f7;padding:24px;}'
+            . '.wrap{max-width:860px;margin:0 auto;background:#fff;border:1px solid #e9ecef;border-radius:12px;overflow:hidden;}'
+            . '.head{background:#f8f9fa;padding:20px;border-bottom:1px solid #e9ecef;}'
+            . '.head h2{margin:0 0 8px 0;font-size:22px;}'
+            . '.head p{margin:0;color:#495057;}'
+            . '.section{padding:20px;border-bottom:1px solid #f1f3f5;}'
+            . '.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#6c757d;margin:0 0 6px 0;}'
+            . '.title{font-size:24px;font-weight:700;margin:0 0 6px 0;color:#0d1b2a;}'
+            . '.word{font-size:16px;font-weight:600;margin:0;color:#1d3557;}'
+            . '.text{font-size:16px;color:#212529;}'
+            . '.reflection{background:#f1f8ff;border:1px solid #d6e9ff;border-radius:10px;padding:16px;}'
+            . '</style></head><body>'
+            . '<div class="wrap">'
+            . '<div class="head"><h2>Devocional do dia</h2><p><strong>Data atual:</strong> ' . $currentDateLabelSafe . '</p>'
+            . '<p><strong>Data do registro:</strong> ' . $entryDate . '</p><p><strong>Tema:</strong> ' . $theme . '</p></div>'
+            . '<div class="section"><p class="label">Título</p><p class="title">' . $title . '</p>'
+            . '<p class="label">Palavra de Deus</p><p class="word">' . $word . '</p></div>'
+            . '<div class="section"><p class="label">Texto do devocional</p><div class="text">' . $devotionalHtml . '</div></div>'
+            . '<div class="section"><p class="label">Minha reflexão</p><div class="reflection">' . $reflectionHtml . '</div></div>'
+            . '</div></body></html>';
+    }
+
+    public function devotionals(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $today = date('Y-m-d');
+        $todayEntry = $therapistId > 0 ? $this->devotionalEntryModel->findByTherapistAndDate($therapistId, $today) : null;
+        $records = $this->patientDevotionalReflectionModel->listByPatient($patientId);
+
+        $this->view('patient/devotionals', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'records' => $records,
+            'todayEntry' => $todayEntry,
+        ]);
+    }
+
+    public function devotionalToday(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $today = date('Y-m-d');
+        $entry = $therapistId > 0 ? $this->devotionalEntryModel->findByTherapistAndDate($therapistId, $today) : null;
+
+        if (!$entry) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=devotionals&status=error&msg=' . urlencode('Nenhum devocional disponível para hoje.'));
+        }
+
+        $existingReflection = $this->patientDevotionalReflectionModel->findByPatientAndEntry($patientId, (int) ($entry['id'] ?? 0));
+
+        $this->view('patient/devotional-today', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'entry' => $entry,
+            'existingReflection' => $existingReflection,
+            'currentDateLabel' => $this->formatDateWithoutDayNumber($today),
+        ]);
+    }
+
+    public function saveDevotionalReflection(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=devotionals&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=devotionals&status=error&msg=' . urlencode('Paciente não encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $entryId = (int) ($_POST['devotional_entry_id'] ?? 0);
+        $reflectionHtml = $this->sanitizeRichText((string) ($_POST['reflection_html'] ?? ''));
+
+        if (trim(strip_tags($reflectionHtml)) === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=devotional-today&status=error&msg=' . urlencode('Escreva sua reflexão antes de salvar.'));
+        }
+
+        $entry = $this->devotionalEntryModel->findByTherapistAndId($therapistId, $entryId);
+        if (!$entry) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=devotionals&status=error&msg=' . urlencode('Registro devocional não encontrado.'));
+        }
+
+        $today = date('Y-m-d');
+        if ((string) ($entry['entry_date'] ?? '') !== $today) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=devotionals&status=error&msg=' . urlencode('O salvamento só é permitido para o devocional do dia.'));
+        }
+
+        $currentDateLabel = $this->formatDateWithoutDayNumber($today);
+        $compiledHtml = $this->buildPatientDevotionalCompiledHtml($entry, $reflectionHtml, $currentDateLabel);
+        $existing = $this->patientDevotionalReflectionModel->findByPatientAndEntry($patientId, $entryId);
+
+        if ($existing) {
+            $saved = $this->patientDevotionalReflectionModel->updateById((int) ($existing['id'] ?? 0), [
+                'reflection_html' => $reflectionHtml,
+                'compiled_html' => $compiledHtml,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        } else {
+            $saved = $this->patientDevotionalReflectionModel->insert([
+                'devotional_id' => (int) ($entry['devotional_id'] ?? 0),
+                'devotional_entry_id' => $entryId,
+                'therapist_id' => $therapistId,
+                'patient_id' => $patientId,
+                'reflection_html' => $reflectionHtml,
+                'compiled_html' => $compiledHtml,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=devotional-today&status=error&msg=' . urlencode('Falha ao salvar sua reflexão.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=devotionals&status=success&msg=' . urlencode('Reflexão do devocional salva com sucesso.'));
+    }
+
+    public function showPatientDevotionalRecord(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $id = (int) ($_GET['id'] ?? 0);
+        $record = $this->patientDevotionalReflectionModel->findByPatientAndId($patientId, $id);
+
+        if (!$record) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=devotionals&status=error&msg=' . urlencode('Registro não encontrado.'));
+        }
+
+        $this->view('patient/devotional-record-show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'record' => $record,
+        ]);
     }
 
     private function sanitizeRichText(string $html): string

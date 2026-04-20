@@ -32,8 +32,9 @@
             <input class="form-control" type="text" name="word_of_god" maxlength="255" required placeholder="Ex.: Salmo 23:1">
           </div>
           <div class="col-12">
-            <label class="form-label">Texto</label>
-            <textarea class="form-control" name="text_content" rows="6" required></textarea>
+            <label class="form-label">Texto do devocional</label>
+            <div id="devotionalEntryCreateEditor" style="height:220px;"></div>
+            <input type="hidden" name="text_content" id="devotionalEntryCreateHtml" required>
           </div>
         </div>
         <div class="mt-3">
@@ -117,6 +118,35 @@
 
 <script>
 window.addEventListener('load', function () {
+  var editorEl = document.getElementById('devotionalEntryCreateEditor');
+  var htmlInput = document.getElementById('devotionalEntryCreateHtml');
+  var form = document.querySelector('form[action*="therapist-devotionals-entries-store"]');
+  var quill = null;
+
+  if (editorEl && typeof Quill !== 'undefined') {
+    quill = new Quill(editorEl, {
+      theme: 'snow',
+      placeholder: 'Escreva o texto do devocional com os recursos de formatação...',
+      modules: {
+        toolbar: [[{ header: [1, 2, false] }], ['bold', 'italic', 'underline', 'blockquote'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']]
+      }
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      if (!quill || !htmlInput) {
+        return;
+      }
+
+      htmlInput.value = quill.root.innerHTML;
+      if (!quill.getText().trim()) {
+        event.preventDefault();
+        window.alert('Escreva o texto do devocional antes de salvar.');
+      }
+    });
+  }
+
   document.querySelectorAll('.js-delete-devotional-entry-form').forEach(function (form) {
     form.addEventListener('submit', function (event) {
       var label = form.getAttribute('data-entry-label') || 'este registro';
