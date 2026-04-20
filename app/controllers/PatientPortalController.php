@@ -111,7 +111,6 @@ class PatientPortalController extends Controller
     {
         // Ações que não exigem assinatura ativa (plano gratuito + gerenciamento de assinatura)
         $freeActions = [
-            'dashboard',
             'tasks',
             'task-material',
             'task-respond',
@@ -152,9 +151,9 @@ class PatientPortalController extends Controller
         // Sem plano ativo: marcar sessão como free-tier
         $_SESSION['patient_has_active_plan'] = false;
 
-        // Redirecionar para tarefas se tentar acessar conteúdo restrito
+        // Redirecionar para os planos quando não houver assinatura ativa.
         if (!in_array($action, $alwaysAllowed, true)) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Este recurso requer um plano ativo. No plano gratuito você pode responder suas tarefas.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Escolha um plano para continuar usando a plataforma.'));
         }
     }
 

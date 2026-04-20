@@ -77,7 +77,7 @@
                 </form>
               </td>
               <td class="align-middle">
-                <div class="d-flex align-items-center gap-1 flex-nowrap">
+                <div class="table-actions align-items-center">
                   <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-plan-toggle" class="d-flex m-0">
                     <input type="hidden" name="patient_id" value="<?php echo (int) ($patient['id'] ?? 0); ?>">
                     <button class="btn btn-sm btn-outline-warning" style="width:32px;padding:0;line-height:1.8;" type="submit" title="Ativar/Desativar plano"><i class="fa-solid fa-power-off"></i></button>

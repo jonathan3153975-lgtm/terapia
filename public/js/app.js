@@ -68,6 +68,40 @@ const FormSubmitGuard = {
 window.FormSubmitGuard = FormSubmitGuard;
 
 (function() {
+  function applyResponsiveTableCards() {
+    var tables = document.querySelectorAll('.table-responsive > table.table');
+
+    tables.forEach(function(table) {
+      var headers = Array.prototype.slice.call(table.querySelectorAll('thead th')).map(function(th) {
+        return (th.textContent || '').trim();
+      });
+
+      if (headers.length === 0) {
+        return;
+      }
+
+      table.classList.add('responsive-card-table');
+
+      Array.prototype.slice.call(table.querySelectorAll('tbody tr')).forEach(function(row) {
+        var cells = row.querySelectorAll('td');
+        if (cells.length === 0) {
+          return;
+        }
+
+        Array.prototype.slice.call(cells).forEach(function(cell, index) {
+          var label = headers[index] || 'Campo';
+          var isActionLabel = /acao|acoes/i.test(label);
+          var hasInteractive = !!cell.querySelector('a.btn, button.btn, form, .btn-group, .table-actions');
+
+          cell.setAttribute('data-label', label);
+          if (isActionLabel || (hasInteractive && index === cells.length - 1)) {
+            cell.setAttribute('data-cell-type', 'actions');
+          }
+        });
+      });
+    });
+  }
+
   function createPageButton(label, page, currentPage, disabled) {
     var button = document.createElement('button');
     button.type = 'button';
@@ -263,5 +297,8 @@ window.FormSubmitGuard = FormSubmitGuard;
   }
 
   window.initializeRecordsTabulation = initializeRecordsTabulation;
-  window.addEventListener('load', initializeRecordsTabulation);
+  window.addEventListener('load', function() {
+    applyResponsiveTableCards();
+    initializeRecordsTabulation();
+  });
 })();

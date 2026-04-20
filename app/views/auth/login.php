@@ -49,7 +49,7 @@
             <?php echo htmlspecialchars((string) $_GET['msg']); ?>
           </div>
         <?php elseif (isset($_GET['error'])): ?>
-          <div class="alert alert-danger">Credenciais inválidas ou acesso ainda não liberado.</div>
+          <div class="alert alert-danger">Credenciais inválidas. Verifique seu e-mail e senha.</div>
         <?php endif; ?>
         <form id="loginForm" method="POST" action="<?php echo $appUrl; ?>/index.php?action=process-login">
           <div class="mb-3 login-input-wrap">
@@ -65,6 +65,12 @@
           </div>
           <button class="btn btn-primary w-100 login-btn" type="submit">Entrar</button>
         </form>
+        <?php if (!empty($signupUrl)): ?>
+          <div class="login-signup-cta mt-4 pt-3">
+            <span class="text-muted small d-block mb-2">Primeiro acesso como paciente?</span>
+            <a class="btn btn-outline-light w-100 login-signup-btn" href="<?php echo htmlspecialchars((string) $signupUrl); ?>">Fazer cadastro básico</a>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>

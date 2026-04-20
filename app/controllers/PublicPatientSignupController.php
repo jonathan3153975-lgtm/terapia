@@ -97,18 +97,6 @@ class PublicPatientSignupController extends Controller
         $cpf = Validator::onlyDigits($_POST['cpf'] ?? '');
         $phone = Validator::onlyDigits($_POST['phone'] ?? '');
         $email = Utils::sanitize($_POST['email'] ?? '');
-        $medicalTreatment = $this->buildMedicalTreatmentText();
-        $addictions = $_POST['addictions'] ?? [];
-        if (!is_array($addictions)) {
-            $addictions = [];
-        }
-        $addictions = array_values(array_map(static fn ($item) => Utils::sanitize((string) $item), $addictions));
-        $comorbidities = $_POST['comorbidities'] ?? [];
-        if (!is_array($comorbidities)) {
-            $comorbidities = [];
-        }
-        $comorbidities = array_values(array_map(static fn ($item) => Utils::sanitize((string) $item), $comorbidities));
-
         if ($name === '' || $cpf === '' || $phone === '' || $email === '') {
             $this->redirect(Config::get('APP_URL', '') . '/index.php?action=patient-signup&token=' . urlencode($token) . '&status=error&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
         }
@@ -125,33 +113,33 @@ class PublicPatientSignupController extends Controller
             'therapist_id' => $therapistId,
             'name' => $name,
             'cpf' => $cpf,
-            'birth_date' => trim((string) ($_POST['birth_date'] ?? '')) !== '' ? $_POST['birth_date'] : null,
+            'birth_date' => null,
             'phone' => $phone,
             'email' => $email,
-            'marital_status' => Utils::sanitize($_POST['marital_status'] ?? ''),
-            'children' => Utils::sanitize($_POST['children'] ?? ''),
-            'father' => Utils::sanitize($_POST['father'] ?? ''),
-            'mother' => Utils::sanitize($_POST['mother'] ?? ''),
-            'first_word' => Utils::sanitize($_POST['first_word'] ?? ''),
-            'cep' => Validator::onlyDigits($_POST['cep'] ?? ''),
-            'address' => Utils::sanitize($_POST['address'] ?? ''),
-            'neighborhood' => Utils::sanitize($_POST['neighborhood'] ?? ''),
-            'city' => Utils::sanitize($_POST['city'] ?? ''),
-            'state' => Utils::sanitize($_POST['state'] ?? ''),
-            'depression' => $this->boolPost('depression'),
-            'anxiety' => $this->boolPost('anxiety'),
-            'medical_treatment' => $medicalTreatment,
-            'comorbidities_json' => empty($comorbidities) ? null : json_encode($comorbidities, JSON_UNESCAPED_UNICODE),
-            'addictions_json' => empty($addictions) ? null : json_encode($addictions, JSON_UNESCAPED_UNICODE),
-            'had_therapy' => $this->boolPost('had_therapy'),
-            'therapy_description' => Utils::sanitize($_POST['therapy_description'] ?? ''),
-            'treatment_start_date' => trim((string) ($_POST['treatment_start_date'] ?? '')) !== '' ? $_POST['treatment_start_date'] : null,
-            'menstruation' => Utils::sanitize($_POST['menstruation'] ?? ''),
-            'bowel' => Utils::sanitize($_POST['bowel'] ?? ''),
-            'main_complaint' => Utils::sanitize($_POST['main_complaint'] ?? ''),
+            'marital_status' => '',
+            'children' => '',
+            'father' => '',
+            'mother' => '',
+            'first_word' => '',
+            'cep' => '',
+            'address' => '',
+            'neighborhood' => '',
+            'city' => '',
+            'state' => '',
+            'depression' => 0,
+            'anxiety' => 0,
+            'medical_treatment' => '',
+            'comorbidities_json' => null,
+            'addictions_json' => null,
+            'had_therapy' => 0,
+            'therapy_description' => '',
+            'treatment_start_date' => null,
+            'menstruation' => '',
+            'bowel' => '',
+            'main_complaint' => '',
             'review_status' => 'pending_review',
             'approved_at' => null,
-            'status' => 'inactive',
+            'status' => 'active',
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
@@ -169,7 +157,7 @@ class PublicPatientSignupController extends Controller
             'role' => 'patient',
             'therapist_id' => $therapistId,
             'patient_id' => (int) $patientId,
-            'status' => 'inactive',
+            'status' => 'active',
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
@@ -179,9 +167,10 @@ class PublicPatientSignupController extends Controller
 
         $this->signupLinkModel->incrementUsage((int) ($link['id'] ?? 0));
 
+        $sent = false;
         try {
             $mail = new MailService();
-            $mail->send(
+            $sent = $mail->send(
                 $email,
                 $name,
                 'Acesso ao sistema de terapia',
@@ -196,7 +185,12 @@ class PublicPatientSignupController extends Controller
             error_log('[public-signup-email] ' . $e->getMessage());
         }
 
-        $this->redirect(Config::get('APP_URL', '') . '/index.php?action=patient-signup-success&token=' . urlencode($token) . '&status=success&msg=' . urlencode('Cadastro enviado com sucesso. Seu terapeuta irá revisar os dados para liberar o acesso.'));
+        $status = $sent ? 'success' : 'error';
+        $message = $sent
+            ? 'Cadastro concluído com sucesso. Enviamos sua senha por e-mail.'
+            : 'Cadastro concluído, mas não foi possível enviar o e-mail com a senha. Solicite o reenvio ao terapeuta.';
+
+        $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&status=' . $status . '&msg=' . urlencode($message));
     }
 
     public function successPage(): void

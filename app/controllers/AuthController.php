@@ -13,6 +13,7 @@ use Helpers\Utils;
 class AuthController extends Controller
 {
     private User $userModel;
+    private const DEFAULT_PUBLIC_SIGNUP_URL = 'https://jw-adminix.com.br/terapia/index.php?action=patient-signup&token=3bc0590207b22f6bfa4f4e24cdaaca4b2687055be8303c09';
 
     public function __construct()
     {
@@ -21,7 +22,10 @@ class AuthController extends Controller
 
     public function login(): void
     {
-        $this->view('auth/login', ['appUrl' => Config::get('APP_URL', '')]);
+        $this->view('auth/login', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'signupUrl' => self::DEFAULT_PUBLIC_SIGNUP_URL,
+        ]);
     }
 
     public function processLogin(): void
@@ -45,7 +49,7 @@ class AuthController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&error=1');
         }
 
-        if ((string) ($user['status'] ?? 'active') !== 'active') {
+        if (($user['role'] ?? '') !== 'patient' && (string) ($user['status'] ?? 'active') !== 'active') {
             if ($isAjax) {
                 $this->error('Seu acesso está pendente de liberação pelo terapeuta.');
             }

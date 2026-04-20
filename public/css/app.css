@@ -209,6 +209,13 @@ body.app-body {
 	display: none;
 	align-items: center;
 	gap: .65rem;
+	position: sticky;
+	top: 0;
+	z-index: 60;
+	padding: 10px 0;
+	background: rgba(245, 247, 251, .92);
+	backdrop-filter: blur(12px);
+	border-bottom: 1px solid rgba(15, 23, 42, .08);
 }
 
 .mobile-topbar-title {
@@ -1760,6 +1767,22 @@ body.app-body {
 
 .table-actions .btn { margin-right: 0; }
 
+.login-signup-cta {
+	border-top: 1px solid rgba(255, 255, 255, .14);
+}
+
+.login-signup-btn {
+	border-color: rgba(255, 255, 255, .3);
+	color: #f8fafc;
+}
+
+.login-signup-btn:hover,
+.login-signup-btn:focus {
+	background: rgba(255, 255, 255, .12);
+	border-color: rgba(255, 255, 255, .48);
+	color: #fff;
+}
+
 .login-shell {
 	min-height: 100vh;
 	position: relative;
@@ -2234,6 +2257,8 @@ body.app-body {
 
 	.mobile-topbar {
 		display: flex;
+		margin: -16px -16px 16px;
+		padding: 12px 16px;
 	}
 
 	.app-content {
@@ -2241,6 +2266,78 @@ body.app-body {
 		height: auto;
 		min-height: 100dvh;
 		overflow: visible;
+	}
+
+	.table-responsive {
+		overflow: visible;
+	}
+
+	.table-responsive > .responsive-card-table {
+		border-collapse: separate;
+		border-spacing: 0;
+		width: 100%;
+	}
+
+	.table-responsive > .responsive-card-table thead {
+		display: none;
+	}
+
+	.table-responsive > .responsive-card-table tbody,
+	.table-responsive > .responsive-card-table tr,
+	.table-responsive > .responsive-card-table td {
+		display: block;
+		width: 100%;
+	}
+
+	.table-responsive > .responsive-card-table tbody {
+		display: grid;
+		gap: 12px;
+	}
+
+	.table-responsive > .responsive-card-table tbody tr {
+		padding: 14px;
+		border: 1px solid rgba(148, 163, 184, .26);
+		border-radius: 16px;
+		background: #fff;
+		box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+	}
+
+	.table-responsive > .responsive-card-table tbody tr td {
+		padding: 8px 0;
+		border: 0;
+	}
+
+	.table-responsive > .responsive-card-table tbody tr td::before {
+		content: attr(data-label);
+		display: block;
+		margin-bottom: 4px;
+		font-size: .72rem;
+		font-weight: 700;
+		letter-spacing: .04em;
+		text-transform: uppercase;
+		color: #64748b;
+	}
+
+	.table-responsive > .responsive-card-table tbody tr td[data-cell-type="actions"] {
+		margin-top: 8px;
+		padding-top: 12px;
+		border-top: 1px solid rgba(148, 163, 184, .18);
+	}
+
+	.table-responsive > .responsive-card-table tbody tr td[data-cell-type="actions"] .table-actions,
+	.table-responsive > .responsive-card-table tbody tr td[data-cell-type="actions"] .d-flex {
+		flex-wrap: wrap !important;
+		justify-content: flex-start;
+		gap: .5rem;
+	}
+
+	.table-responsive > .responsive-card-table tbody tr td[data-cell-type="actions"] form {
+		display: inline-flex !important;
+		margin: 0;
+	}
+
+	.table-responsive > .responsive-card-table tbody tr td[data-cell-type="actions"] .btn {
+		min-width: 38px;
 	}
 
 	.login-card-wrap {
