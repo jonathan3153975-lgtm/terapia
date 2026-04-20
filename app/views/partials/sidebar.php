@@ -77,6 +77,9 @@ $sidebarLogoUrl = $sidebarLogoPath !== '' ? ($appUrl . '/' . ltrim($sidebarLogoP
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'guided-meditation') || $currentAction === 'guided-meditations' ? 'active' : ''; ?> <?php echo $patientFreeTier ? 'sidebar-link--locked' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=guided-meditations"><?php if ($patientFreeTier): ?><i class="fa-solid fa-lock"></i><?php else: ?><i class="fa-solid fa-compact-disc"></i><?php endif; ?><span>Meditação guiada</span></a>
       <a class="sidebar-link <?php echo $currentAction === 'breathing-game' ? 'active' : ''; ?> <?php echo $patientFreeTier ? 'sidebar-link--locked' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=breathing-game"><?php if ($patientFreeTier): ?><i class="fa-solid fa-lock"></i><?php else: ?><i class="fa-solid fa-lungs"></i><?php endif; ?><span>Exercício de respiração</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'prayer') || $currentAction === 'prayers' ? 'active' : ''; ?> <?php echo $patientFreeTier ? 'sidebar-link--locked' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=prayers"><?php if ($patientFreeTier): ?><i class="fa-solid fa-lock"></i><?php else: ?><i class="fa-solid fa-hands-praying"></i><?php endif; ?><span>Orações</span></a>
+      <?php if (!$isPatientPreview): ?>
+      <a class="sidebar-link <?php echo $currentAction === 'my-account' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=my-account"><i class="fa-solid fa-circle-user"></i><span>Minha conta</span></a>
+      <?php endif; ?>
     <?php endif; ?>
   </nav>
 

@@ -136,6 +136,8 @@ class PatientPortalController extends Controller
             'task-material',
             'task-respond',
             'task-respond-submit',
+            'my-account',
+            'my-account-save',
         ];
 
         $subscriptionActions = [
@@ -694,6 +696,119 @@ class PatientPortalController extends Controller
         header('Cache-Control: no-cache, no-store, must-revalidate');
         echo $record['compiled_html'];
         exit;
+    }
+
+    public function myAccount(): void
+    {
+        $appUrl    = Config::get('APP_URL', '');
+        $userId    = (int) Auth::id();
+        $patientId = (int) Auth::patientId();
+
+        $user    = $this->userModel->findById($userId);
+        $patient = $this->patientModel->findById($patientId);
+
+        if (!$user || !$patient) {
+            $this->redirect($appUrl . '/patient.php?action=dashboard');
+        }
+
+        $this->view('patient/my-account', [
+            'appUrl'  => $appUrl,
+            'user'    => $user,
+            'patient' => $patient,
+        ]);
+    }
+
+    public function saveMyAccount(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=my-account');
+        }
+
+        $appUrl    = Config::get('APP_URL', '');
+        $userId    = (int) Auth::id();
+        $patientId = (int) Auth::patientId();
+
+        $user    = $this->userModel->findById($userId);
+        $patient = $this->patientModel->findById($patientId);
+
+        if (!$user || !$patient) {
+            $this->redirect($appUrl . '/patient.php?action=dashboard');
+        }
+
+        $section = Utils::sanitize($_POST['section'] ?? '');
+
+        if ($section === 'profile') {
+            // ── Dados pessoais ─────────────────────────────────────────────
+            $name  = trim(Utils::sanitize($_POST['name'] ?? ''));
+            $email = trim(Utils::sanitize($_POST['email'] ?? ''));
+            $phone = trim(Utils::sanitize($_POST['phone'] ?? ''));
+
+            if ($name === '' || $email === '' || $phone === '') {
+                $this->redirect($appUrl . '/patient.php?action=my-account&status=error&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
+            }
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $this->redirect($appUrl . '/patient.php?action=my-account&status=error&msg=' . urlencode('E-mail inválido.'));
+            }
+
+            // Verifica se o e-mail já está em uso por outro usuário
+            $existing = $this->userModel->findByEmail($email);
+            if ($existing && (int) $existing['id'] !== $userId) {
+                $this->redirect($appUrl . '/patient.php?action=my-account&status=error&msg=' . urlencode('Este e-mail já está em uso por outra conta.'));
+            }
+
+            $now = date('Y-m-d H:i:s');
+            $this->userModel->updateById($userId, [
+                'name'       => $name,
+                'email'      => $email,
+                'phone'      => $phone,
+                'updated_at' => $now,
+            ]);
+
+            $this->patientModel->updateById($patientId, [
+                'name'       => $name,
+                'email'      => $email,
+                'phone'      => $phone,
+                'updated_at' => $now,
+            ]);
+
+            // Atualiza nome na sessão
+            $_SESSION['user_name'] = $name;
+
+            $this->redirect($appUrl . '/patient.php?action=my-account&status=success&msg=' . urlencode('Dados atualizados com sucesso.'));
+        }
+
+        if ($section === 'password') {
+            // ── Alteração de senha ─────────────────────────────────────────
+            $currentPassword = $_POST['current_password'] ?? '';
+            $newPassword     = $_POST['new_password'] ?? '';
+            $confirmPassword = $_POST['confirm_password'] ?? '';
+
+            if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
+                $this->redirect($appUrl . '/patient.php?action=my-account&status=error&msg=' . urlencode('Preencha todos os campos de senha.'));
+            }
+
+            if (!password_verify($currentPassword, (string) ($user['password'] ?? ''))) {
+                $this->redirect($appUrl . '/patient.php?action=my-account&status=error&msg=' . urlencode('Senha atual incorreta.'));
+            }
+
+            if (strlen($newPassword) < 8) {
+                $this->redirect($appUrl . '/patient.php?action=my-account&status=error&msg=' . urlencode('A nova senha deve ter ao menos 8 caracteres.'));
+            }
+
+            if ($newPassword !== $confirmPassword) {
+                $this->redirect($appUrl . '/patient.php?action=my-account&status=error&msg=' . urlencode('A confirmação de senha não confere.'));
+            }
+
+            $this->userModel->updateById($userId, [
+                'password'   => password_hash($newPassword, PASSWORD_BCRYPT),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $this->redirect($appUrl . '/patient.php?action=my-account&status=success&msg=' . urlencode('Senha alterada com sucesso.'));
+        }
+
+        $this->redirect($appUrl . '/patient.php?action=my-account');
     }
 
     private function sanitizeRichText(string $html): string

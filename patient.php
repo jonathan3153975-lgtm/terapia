@@ -74,6 +74,8 @@ match ($action) {
     'gratitude-edit' => $portal->editGratitudeEntry(),
     'gratitude-update' => $portal->updateGratitudeEntry(),
     'gratitude-delete' => $portal->deleteGratitudeEntry(),
+    'my-account' => $portal->myAccount(),
+    'my-account-save' => $portal->saveMyAccount(),
     'devotionals' => $portal->devotionals(),
     'devotional-today' => $portal->devotionalToday(),
     'devotional-save' => $portal->saveDevotionalReflection(),
