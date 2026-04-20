@@ -211,20 +211,39 @@
                 <div class="task-form-section">
                   <div class="task-form-section-title">Detalhes da tarefa</div>
                   <div class="row g-3">
+                    <div class="col-12">
+                      <label class="form-label">Tarefa pré-definida (opcional)</label>
+                      <select class="form-select" id="predefinedTaskSelect">
+                        <option value="">Selecione uma tarefa pré-definida ou preencha manualmente</option>
+                        <?php foreach (($predefinedTasks ?? []) as $predefinedTask): ?>
+                          <option
+                            value="<?php echo (int) ($predefinedTask['id'] ?? 0); ?>"
+                            data-title="<?php echo htmlspecialchars((string) ($predefinedTask['title'] ?? ''), ENT_QUOTES); ?>"
+                            data-description="<?php echo htmlspecialchars((string) ($predefinedTask['description'] ?? ''), ENT_QUOTES); ?>"
+                            data-delivery-kind="<?php echo htmlspecialchars((string) ($predefinedTask['delivery_kind'] ?? 'task')); ?>"
+                            data-status="<?php echo htmlspecialchars((string) ($predefinedTask['status'] ?? 'pending')); ?>"
+                            data-send-to-patient="<?php echo (int) ($predefinedTask['send_to_patient'] ?? 0); ?>"
+                          >
+                            <?php echo htmlspecialchars((string) ($predefinedTask['title'] ?? 'Modelo sem título')); ?>
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
+                      <div class="form-text">Ao selecionar um modelo, título, tipo de envio, status, descrição e encaminhamento serão preenchidos automaticamente.</div>
+                    </div>
                     <div class="col-md-6">
                       <label class="form-label">Data</label>
-                      <input class="form-control" type="date" name="due_date" required>
+                      <input class="form-control" type="date" name="due_date" id="task_due_date" required>
                     </div>
                     <div class="col-md-6">
                       <label class="form-label">Status</label>
-                      <select class="form-select" name="status">
+                      <select class="form-select" name="status" id="task_status">
                         <option value="pending" selected>Pendente</option>
                         <option value="done">Finalizado</option>
                       </select>
                     </div>
                     <div class="col-12">
                       <label class="form-label">Título</label>
-                      <input class="form-control" name="title" required>
+                      <input class="form-control" name="title" id="task_title" required>
                     </div>
                     <div class="col-12">
                       <label class="form-label">Tipo de envio</label>
@@ -335,6 +354,12 @@
 
 <script>
 window.addEventListener('load', function() {
+  const predefinedTaskSelect = document.getElementById('predefinedTaskSelect');
+  const taskTitleInput = document.getElementById('task_title');
+  const taskStatusInput = document.getElementById('task_status');
+  const taskDeliveryKindInput = document.getElementById('delivery_kind');
+  const taskSendToPatientInput = document.getElementById('send_to_patient');
+
   const materialSearchInput = document.getElementById('materialSearchInput');
   const materialItems = Array.from(document.querySelectorAll('.material-picker-item'));
   const materialCheckboxes = Array.from(document.querySelectorAll('.js-material-checkbox'));
@@ -383,6 +408,28 @@ window.addEventListener('load', function() {
       ]
     }
   });
+
+  if (predefinedTaskSelect && taskTitleInput && taskStatusInput && taskDeliveryKindInput && taskSendToPatientInput) {
+    predefinedTaskSelect.addEventListener('change', function() {
+      const selectedOption = predefinedTaskSelect.options[predefinedTaskSelect.selectedIndex];
+      if (!selectedOption || selectedOption.value === '') {
+        return;
+      }
+
+      taskTitleInput.value = selectedOption.dataset.title || '';
+
+      const selectedStatus = selectedOption.dataset.status || 'pending';
+      taskStatusInput.value = (selectedStatus === 'done') ? 'done' : 'pending';
+
+      const selectedDeliveryKind = selectedOption.dataset.deliveryKind || 'task';
+      taskDeliveryKindInput.value = (selectedDeliveryKind === 'material') ? 'material' : 'task';
+
+      taskSendToPatientInput.checked = (selectedOption.dataset.sendToPatient || '0') === '1';
+
+      const descriptionHtml = selectedOption.dataset.description || '';
+      taskQuill.root.innerHTML = descriptionHtml;
+    });
+  }
 
   const renderSelectedMaterialsSummary = function() {
     const selected = materialCheckboxes.filter(function(checkbox) { return checkbox.checked; });

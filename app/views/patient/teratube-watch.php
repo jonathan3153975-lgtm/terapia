@@ -32,6 +32,26 @@
     align-items: center;
     gap: .3rem;
   }
+  .teratube-watch-page .star-rating {
+    display: inline-flex;
+    gap: .2rem;
+  }
+  .teratube-watch-page .star-btn {
+    border: 0;
+    background: transparent;
+    color: #c5ccd4;
+    padding: .1rem .2rem;
+    font-size: 1.55rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform .12s ease, color .15s ease;
+  }
+  .teratube-watch-page .star-btn.active {
+    color: #ffb200;
+  }
+  .teratube-watch-page .star-btn:hover {
+    transform: translateY(-1px) scale(1.06);
+  }
 </style>
 <div class="container page-wrap teratube-watch-page">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
@@ -76,20 +96,20 @@
       <div class="card h-100">
         <div class="card-header bg-transparent"><strong>Sua avaliação</strong></div>
         <div class="card-body">
-          <form method="POST" action="<?php echo $appUrl; ?>/patient.php?action=teratube-rate" class="d-flex flex-column gap-3">
+          <form id="video-rating-form" method="POST" action="<?php echo $appUrl; ?>/patient.php?action=teratube-rate" class="d-flex flex-column gap-2">
             <input type="hidden" name="video_id" value="<?php echo (int) ($video['id'] ?? 0); ?>">
+            <input type="hidden" name="rating" id="video-rating-input" value="<?php echo (int) ($myRating ?? 0); ?>" required>
             <div>
-              <div class="mb-2">Escolha de 1 a 5 estrelas:</div>
-              <div class="d-flex flex-wrap gap-2">
+              <div class="mb-2">Clique nas estrelas para avaliar:</div>
+              <div class="star-rating" id="video-star-rating" role="radiogroup" aria-label="Avaliação do vídeo">
                 <?php for ($star = 1; $star <= 5; $star++): ?>
-                  <label class="btn btn-sm <?php echo (int) ($myRating ?? 0) === $star ? 'btn-warning' : 'btn-outline-warning'; ?>">
-                    <input class="d-none" type="radio" name="rating" value="<?php echo $star; ?>" <?php echo (int) ($myRating ?? 0) === $star ? 'checked' : ''; ?> required>
-                    <?php echo $star; ?> <i class="fa-solid fa-star"></i>
-                  </label>
+                  <button type="button" class="star-btn" data-value="<?php echo $star; ?>" aria-label="<?php echo $star; ?> estrela(s)">
+                    <i class="fa-solid fa-star"></i>
+                  </button>
                 <?php endfor; ?>
               </div>
             </div>
-            <button class="btn btn-primary" type="submit">Salvar avaliação</button>
+            <small class="text-muted">A avaliação é salva automaticamente ao clicar.</small>
           </form>
         </div>
       </div>
@@ -162,4 +182,44 @@
     </div>
   </div>
 </div>
+<script>
+  (function () {
+    const form = document.getElementById('video-rating-form');
+    const input = document.getElementById('video-rating-input');
+    const starsRoot = document.getElementById('video-star-rating');
+
+    if (!form || !input || !starsRoot) {
+      return;
+    }
+
+    const stars = Array.from(starsRoot.querySelectorAll('.star-btn'));
+
+    function paint(value) {
+      stars.forEach((starBtn) => {
+        const starValue = Number(starBtn.getAttribute('data-value') || 0);
+        starBtn.classList.toggle('active', starValue <= value);
+      });
+    }
+
+    const currentValue = Number(input.value || 0);
+    paint(currentValue);
+
+    stars.forEach((starBtn) => {
+      starBtn.addEventListener('mouseenter', function () {
+        paint(Number(this.getAttribute('data-value') || 0));
+      });
+
+      starBtn.addEventListener('click', function () {
+        const selected = Number(this.getAttribute('data-value') || 0);
+        input.value = String(selected);
+        paint(selected);
+        form.submit();
+      });
+    });
+
+    starsRoot.addEventListener('mouseleave', function () {
+      paint(Number(input.value || 0));
+    });
+  })();
+</script>
 <?php include __DIR__ . '/../partials/footer.php'; ?>

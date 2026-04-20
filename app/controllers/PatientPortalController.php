@@ -1135,7 +1135,7 @@ class PatientPortalController extends Controller
     public function rateTeraTubeVideo(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('Método não permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
@@ -1144,21 +1144,21 @@ class PatientPortalController extends Controller
         $video = $this->teraTubeVideoModel->findPublishedByPatientAndId($patientId, $videoId);
 
         if (!$video) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('VÃ­deo nÃ£o encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('Vídeo não encontrado.'));
         }
 
         $saved = $this->patientVideoRatingModel->upsertRating($patientId, $videoId, (int) ($video['therapist_id'] ?? 0), $rating);
         if (!$saved) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('NÃ£o foi possÃ­vel registrar sua avaliaÃ§Ã£o.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('Não foi possível registrar sua avaliação.'));
         }
 
-        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=success&msg=' . urlencode('AvaliaÃ§Ã£o registrada com sucesso.'));
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=success&msg=' . urlencode('Avaliação registrada com sucesso.'));
     }
 
     public function commentTeraTubeVideo(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('Método não permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
@@ -1167,11 +1167,11 @@ class PatientPortalController extends Controller
         $video = $this->teraTubeVideoModel->findPublishedByPatientAndId($patientId, $videoId);
 
         if (!$video) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('VÃ­deo nÃ£o encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('Vídeo não encontrado.'));
         }
 
         if ($commentText === '') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('Escreva um comentÃ¡rio para continuar.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('Escreva um comentário para continuar.'));
         }
 
         $saved = $this->patientVideoCommentModel->insert([
@@ -1185,16 +1185,16 @@ class PatientPortalController extends Controller
         ]);
 
         if (!$saved) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('NÃ£o foi possÃ­vel salvar seu comentÃ¡rio.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('Não foi possível salvar seu comentário.'));
         }
 
-        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=success&msg=' . urlencode('ComentÃ¡rio publicado.'));
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=success&msg=' . urlencode('Comentário publicado.'));
     }
 
     public function rateTeraTubeComment(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('Método não permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
@@ -1204,24 +1204,24 @@ class PatientPortalController extends Controller
 
         $video = $this->teraTubeVideoModel->findPublishedByPatientAndId($patientId, $videoId);
         if (!$video) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('VÃ­deo nÃ£o encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('Vídeo não encontrado.'));
         }
 
         $comment = $this->patientVideoCommentModel->findByIdActive($commentId);
         if (!$comment || (int) ($comment['video_id'] ?? 0) !== $videoId) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('ComentÃ¡rio invÃ¡lido para avaliaÃ§Ã£o.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('Comentário inválido para avaliação.'));
         }
 
         if ((int) ($comment['patient_id'] ?? 0) === $patientId) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('VocÃª nÃ£o pode avaliar seu prÃ³prio comentÃ¡rio.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('Você não pode avaliar seu próprio comentário.'));
         }
 
         $saved = $this->patientVideoCommentRatingModel->upsertRating($commentId, $patientId, $rating);
         if (!$saved) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('NÃ£o foi possÃ­vel registrar a avaliaÃ§Ã£o do comentÃ¡rio.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('Não foi possível registrar a avaliação do comentário.'));
         }
 
-        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=success&msg=' . urlencode('AvaliaÃ§Ã£o do comentÃ¡rio registrada.'));
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=success&msg=' . urlencode('Avaliação do comentário registrada.'));
     }
 
     public function myContents(): void

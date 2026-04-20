@@ -21,6 +21,7 @@ use App\Models\PatientSubscription;
 use App\Models\PatientVideoComment;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\PredefinedTask;
 use App\Models\Prayer;
 use App\Models\TeraTubeVideo;
 use App\Models\Task;
@@ -59,6 +60,7 @@ class TherapistController extends Controller
     private PatientSubscription $patientSubscriptionModel;
     private TeraTubeVideo $teraTubeVideoModel;
     private PatientVideoComment $patientVideoCommentModel;
+    private PredefinedTask $predefinedTaskModel;
 
     public function __construct()
     {
@@ -86,6 +88,7 @@ class TherapistController extends Controller
         $this->patientSubscriptionModel = new PatientSubscription();
         $this->teraTubeVideoModel = new TeraTubeVideo();
         $this->patientVideoCommentModel = new PatientVideoComment();
+        $this->predefinedTaskModel = new PredefinedTask();
     }
 
     public function dashboard(): void
@@ -3836,6 +3839,7 @@ class TherapistController extends Controller
         $materials = $this->materialModel->listByTherapist($therapistId);
         $taskIds = array_map(static fn (array $task): int => (int) ($task['id'] ?? 0), $tasks);
         $taskLinkedMaterials = $this->taskModel->listLinkedMaterialsGroupedByTask($taskIds);
+        $predefinedTasks = $this->predefinedTaskModel->listByTherapist($therapistId);
 
         $this->view('therapist/patients/history', [
             'appUrl' => Config::get('APP_URL', ''),
@@ -3845,7 +3849,126 @@ class TherapistController extends Controller
             'taskFiles' => $taskFiles,
             'materials' => $materials,
             'taskLinkedMaterials' => $taskLinkedMaterials,
+            'predefinedTasks' => $predefinedTasks,
         ]);
+    }
+
+    public function predefinedTasks(): void
+    {
+        $therapistId = (int) Auth::id();
+        $search = trim((string) ($_GET['q'] ?? ''));
+        $tasks = $this->predefinedTaskModel->listByTherapist($therapistId, $search);
+
+        $this->view('therapist/predefined-tasks/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'tasks' => $tasks,
+            'filters' => [
+                'q' => $search,
+            ],
+        ]);
+    }
+
+    public function storePredefinedTask(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
+        $deliveryKind = $this->normalizeDeliveryKind((string) ($_POST['delivery_kind'] ?? 'task'));
+        $status = Utils::sanitize($_POST['status'] ?? 'pending');
+        $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
+
+        if (!in_array($status, ['pending', 'done'], true)) {
+            $status = 'pending';
+        }
+
+        if ($title === '' || trim(strip_tags($description)) === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Título e descrição são obrigatórios.'));
+        }
+
+        $saved = $this->predefinedTaskModel->insert([
+            'therapist_id' => $therapistId,
+            'title' => $title,
+            'description' => $description,
+            'delivery_kind' => $deliveryKind,
+            'status' => $status,
+            'send_to_patient' => $sendToPatient,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Falha ao cadastrar tarefa pré-definida.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=success&msg=' . urlencode('Tarefa pré-definida cadastrada com sucesso.'));
+    }
+
+    public function updatePredefinedTask(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $taskId = (int) ($_POST['id'] ?? 0);
+        $task = $this->predefinedTaskModel->findByTherapistAndId($therapistId, $taskId);
+        if (!$task) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Tarefa pré-definida não encontrada.'));
+        }
+
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $description = $this->sanitizeRichText((string) ($_POST['description'] ?? ''));
+        $deliveryKind = $this->normalizeDeliveryKind((string) ($_POST['delivery_kind'] ?? 'task'));
+        $status = Utils::sanitize($_POST['status'] ?? 'pending');
+        $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
+
+        if (!in_array($status, ['pending', 'done'], true)) {
+            $status = 'pending';
+        }
+
+        if ($title === '' || trim(strip_tags($description)) === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Título e descrição são obrigatórios.'));
+        }
+
+        $updated = $this->predefinedTaskModel->updateById($taskId, [
+            'title' => $title,
+            'description' => $description,
+            'delivery_kind' => $deliveryKind,
+            'status' => $status,
+            'send_to_patient' => $sendToPatient,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Falha ao atualizar tarefa pré-definida.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=success&msg=' . urlencode('Tarefa pré-definida atualizada com sucesso.'));
+    }
+
+    public function deletePredefinedTask(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $taskId = (int) ($_POST['id'] ?? 0);
+        $task = $this->predefinedTaskModel->findByTherapistAndId($therapistId, $taskId);
+        if (!$task) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Tarefa pré-definida não encontrada.'));
+        }
+
+        $deleted = $this->predefinedTaskModel->deleteByTherapistAndId($therapistId, $taskId);
+        if (!$deleted) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Falha ao excluir tarefa pré-definida.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=success&msg=' . urlencode('Tarefa pré-definida excluída com sucesso.'));
     }
 
     private function sanitizeRichText(string $html): string
