@@ -18,9 +18,11 @@ use App\Models\PatientPrayerEntry;
 use App\Models\PatientMessageEntry;
 use App\Models\PatientSignupLink;
 use App\Models\PatientSubscription;
+use App\Models\PatientVideoComment;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Prayer;
+use App\Models\TeraTubeVideo;
 use App\Models\Task;
 use App\Models\User;
 use Classes\Controller;
@@ -55,6 +57,8 @@ class TherapistController extends Controller
     private PatientSignupLink $patientSignupLinkModel;
     private Plan $planModel;
     private PatientSubscription $patientSubscriptionModel;
+    private TeraTubeVideo $teraTubeVideoModel;
+    private PatientVideoComment $patientVideoCommentModel;
 
     public function __construct()
     {
@@ -80,6 +84,8 @@ class TherapistController extends Controller
         $this->patientSignupLinkModel = new PatientSignupLink();
         $this->planModel = new Plan();
         $this->patientSubscriptionModel = new PatientSubscription();
+        $this->teraTubeVideoModel = new TeraTubeVideo();
+        $this->patientVideoCommentModel = new PatientVideoComment();
     }
 
     public function dashboard(): void
@@ -1664,6 +1670,135 @@ class TherapistController extends Controller
         return $uploadBase;
     }
 
+    private function teraTubeUploadBasePath(): string
+    {
+        $uploadBase = dirname(__DIR__, 2) . '/uploads/teratube';
+        if (!is_dir($uploadBase)) {
+            @mkdir($uploadBase, 0777, true);
+        }
+
+        return $uploadBase;
+    }
+
+    private function normalizeTeraTubeSourceType(string $value): string
+    {
+        $normalized = strtolower(trim($value));
+        return in_array($normalized, ['upload', 'youtube'], true) ? $normalized : 'upload';
+    }
+
+    private function normalizeYouTubeUrl(string $value): ?array
+    {
+        $url = trim($value);
+        if ($url === '') {
+            return null;
+        }
+
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        if (!is_array($parts)) {
+            return null;
+        }
+
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $path = (string) ($parts['path'] ?? '');
+        $query = (string) ($parts['query'] ?? '');
+        $videoId = '';
+
+        if (str_contains($host, 'youtube.com')) {
+            parse_str($query, $queryParams);
+            $videoId = (string) ($queryParams['v'] ?? '');
+            if ($videoId === '' && str_starts_with($path, '/shorts/')) {
+                $videoId = (string) substr($path, strlen('/shorts/'));
+            }
+            if ($videoId === '' && str_starts_with($path, '/embed/')) {
+                $videoId = (string) substr($path, strlen('/embed/'));
+            }
+        } elseif ($host === 'youtu.be' || str_ends_with($host, '.youtu.be')) {
+            $videoId = ltrim($path, '/');
+        }
+
+        $videoId = preg_replace('/[^a-zA-Z0-9_-]/', '', $videoId) ?? '';
+        if ($videoId === '') {
+            return null;
+        }
+
+        return [
+            'youtube_url' => 'https://www.youtube.com/watch?v=' . $videoId,
+            'youtube_video_id' => $videoId,
+        ];
+    }
+
+    private function uploadTeraTubeVideoFromRequest(?array $existingVideo = null): array
+    {
+        $file = $_FILES['video_file'] ?? null;
+        if (!is_array($file) || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return [
+                'ok' => $existingVideo !== null,
+                'message' => 'O arquivo de vídeo é obrigatório para a fonte upload.',
+                'data' => $existingVideo,
+            ];
+        }
+
+        if ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return [
+                'ok' => false,
+                'message' => 'Falha no upload do vídeo.',
+                'data' => $existingVideo,
+            ];
+        }
+
+        $tmpName = (string) ($file['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            return [
+                'ok' => false,
+                'message' => 'Arquivo enviado é inválido.',
+                'data' => $existingVideo,
+            ];
+        }
+
+        $originalName = (string) ($file['name'] ?? 'video.mp4');
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $allowedExt = ['mp4', 'webm', 'ogg', 'mov', 'm4v'];
+        if (!in_array($extension, $allowedExt, true)) {
+            return [
+                'ok' => false,
+                'message' => 'Extensão inválida. Use MP4, WEBM, OGG, MOV ou M4V.',
+                'data' => $existingVideo,
+            ];
+        }
+
+        $safeFile = uniqid('teratube_', true) . '.' . $extension;
+        $target = $this->teraTubeUploadBasePath() . '/' . $safeFile;
+        if (!@move_uploaded_file($tmpName, $target)) {
+            return [
+                'ok' => false,
+                'message' => 'Não foi possível salvar o vídeo enviado.',
+                'data' => $existingVideo,
+            ];
+        }
+
+        if ($existingVideo && !empty($existingVideo['video_path'])) {
+            $oldPath = dirname(__DIR__, 2) . '/' . ltrim((string) $existingVideo['video_path'], '/');
+            if (is_file($oldPath)) {
+                @unlink($oldPath);
+            }
+        }
+
+        return [
+            'ok' => true,
+            'message' => '',
+            'data' => [
+                'video_original_name' => $originalName,
+                'video_path' => 'uploads/teratube/' . $safeFile,
+                'video_mime_type' => (string) ($file['type'] ?? 'video/mp4'),
+                'video_size' => (int) ($file['size'] ?? 0),
+            ],
+        ];
+    }
+
     private function uploadBookPdfFromRequest(?array $existingBook = null): array
     {
         $file = $_FILES['pdf_file'] ?? null;
@@ -1743,6 +1878,24 @@ class TherapistController extends Controller
         }
 
         header('Content-Type: application/pdf');
+        header('Content-Length: ' . (string) filesize($absolutePath));
+        header('Content-Disposition: inline; filename="' . rawurlencode($downloadName) . '"');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: SAMEORIGIN');
+        readfile($absolutePath);
+        exit;
+    }
+
+    private function streamVideoFile(string $relativePath, string $downloadName, string $mimeType = 'video/mp4'): void
+    {
+        $absolutePath = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        if (!is_file($absolutePath)) {
+            http_response_code(404);
+            echo 'Arquivo não encontrado.';
+            exit;
+        }
+
+        header('Content-Type: ' . $mimeType);
         header('Content-Length: ' . (string) filesize($absolutePath));
         header('Content-Disposition: inline; filename="' . rawurlencode($downloadName) . '"');
         header('X-Content-Type-Options: nosniff');
@@ -2229,6 +2382,306 @@ class TherapistController extends Controller
 
         $downloadName = (string) ($book['pdf_original_name'] ?? ($book['title'] ?? 'livro') . '.pdf');
         $this->streamPdfFile((string) $book['pdf_path'], $downloadName);
+    }
+
+    public function teraTube(): void
+    {
+        $therapistId = (int) Auth::id();
+        $term = Utils::sanitize($_GET['search'] ?? '');
+        $videos = $this->teraTubeVideoModel->listByTherapist($therapistId, $term);
+
+        $this->view('therapist/teratube/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'videos' => $videos,
+            'search' => $term,
+        ]);
+    }
+
+    public function createTeraTubeVideo(): void
+    {
+        $this->view('therapist/teratube/create', ['appUrl' => Config::get('APP_URL', '')]);
+    }
+
+    public function storeTeraTubeVideo(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-teratube&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $descriptionText = trim((string) ($_POST['description_text'] ?? ''));
+        $keywords = Utils::sanitize($_POST['keywords'] ?? '');
+        $sourceType = $this->normalizeTeraTubeSourceType((string) ($_POST['source_type'] ?? 'upload'));
+        $publishValue = (string) ($_POST['is_published'] ?? '');
+
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-teratube';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if ($title === '') {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Título é obrigatório.'));
+        }
+
+        if (!in_array($publishValue, ['0', '1'], true)) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Informe se o vídeo deve ser publicado.'));
+        }
+
+        $videoData = [
+            'youtube_url' => null,
+            'youtube_video_id' => null,
+            'video_original_name' => null,
+            'video_path' => null,
+            'video_mime_type' => null,
+            'video_size' => 0,
+        ];
+
+        if ($sourceType === 'youtube') {
+            $youtubeData = $this->normalizeYouTubeUrl((string) ($_POST['youtube_url'] ?? ''));
+            if (!$youtubeData) {
+                $this->redirect($redirectWithStatus($redirectBase, 'error', 'Informe um link válido do YouTube.'));
+            }
+
+            $videoData['youtube_url'] = (string) ($youtubeData['youtube_url'] ?? '');
+            $videoData['youtube_video_id'] = (string) ($youtubeData['youtube_video_id'] ?? '');
+        } else {
+            $upload = $this->uploadTeraTubeVideoFromRequest(null);
+            if (!($upload['ok'] ?? false)) {
+                $this->redirect($redirectWithStatus($redirectBase, 'error', (string) ($upload['message'] ?? 'Falha ao enviar vídeo.')));
+            }
+
+            $uploadData = (array) ($upload['data'] ?? []);
+            $videoData['video_original_name'] = (string) ($uploadData['video_original_name'] ?? '');
+            $videoData['video_path'] = (string) ($uploadData['video_path'] ?? '');
+            $videoData['video_mime_type'] = (string) ($uploadData['video_mime_type'] ?? 'video/mp4');
+            $videoData['video_size'] = (int) ($uploadData['video_size'] ?? 0);
+        }
+
+        $saved = $this->teraTubeVideoModel->insert([
+            'therapist_id' => $therapistId,
+            'title' => $title,
+            'description_text' => $descriptionText,
+            'keywords' => $keywords,
+            'source_type' => $sourceType,
+            'youtube_url' => $videoData['youtube_url'],
+            'youtube_video_id' => $videoData['youtube_video_id'],
+            'video_original_name' => $videoData['video_original_name'],
+            'video_path' => $videoData['video_path'],
+            'video_mime_type' => $videoData['video_mime_type'],
+            'video_size' => (int) $videoData['video_size'],
+            'is_published' => (int) $publishValue,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao cadastrar vídeo.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Vídeo cadastrado com sucesso.'));
+    }
+
+    public function showTeraTubeVideo(): void
+    {
+        $therapistId = (int) Auth::id();
+        $videoId = (int) ($_GET['id'] ?? 0);
+        $video = $this->teraTubeVideoModel->findByTherapistAndId($therapistId, $videoId);
+        if (!$video) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-teratube&status=error&msg=' . urlencode('Vídeo não encontrado.'));
+        }
+
+        $comments = $this->patientVideoCommentModel->listByVideo($videoId);
+
+        $this->view('therapist/teratube/show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'video' => $video,
+            'comments' => $comments,
+        ]);
+    }
+
+    public function editTeraTubeVideo(): void
+    {
+        $therapistId = (int) Auth::id();
+        $videoId = (int) ($_GET['id'] ?? 0);
+        $video = $this->teraTubeVideoModel->findByTherapistAndId($therapistId, $videoId);
+        if (!$video) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-teratube&status=error&msg=' . urlencode('Vídeo não encontrado.'));
+        }
+
+        $this->view('therapist/teratube/edit', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'video' => $video,
+        ]);
+    }
+
+    public function updateTeraTubeVideo(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-teratube&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $videoId = (int) ($_POST['id'] ?? 0);
+        $video = $this->teraTubeVideoModel->findByTherapistAndId($therapistId, $videoId);
+
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-teratube';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$video) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Vídeo não encontrado.'));
+        }
+
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $descriptionText = trim((string) ($_POST['description_text'] ?? ''));
+        $keywords = Utils::sanitize($_POST['keywords'] ?? '');
+        $sourceType = $this->normalizeTeraTubeSourceType((string) ($_POST['source_type'] ?? 'upload'));
+        $publishValue = (string) ($_POST['is_published'] ?? '');
+
+        if ($title === '') {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Título é obrigatório.'));
+        }
+
+        if (!in_array($publishValue, ['0', '1'], true)) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Informe se o vídeo deve ser publicado.'));
+        }
+
+        $updateData = [
+            'title' => $title,
+            'description_text' => $descriptionText,
+            'keywords' => $keywords,
+            'source_type' => $sourceType,
+            'is_published' => (int) $publishValue,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if ($sourceType === 'youtube') {
+            $youtubeData = $this->normalizeYouTubeUrl((string) ($_POST['youtube_url'] ?? ''));
+            if (!$youtubeData) {
+                $this->redirect($redirectWithStatus($redirectBase, 'error', 'Informe um link válido do YouTube.'));
+            }
+
+            if (!empty($video['video_path'])) {
+                $oldPath = dirname(__DIR__, 2) . '/' . ltrim((string) $video['video_path'], '/');
+                if (is_file($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            $updateData['youtube_url'] = (string) ($youtubeData['youtube_url'] ?? '');
+            $updateData['youtube_video_id'] = (string) ($youtubeData['youtube_video_id'] ?? '');
+            $updateData['video_original_name'] = null;
+            $updateData['video_path'] = null;
+            $updateData['video_mime_type'] = null;
+            $updateData['video_size'] = 0;
+        } else {
+            $hasNewFile = isset($_FILES['video_file']) && (int) ($_FILES['video_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+            if ($hasNewFile) {
+                $upload = $this->uploadTeraTubeVideoFromRequest($video);
+                if (!($upload['ok'] ?? false)) {
+                    $this->redirect($redirectWithStatus($redirectBase, 'error', (string) ($upload['message'] ?? 'Falha ao enviar vídeo.')));
+                }
+
+                $uploadData = (array) ($upload['data'] ?? []);
+                $updateData['video_original_name'] = (string) ($uploadData['video_original_name'] ?? '');
+                $updateData['video_path'] = (string) ($uploadData['video_path'] ?? '');
+                $updateData['video_mime_type'] = (string) ($uploadData['video_mime_type'] ?? 'video/mp4');
+                $updateData['video_size'] = (int) ($uploadData['video_size'] ?? 0);
+            }
+
+            $updateData['youtube_url'] = null;
+            $updateData['youtube_video_id'] = null;
+
+            if (empty($video['video_path']) && !$hasNewFile) {
+                $this->redirect($redirectWithStatus($redirectBase, 'error', 'Envie um arquivo de vídeo para esta fonte.'));
+            }
+        }
+
+        $updated = $this->teraTubeVideoModel->updateById($videoId, $updateData);
+        if (!$updated) {
+            $this->redirect($redirectWithStatus($redirectBase, 'success', 'Nenhuma alteração foi necessária.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Vídeo atualizado com sucesso.'));
+    }
+
+    public function deleteTeraTubeVideo(): void
+    {
+        $therapistId = (int) Auth::id();
+        $videoId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+        $video = $this->teraTubeVideoModel->findByTherapistAndId($therapistId, $videoId);
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-teratube';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$video) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Vídeo não encontrado.'));
+        }
+
+        if (!empty($video['video_path'])) {
+            $absolutePath = dirname(__DIR__, 2) . '/' . ltrim((string) $video['video_path'], '/');
+            if (is_file($absolutePath)) {
+                @unlink($absolutePath);
+            }
+        }
+
+        $deleted = $this->teraTubeVideoModel->deleteByTherapistAndId($therapistId, $videoId);
+        if (!$deleted) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao excluir vídeo.'));
+        }
+
+        $this->redirect($redirectWithStatus($redirectBase, 'success', 'Vídeo excluído com sucesso.'));
+    }
+
+    public function toggleTeraTubePublish(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-teratube&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $videoId = (int) ($_POST['id'] ?? 0);
+        $video = $this->teraTubeVideoModel->findByTherapistAndId($therapistId, $videoId);
+        $redirectBase = Config::get('APP_URL', '') . '/dashboard.php?action=therapist-teratube';
+        $redirectWithStatus = static function (string $baseUrl, string $status, string $message): string {
+            return $baseUrl . '&status=' . urlencode($status) . '&msg=' . urlencode($message);
+        };
+
+        if (!$video) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Vídeo não encontrado.'));
+        }
+
+        $nextStatus = (int) (($video['is_published'] ?? 0) === '1' || (int) ($video['is_published'] ?? 0) === 1 ? 0 : 1);
+        $updated = $this->teraTubeVideoModel->updateById($videoId, [
+            'is_published' => $nextStatus,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->redirect($redirectWithStatus($redirectBase, 'error', 'Falha ao alterar disponibilidade do vídeo.'));
+        }
+
+        $message = $nextStatus === 1 ? 'Vídeo liberado para pacientes.' : 'Vídeo removido do acesso dos pacientes.';
+        $this->redirect($redirectWithStatus($redirectBase, 'success', $message));
+    }
+
+    public function streamTeraTubeVideo(): void
+    {
+        $therapistId = (int) Auth::id();
+        $videoId = (int) ($_GET['id'] ?? 0);
+        $video = $this->teraTubeVideoModel->findByTherapistAndId($therapistId, $videoId);
+
+        if (!$video || (string) ($video['source_type'] ?? '') !== 'upload' || empty($video['video_path'])) {
+            http_response_code(404);
+            echo 'Vídeo não encontrado.';
+            exit;
+        }
+
+        $downloadName = (string) ($video['video_original_name'] ?? ($video['title'] ?? 'video') . '.mp4');
+        $this->streamVideoFile((string) $video['video_path'], $downloadName, (string) ($video['video_mime_type'] ?? 'video/mp4'));
     }
 
     private function normalizeMonth(int $month): int

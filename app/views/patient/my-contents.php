@@ -4,7 +4,10 @@
 
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h3 class="mb-0">Meus conteúdos</h3>
-    <a class="btn btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=books"><i class="fa-solid fa-book-open-reader me-1"></i>Ver livros disponíveis</a>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=books"><i class="fa-solid fa-book-open-reader me-1"></i>Ver livros</a>
+      <a class="btn btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=teratube"><i class="fa-solid fa-circle-play me-1"></i>Ver teraTube</a>
+    </div>
   </div>
 
   <div class="card">
@@ -16,7 +19,7 @@
       <div class="row g-2 align-items-center mb-3">
         <div class="col-12 col-lg-6">
           <label class="form-label mb-1" for="myContentsSearchInput">Buscar nos salvos</label>
-          <input id="myContentsSearchInput" class="form-control" type="search" placeholder="Digite o título do livro..." value="<?php echo htmlspecialchars((string) ($search ?? '')); ?>">
+          <input id="myContentsSearchInput" class="form-control" type="search" placeholder="Digite título, descrição ou palavras-chave..." value="<?php echo htmlspecialchars((string) ($search ?? '')); ?>">
         </div>
       </div>
     </div>
@@ -61,6 +64,52 @@
     <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2" id="myContentsPaginationWrapper">
       <small class="text-muted mb-0" id="myContentsPaginationInfo"></small>
       <div class="btn-group" role="group" id="myContentsPaginationControls"></div>
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-header bg-transparent d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <strong>Vídeos salvos (teraTube)</strong>
+      <span class="small text-muted"><?php echo count($favoriteVideos ?? []); ?> item(ns)</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Nota média</th>
+              <th>Salvo em</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="myContentVideosTableBody">
+            <?php if (empty($favoriteVideos)): ?>
+              <tr id="myContentVideosEmptyRow">
+                <td colspan="4" class="text-center text-muted py-4">Você ainda não salvou nenhum vídeo.</td>
+              </tr>
+            <?php else: ?>
+              <?php foreach ($favoriteVideos as $video): ?>
+                <tr class="my-contents-data-row" data-search="<?php echo htmlspecialchars(strtolower((string) (($video['title'] ?? '') . ' ' . ($video['description_text'] ?? '') . ' ' . ($video['keywords'] ?? '')))); ?>">
+                  <td><?php echo htmlspecialchars((string) ($video['title'] ?? '-')); ?></td>
+                  <td><?php echo number_format((float) ($video['average_rating'] ?? 0), 1, ',', '.'); ?></td>
+                  <td><?php echo !empty($video['favorited_at']) ? date('d/m/Y H:i', strtotime((string) $video['favorited_at'])) : '-'; ?></td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <a class="btn btn-sm btn-outline-secondary" href="<?php echo $appUrl; ?>/patient.php?action=teratube-watch&id=<?php echo (int) ($video['id'] ?? 0); ?>"><i class="fa-solid fa-play me-1"></i>Assistir</a>
+                      <form method="POST" action="<?php echo $appUrl; ?>/patient.php?action=teratube-toggle-favorite" class="m-0">
+                        <input type="hidden" name="video_id" value="<?php echo (int) ($video['id'] ?? 0); ?>">
+                        <input type="hidden" name="redirect_action" value="my-contents">
+                        <button class="btn btn-sm btn-outline-warning" type="submit"><i class="fa-solid fa-bookmark-slash me-1"></i>Remover</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

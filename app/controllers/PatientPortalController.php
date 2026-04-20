@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Controllers;
 
@@ -16,12 +16,17 @@ use App\Models\Patient;
 use App\Models\PatientFaithEntry;
 use App\Models\PatientGratitudeEntry;
 use App\Models\PatientGuidedMeditationEntry;
+use App\Models\PatientVideoComment;
+use App\Models\PatientVideoCommentRating;
+use App\Models\PatientVideoFavorite;
+use App\Models\PatientVideoRating;
 use App\Models\PatientMessageEntry;
 use App\Models\PatientPrayerEntry;
 use App\Models\PatientSubscription;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Prayer;
+use App\Models\TeraTubeVideo;
 use App\Models\Task;
 use App\Models\User;
 use Classes\Controller;
@@ -43,6 +48,11 @@ class PatientPortalController extends Controller
     private MaterialDelivery $materialDeliveryModel;
     private Book $bookModel;
     private PatientBookFavorite $patientBookFavoriteModel;
+    private TeraTubeVideo $teraTubeVideoModel;
+    private PatientVideoFavorite $patientVideoFavoriteModel;
+    private PatientVideoRating $patientVideoRatingModel;
+    private PatientVideoComment $patientVideoCommentModel;
+    private PatientVideoCommentRating $patientVideoCommentRatingModel;
     private FileStorage $fileModel;
     private Patient $patientModel;
     private User $userModel;
@@ -71,6 +81,11 @@ class PatientPortalController extends Controller
         $this->materialDeliveryModel = new MaterialDelivery();
         $this->bookModel = new Book();
         $this->patientBookFavoriteModel = new PatientBookFavorite();
+        $this->teraTubeVideoModel = new TeraTubeVideo();
+        $this->patientVideoFavoriteModel = new PatientVideoFavorite();
+        $this->patientVideoRatingModel = new PatientVideoRating();
+        $this->patientVideoCommentModel = new PatientVideoComment();
+        $this->patientVideoCommentRatingModel = new PatientVideoCommentRating();
         $this->fileModel = new FileStorage();
         $this->patientModel = new Patient();
         $this->userModel = new User();
@@ -910,6 +925,29 @@ class PatientPortalController extends Controller
         exit;
     }
 
+    private function streamVideoFile(string $relativePath, string $downloadName, string $mimeType = 'video/mp4'): void
+    {
+        $absolutePath = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        if (!is_file($absolutePath)) {
+            http_response_code(404);
+            echo 'Arquivo não encontrado.';
+            exit;
+        }
+
+        header('Content-Type: ' . $mimeType);
+        header('Content-Length: ' . (string) filesize($absolutePath));
+        header('Content-Disposition: inline; filename="' . rawurlencode($downloadName) . '"');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: SAMEORIGIN');
+        readfile($absolutePath);
+        exit;
+    }
+
+    private function normalizeStarsValue(int $value): int
+    {
+        return max(1, min(5, $value));
+    }
+
     public function books(): void
     {
         $patientId = (int) Auth::patientId();
@@ -988,15 +1026,215 @@ class PatientPortalController extends Controller
         $this->redirect(Config::get('APP_URL', '') . '/patient.php?' . $query);
     }
 
+    public function teraTube(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        if (!$patient) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $search = Utils::sanitize($_GET['search'] ?? '');
+        $videos = $therapistId > 0 ? $this->teraTubeVideoModel->listPublishedByTherapist($therapistId, $search) : [];
+        $favorites = $this->patientVideoFavoriteModel->listVideoIdsByPatient($patientId);
+        $favoriteMap = array_fill_keys($favorites, true);
+
+        $this->view('patient/teratube', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'videos' => $videos,
+            'favoriteMap' => $favoriteMap,
+            'search' => $search,
+        ]);
+    }
+
+    public function teraTubeWatch(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $videoId = (int) ($_GET['id'] ?? 0);
+        $video = $this->teraTubeVideoModel->findPublishedByPatientAndId($patientId, $videoId);
+
+        if (!$video) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('VÃ­deo nÃ£o encontrado ou indisponÃ­vel.'));
+        }
+
+        $isFavorite = $this->patientVideoFavoriteModel->exists($patientId, $videoId);
+        $myRating = $this->patientVideoRatingModel->findByPatientAndVideo($patientId, $videoId);
+        $comments = $this->patientVideoCommentModel->listByVideo($videoId);
+        $commentRatingMap = $this->patientVideoCommentRatingModel->listByPatientAndVideo($patientId, $videoId);
+
+        $this->view('patient/teratube-watch', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'video' => $video,
+            'isFavorite' => $isFavorite,
+            'myRating' => (int) ($myRating['rating'] ?? 0),
+            'comments' => $comments,
+            'commentRatingMap' => $commentRatingMap,
+        ]);
+    }
+
+    public function streamTeraTubeVideo(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $videoId = (int) ($_GET['id'] ?? 0);
+        $video = $this->teraTubeVideoModel->findPublishedByPatientAndId($patientId, $videoId);
+
+        if (!$video || (string) ($video['source_type'] ?? '') !== 'upload' || empty($video['video_path'])) {
+            http_response_code(404);
+            echo 'VÃ­deo nÃ£o encontrado.';
+            exit;
+        }
+
+        $downloadName = (string) ($video['video_original_name'] ?? ($video['title'] ?? 'video') . '.mp4');
+        $this->streamVideoFile((string) $video['video_path'], $downloadName, (string) ($video['video_mime_type'] ?? 'video/mp4'));
+    }
+
+    public function toggleTeraTubeFavorite(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $videoId = (int) ($_POST['video_id'] ?? 0);
+        $video = $this->teraTubeVideoModel->findPublishedByPatientAndId($patientId, $videoId);
+        $redirectAction = (string) ($_POST['redirect_action'] ?? 'teratube');
+        if (!in_array($redirectAction, ['teratube', 'my-contents', 'teratube-watch'], true)) {
+            $redirectAction = 'teratube';
+        }
+
+        if (!$video) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('VÃ­deo nÃ£o encontrado ou indisponÃ­vel.'));
+        }
+
+        $wasFavorite = $this->patientVideoFavoriteModel->exists($patientId, $videoId);
+        if ($wasFavorite) {
+            $this->patientVideoFavoriteModel->deleteByPatientAndVideo($patientId, $videoId);
+            $message = 'VÃ­deo removido de Meus conteÃºdos.';
+        } else {
+            $patient = $this->patientModel->findById($patientId);
+            $therapistId = (int) ($patient['therapist_id'] ?? 0);
+            $this->patientVideoFavoriteModel->insertIgnore([
+                'patient_id' => $patientId,
+                'video_id' => $videoId,
+                'therapist_id' => $therapistId,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+            $message = 'VÃ­deo salvo em Meus conteÃºdos.';
+        }
+
+        if ($redirectAction === 'teratube-watch') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=success&msg=' . urlencode($message));
+        }
+
+        $query = 'action=' . urlencode($redirectAction);
+        $query .= '&status=success&msg=' . urlencode($message);
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?' . $query);
+    }
+
+    public function rateTeraTubeVideo(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $videoId = (int) ($_POST['video_id'] ?? 0);
+        $rating = $this->normalizeStarsValue((int) ($_POST['rating'] ?? 0));
+        $video = $this->teraTubeVideoModel->findPublishedByPatientAndId($patientId, $videoId);
+
+        if (!$video) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('VÃ­deo nÃ£o encontrado.'));
+        }
+
+        $saved = $this->patientVideoRatingModel->upsertRating($patientId, $videoId, (int) ($video['therapist_id'] ?? 0), $rating);
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('NÃ£o foi possÃ­vel registrar sua avaliaÃ§Ã£o.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=success&msg=' . urlencode('AvaliaÃ§Ã£o registrada com sucesso.'));
+    }
+
+    public function commentTeraTubeVideo(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $videoId = (int) ($_POST['video_id'] ?? 0);
+        $commentText = trim((string) ($_POST['comment_text'] ?? ''));
+        $video = $this->teraTubeVideoModel->findPublishedByPatientAndId($patientId, $videoId);
+
+        if (!$video) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('VÃ­deo nÃ£o encontrado.'));
+        }
+
+        if ($commentText === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('Escreva um comentÃ¡rio para continuar.'));
+        }
+
+        $saved = $this->patientVideoCommentModel->insert([
+            'patient_id' => $patientId,
+            'video_id' => $videoId,
+            'therapist_id' => (int) ($video['therapist_id'] ?? 0),
+            'comment_text' => $commentText,
+            'is_active' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('NÃ£o foi possÃ­vel salvar seu comentÃ¡rio.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=success&msg=' . urlencode('ComentÃ¡rio publicado.'));
+    }
+
+    public function rateTeraTubeComment(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
+        }
+
+        $patientId = (int) Auth::patientId();
+        $videoId = (int) ($_POST['video_id'] ?? 0);
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        $rating = $this->normalizeStarsValue((int) ($_POST['rating'] ?? 0));
+
+        $video = $this->teraTubeVideoModel->findPublishedByPatientAndId($patientId, $videoId);
+        if (!$video) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube&status=error&msg=' . urlencode('VÃ­deo nÃ£o encontrado.'));
+        }
+
+        $comment = $this->patientVideoCommentModel->findByIdActive($commentId);
+        if (!$comment || (int) ($comment['video_id'] ?? 0) !== $videoId) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('ComentÃ¡rio invÃ¡lido para avaliaÃ§Ã£o.'));
+        }
+
+        if ((int) ($comment['patient_id'] ?? 0) === $patientId) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('VocÃª nÃ£o pode avaliar seu prÃ³prio comentÃ¡rio.'));
+        }
+
+        $saved = $this->patientVideoCommentRatingModel->upsertRating($commentId, $patientId, $rating);
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=error&msg=' . urlencode('NÃ£o foi possÃ­vel registrar a avaliaÃ§Ã£o do comentÃ¡rio.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=teratube-watch&id=' . $videoId . '&status=success&msg=' . urlencode('AvaliaÃ§Ã£o do comentÃ¡rio registrada.'));
+    }
+
     public function myContents(): void
     {
         $patientId = (int) Auth::patientId();
         $search = Utils::sanitize($_GET['search'] ?? '');
         $favoriteBooks = $this->bookModel->listFavoriteBooksByPatient($patientId, $search);
+        $favoriteVideos = $this->teraTubeVideoModel->listFavoriteVideosByPatient($patientId, $search);
 
         $this->view('patient/my-contents', [
             'appUrl' => Config::get('APP_URL', ''),
             'favoriteBooks' => $favoriteBooks,
+            'favoriteVideos' => $favoriteVideos,
             'search' => $search,
         ]);
     }
