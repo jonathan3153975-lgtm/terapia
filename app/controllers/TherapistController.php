@@ -11,6 +11,8 @@ use App\Models\HealingLetter;
 use App\Models\Book;
 use App\Models\Material;
 use App\Models\MaterialDelivery;
+use App\Models\Devotional;
+use App\Models\DevotionalEntry;
 use App\Models\Patient;
 use App\Models\PatientFaithEntry;
 use App\Models\PatientGuidedMeditationEntry;
@@ -61,6 +63,8 @@ class TherapistController extends Controller
     private TeraTubeVideo $teraTubeVideoModel;
     private PatientVideoComment $patientVideoCommentModel;
     private PredefinedTask $predefinedTaskModel;
+    private Devotional $devotionalModel;
+    private DevotionalEntry $devotionalEntryModel;
 
     public function __construct()
     {
@@ -89,6 +93,8 @@ class TherapistController extends Controller
         $this->teraTubeVideoModel = new TeraTubeVideo();
         $this->patientVideoCommentModel = new PatientVideoComment();
         $this->predefinedTaskModel = new PredefinedTask();
+        $this->devotionalModel = new Devotional();
+        $this->devotionalEntryModel = new DevotionalEntry();
     }
 
     public function dashboard(): void
@@ -825,6 +831,391 @@ class TherapistController extends Controller
         $this->deleteGuidedMeditationFileIfExists((string) ($current['audio_path'] ?? ''));
 
         $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-guided-meditations&status=success&msg=' . urlencode('Meditação excluída com sucesso.'));
+    }
+
+    private function normalizeDevotionalMonth(int $month): int
+    {
+        return max(1, min(12, $month));
+    }
+
+    private function normalizeDevotionalYear(int $year): int
+    {
+        if ($year < 2000) {
+            return 2000;
+        }
+
+        if ($year > 2100) {
+            return 2100;
+        }
+
+        return $year;
+    }
+
+    private function devotionalMonthLabel(int $month): string
+    {
+        return match ($month) {
+            1 => 'Janeiro',
+            2 => 'Fevereiro',
+            3 => 'Março',
+            4 => 'Abril',
+            5 => 'Maio',
+            6 => 'Junho',
+            7 => 'Julho',
+            8 => 'Agosto',
+            9 => 'Setembro',
+            10 => 'Outubro',
+            11 => 'Novembro',
+            12 => 'Dezembro',
+            default => 'Mês inválido',
+        };
+    }
+
+    private function isDateInsideDevotionalPeriod(string $entryDate, int $monthNumber, int $yearNumber): bool
+    {
+        $timestamp = strtotime($entryDate);
+        if ($timestamp === false) {
+            return false;
+        }
+
+        return (int) date('n', $timestamp) === $monthNumber
+            && (int) date('Y', $timestamp) === $yearNumber;
+    }
+
+    public function devotionals(): void
+    {
+        $therapistId = (int) Auth::id();
+        $search = trim((string) ($_GET['q'] ?? ''));
+        $devotionals = $this->devotionalModel->listByTherapist($therapistId, $search);
+
+        $this->view('therapist/devotionals/index', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'devotionals' => $devotionals,
+            'filters' => [
+                'q' => $search,
+            ],
+            'monthLabel' => fn (int $month): string => $this->devotionalMonthLabel($month),
+        ]);
+    }
+
+    public function createDevotional(): void
+    {
+        $this->view('therapist/devotionals/create', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'monthLabel' => fn (int $month): string => $this->devotionalMonthLabel($month),
+        ]);
+    }
+
+    public function storeDevotional(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $monthNumber = $this->normalizeDevotionalMonth((int) ($_POST['month_number'] ?? (int) date('n')));
+        $yearNumber = $this->normalizeDevotionalYear((int) ($_POST['year_number'] ?? (int) date('Y')));
+        $theme = trim((string) ($_POST['theme'] ?? ''));
+
+        if ($theme === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-create&status=error&msg=' . urlencode('Tema é obrigatório.'));
+        }
+
+        $existing = $this->devotionalModel->findByTherapistMonthYear($therapistId, $monthNumber, $yearNumber);
+        if ($existing) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-create&status=error&msg=' . urlencode('Já existe um devocional para este mês e ano.'));
+        }
+
+        $saved = $this->devotionalModel->insert([
+            'therapist_id' => $therapistId,
+            'month_number' => $monthNumber,
+            'year_number' => $yearNumber,
+            'theme' => $theme,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Falha ao cadastrar devocional.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=success&msg=' . urlencode('Devocional cadastrado com sucesso.'));
+    }
+
+    public function showDevotional(): void
+    {
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_GET['id'] ?? 0);
+
+        $devotional = $this->devotionalModel->findByTherapistAndId($therapistId, $id);
+        if (!$devotional) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Devocional não encontrado.'));
+        }
+
+        $entries = $this->devotionalEntryModel->listByDevotional($therapistId, $id);
+
+        $this->view('therapist/devotionals/show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'devotional' => $devotional,
+            'entries' => $entries,
+            'monthLabel' => fn (int $month): string => $this->devotionalMonthLabel($month),
+        ]);
+    }
+
+    public function editDevotional(): void
+    {
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_GET['id'] ?? 0);
+
+        $devotional = $this->devotionalModel->findByTherapistAndId($therapistId, $id);
+        if (!$devotional) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Devocional não encontrado.'));
+        }
+
+        $this->view('therapist/devotionals/edit', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'devotional' => $devotional,
+            'monthLabel' => fn (int $month): string => $this->devotionalMonthLabel($month),
+        ]);
+    }
+
+    public function updateDevotional(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_POST['id'] ?? 0);
+        $monthNumber = $this->normalizeDevotionalMonth((int) ($_POST['month_number'] ?? (int) date('n')));
+        $yearNumber = $this->normalizeDevotionalYear((int) ($_POST['year_number'] ?? (int) date('Y')));
+        $theme = trim((string) ($_POST['theme'] ?? ''));
+
+        $current = $this->devotionalModel->findByTherapistAndId($therapistId, $id);
+        if (!$current) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Devocional não encontrado.'));
+        }
+
+        if ($theme === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-edit&id=' . $id . '&status=error&msg=' . urlencode('Tema é obrigatório.'));
+        }
+
+        $existing = $this->devotionalModel->findByTherapistMonthYear($therapistId, $monthNumber, $yearNumber, $id);
+        if ($existing) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-edit&id=' . $id . '&status=error&msg=' . urlencode('Já existe um devocional para este mês e ano.'));
+        }
+
+        $updated = $this->devotionalModel->updateById($id, [
+            'month_number' => $monthNumber,
+            'year_number' => $yearNumber,
+            'theme' => $theme,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-edit&id=' . $id . '&status=error&msg=' . urlencode('Falha ao atualizar devocional.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=success&msg=' . urlencode('Devocional atualizado com sucesso.'));
+    }
+
+    public function deleteDevotional(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $id = (int) ($_POST['id'] ?? 0);
+
+        $current = $this->devotionalModel->findByTherapistAndId($therapistId, $id);
+        if (!$current) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Devocional não encontrado.'));
+        }
+
+        $deleted = $this->devotionalModel->deleteByTherapistAndId($therapistId, $id);
+        if (!$deleted) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Falha ao excluir devocional.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=success&msg=' . urlencode('Devocional excluído com sucesso.'));
+    }
+
+    public function storeDevotionalEntry(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $devotionalId = (int) ($_POST['devotional_id'] ?? 0);
+        $devotional = $this->devotionalModel->findByTherapistAndId($therapistId, $devotionalId);
+        if (!$devotional) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Devocional não encontrado.'));
+        }
+
+        $entryDate = trim((string) ($_POST['entry_date'] ?? ''));
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $wordOfGod = Utils::sanitize($_POST['word_of_god'] ?? '');
+        $textContent = $this->sanitizeRichText((string) ($_POST['text_content'] ?? ''));
+
+        if ($entryDate === '' || $title === '' || $wordOfGod === '' || trim(strip_tags($textContent)) === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=error&msg=' . urlencode('Data, título, Palavra de Deus e texto são obrigatórios.'));
+        }
+
+        if (!$this->isDateInsideDevotionalPeriod($entryDate, (int) ($devotional['month_number'] ?? 0), (int) ($devotional['year_number'] ?? 0))) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=error&msg=' . urlencode('A data deve pertencer ao mês e ano do devocional.'));
+        }
+
+        $existing = $this->devotionalEntryModel->findByDevotionalAndDate($therapistId, $devotionalId, $entryDate);
+        if ($existing) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=error&msg=' . urlencode('Já existe um registro devocional para esta data.'));
+        }
+
+        $saved = $this->devotionalEntryModel->insert([
+            'devotional_id' => $devotionalId,
+            'therapist_id' => $therapistId,
+            'entry_date' => $entryDate,
+            'title' => $title,
+            'word_of_god' => $wordOfGod,
+            'text_content' => $textContent,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$saved) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=error&msg=' . urlencode('Falha ao cadastrar registro devocional.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=success&msg=' . urlencode('Registro devocional cadastrado com sucesso.'));
+    }
+
+    public function showDevotionalEntry(): void
+    {
+        $therapistId = (int) Auth::id();
+        $devotionalId = (int) ($_GET['devotional_id'] ?? 0);
+        $entryId = (int) ($_GET['id'] ?? 0);
+
+        $devotional = $this->devotionalModel->findByTherapistAndId($therapistId, $devotionalId);
+        if (!$devotional) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Devocional não encontrado.'));
+        }
+
+        $entry = $this->devotionalEntryModel->findByTherapistDevotionalAndId($therapistId, $devotionalId, $entryId);
+        if (!$entry) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=error&msg=' . urlencode('Registro devocional não encontrado.'));
+        }
+
+        $this->view('therapist/devotionals/entries/show', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'devotional' => $devotional,
+            'entry' => $entry,
+            'monthLabel' => fn (int $month): string => $this->devotionalMonthLabel($month),
+        ]);
+    }
+
+    public function editDevotionalEntry(): void
+    {
+        $therapistId = (int) Auth::id();
+        $devotionalId = (int) ($_GET['devotional_id'] ?? 0);
+        $entryId = (int) ($_GET['id'] ?? 0);
+
+        $devotional = $this->devotionalModel->findByTherapistAndId($therapistId, $devotionalId);
+        if (!$devotional) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Devocional não encontrado.'));
+        }
+
+        $entry = $this->devotionalEntryModel->findByTherapistDevotionalAndId($therapistId, $devotionalId, $entryId);
+        if (!$entry) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=error&msg=' . urlencode('Registro devocional não encontrado.'));
+        }
+
+        $this->view('therapist/devotionals/entries/edit', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'devotional' => $devotional,
+            'entry' => $entry,
+            'monthLabel' => fn (int $month): string => $this->devotionalMonthLabel($month),
+        ]);
+    }
+
+    public function updateDevotionalEntry(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $devotionalId = (int) ($_POST['devotional_id'] ?? 0);
+        $entryId = (int) ($_POST['id'] ?? 0);
+
+        $devotional = $this->devotionalModel->findByTherapistAndId($therapistId, $devotionalId);
+        if (!$devotional) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Devocional não encontrado.'));
+        }
+
+        $entry = $this->devotionalEntryModel->findByTherapistDevotionalAndId($therapistId, $devotionalId, $entryId);
+        if (!$entry) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=error&msg=' . urlencode('Registro devocional não encontrado.'));
+        }
+
+        $entryDate = trim((string) ($_POST['entry_date'] ?? ''));
+        $title = Utils::sanitize($_POST['title'] ?? '');
+        $wordOfGod = Utils::sanitize($_POST['word_of_god'] ?? '');
+        $textContent = $this->sanitizeRichText((string) ($_POST['text_content'] ?? ''));
+
+        if ($entryDate === '' || $title === '' || $wordOfGod === '' || trim(strip_tags($textContent)) === '') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-entries-edit&devotional_id=' . $devotionalId . '&id=' . $entryId . '&status=error&msg=' . urlencode('Data, título, Palavra de Deus e texto são obrigatórios.'));
+        }
+
+        if (!$this->isDateInsideDevotionalPeriod($entryDate, (int) ($devotional['month_number'] ?? 0), (int) ($devotional['year_number'] ?? 0))) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-entries-edit&devotional_id=' . $devotionalId . '&id=' . $entryId . '&status=error&msg=' . urlencode('A data deve pertencer ao mês e ano do devocional.'));
+        }
+
+        $existing = $this->devotionalEntryModel->findByDevotionalAndDate($therapistId, $devotionalId, $entryDate, $entryId);
+        if ($existing) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-entries-edit&devotional_id=' . $devotionalId . '&id=' . $entryId . '&status=error&msg=' . urlencode('Já existe um registro devocional para esta data.'));
+        }
+
+        $updated = $this->devotionalEntryModel->updateById($entryId, [
+            'entry_date' => $entryDate,
+            'title' => $title,
+            'word_of_god' => $wordOfGod,
+            'text_content' => $textContent,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-entries-edit&devotional_id=' . $devotionalId . '&id=' . $entryId . '&status=error&msg=' . urlencode('Falha ao atualizar registro devocional.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=success&msg=' . urlencode('Registro devocional atualizado com sucesso.'));
+    }
+
+    public function deleteDevotionalEntry(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Método não permitido.'));
+        }
+
+        $therapistId = (int) Auth::id();
+        $devotionalId = (int) ($_POST['devotional_id'] ?? 0);
+        $entryId = (int) ($_POST['id'] ?? 0);
+
+        $devotional = $this->devotionalModel->findByTherapistAndId($therapistId, $devotionalId);
+        if (!$devotional) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals&status=error&msg=' . urlencode('Devocional não encontrado.'));
+        }
+
+        $entry = $this->devotionalEntryModel->findByTherapistDevotionalAndId($therapistId, $devotionalId, $entryId);
+        if (!$entry) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=error&msg=' . urlencode('Registro devocional não encontrado.'));
+        }
+
+        $deleted = $this->devotionalEntryModel->deleteByTherapistDevotionalAndId($therapistId, $devotionalId, $entryId);
+        if (!$deleted) {
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=error&msg=' . urlencode('Falha ao excluir registro devocional.'));
+        }
+
+        $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-devotionals-show&id=' . $devotionalId . '&status=success&msg=' . urlencode('Registro devocional excluído com sucesso.'));
     }
 
     private function prayerUploadBasePath(string $kind): string

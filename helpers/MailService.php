@@ -76,6 +76,7 @@ class MailService
             $this->mailer->Body = $bodyHtml;
             $this->mailer->AltBody = strip_tags($bodyHtml);
             $this->mailer->CharSet = 'UTF-8';
+            $this->mailer->Encoding = 'base64';
 
             return $this->mailer->send();
         } catch (Exception $e) {
@@ -104,15 +105,19 @@ class MailService
         }
 
         $fromName = Config::get('MAIL_FROM_NAME', 'Tera-Tech');
-        $fromEmail = Config::get('MAIL_FROM_ADDRESS', Config::get('MAIL_USERNAME', 'noreply@terapia.local'));
+        $fromEmail = Config::get('MAIL_FROM_ADDRESS', Config::get('MAIL_USERNAME', 'noreply@teratech.local'));
+        $encodedSubject = function_exists('mb_encode_mimeheader')
+            ? mb_encode_mimeheader($subject, 'UTF-8', 'B', "\r\n")
+            : $subject;
 
         $headers = [
             'MIME-Version: 1.0',
             'Content-type: text/html; charset=UTF-8',
+            'Content-Transfer-Encoding: 8bit',
             'From: ' . $fromName . ' <' . $fromEmail . '>',
         ];
 
-        return @mail($email, $subject, $html, implode("\r\n", $headers));
+        return @mail($email, $encodedSubject, $html, implode("\r\n", $headers));
     }
 
     public static function getLastError(): string
