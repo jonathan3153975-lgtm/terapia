@@ -27,13 +27,13 @@ class EmailTemplate
     <div class="container">
         <div class="header"><h2 style="margin:0;">Nova senha de acesso</h2></div>
         <div class="content">
-            <p>Olá, <strong>{$userName}</strong>.</p>
-            <p>Recebemos sua solicitação de redefinição de senha.</p>
+            <p>OlÃ¡, <strong>{$userName}</strong>.</p>
+            <p>Recebemos sua solicitaÃ§Ã£o de redefiniÃ§Ã£o de senha.</p>
             <div class="box">
                 <div><strong>Login:</strong> {$loginEmail}</div>
                 <div><strong>Nova senha:</strong> {$newPassword}</div>
             </div>
-            <p>Por segurança, recomendamos alterar essa senha após entrar no sistema.</p>
+            <p>Por seguranÃ§a, recomendamos alterar essa senha apÃ³s entrar no sistema.</p>
             <a class="btn" href="{$loginUrl}">Acessar login</a>
         </div>
     </div>
@@ -63,7 +63,7 @@ HTML;
     <div class="container">
         <div class="header"><h2 style="margin:0;">Ficha de cadastro do paciente</h2></div>
         <div class="content">
-            <p>Olá,</p>
+            <p>OlÃ¡,</p>
             <p>Seu terapeuta <strong>{$therapistName}</strong> enviou um link seguro para preencher sua ficha de cadastro.</p>
             <p><a class="btn" href="{$signupLink}">Preencher ficha</a></p>
             <div class="hint"><strong>Link direto:</strong><br>{$signupLink}</div>
@@ -95,14 +95,14 @@ HTML;
     <div class="container">
         <div class="header"><h2 style="margin:0;">Cadastro confirmado</h2></div>
         <div class="content">
-            <p>Olá, <strong>{$patientName}</strong>.</p>
-            <p>Seu cadastro foi concluído com sucesso.</p>
-            <p>Estes são seus dados de acesso:</p>
+            <p>OlÃ¡, <strong>{$patientName}</strong>.</p>
+            <p>Seu cadastro foi concluÃ­do com sucesso.</p>
+            <p>Estes sÃ£o seus dados de acesso:</p>
             <div class="box">
                 <div><strong>Login:</strong> {$loginEmail}</div>
                 <div><strong>Senha:</strong> {$rawPassword}</div>
             </div>
-            <p>Você já pode entrar na plataforma e iniciar seu acompanhamento.</p>
+            <p>VocÃª jÃ¡ pode entrar na plataforma e iniciar seu acompanhamento.</p>
             <a class="btn" href="{$loginUrl}">Acessar sistema</a>
         </div>
     </div>
@@ -110,7 +110,41 @@ HTML;
 </html>
 HTML;
     }
-
+    public static function subscriptionConfirmed(string $patientName, string $durationLabel, string $endsAtLabel, string $loginUrl): string
+    {
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f5f7fb; margin: 0; }
+        .container { max-width: 620px; margin: 24px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 24px rgba(15,23,42,.08); }
+        .header { background: linear-gradient(135deg, #0f766e, #14b8a6); color: #fff; padding: 26px; }
+        .content { padding: 26px; color: #334155; line-height: 1.6; }
+        .box { background: #f8fafc; border: 1px solid #ccfbf1; border-radius: 10px; padding: 14px; }
+        .btn { display: inline-block; padding: 12px 18px; border-radius: 8px; text-decoration: none; background: #0f766e; color: #fff; font-weight: 600; margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><h2 style="margin:0;">Assinatura confirmada</h2></div>
+        <div class="content">
+            <p>Olá, <strong>{$patientName}</strong>.</p>
+            <p>Assinatura confirmada! Muito obrigado por fazer parte da comunidade Tera-Tech! Você não vai se arrepender! Esperamos que seja de muito proveito para você!</p>
+            <div class="box">
+                <div><strong>Tempo de acesso:</strong> {$durationLabel}</div>
+                <div><strong>Acesso válido até:</strong> {$endsAtLabel}</div>
+            </div>
+            <p>Seu acesso premium já está liberado para você aproveitar todos os conteúdos disponíveis na plataforma.</p>
+            <a class="btn" href="{$loginUrl}">Acessar plataforma</a>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    }
     public static function taskAssigned(string $patientName, string $taskTitle, string $taskDescription, string $dueDate): string
     {
         $appUrl = Config::get('APP_URL', 'https://app.terapia.local');
@@ -141,26 +175,26 @@ HTML;
 <body>
     <div class="container">
         <div class="header">
-            <h1>📋 Nova Tarefa Recebida</h1>
+            <h1>ðŸ“‹ Nova Tarefa Recebida</h1>
         </div>
         <div class="content">
-            <div class="greeting">Olá <strong>{$patientName}</strong>,</div>
-            <p>Você recebeu uma nova tarefa de seu terapeuta. Confira os detalhes abaixo:</p>
+            <div class="greeting">OlÃ¡ <strong>{$patientName}</strong>,</div>
+            <p>VocÃª recebeu uma nova tarefa de seu terapeuta. Confira os detalhes abaixo:</p>
 
             <div class="task-card">
                 <h3>{$taskTitle}</h3>
-                <p><span class="task-label">Descrição:</span><br>{$taskDescription}</p>
+                <p><span class="task-label">DescriÃ§Ã£o:</span><br>{$taskDescription}</p>
                 <p><span class="task-label">Data limite:</span> {$dueDate}</p>
             </div>
 
             <p style="color: #666; line-height: 1.6;">
-                Faça o login no portal do paciente para visualizar todos os detalhes, anexos e recursos relacionados à tarefa.
+                FaÃ§a o login no portal do paciente para visualizar todos os detalhes, anexos e recursos relacionados Ã  tarefa.
             </p>
 
             <a href="{$appUrl}/patient.php?action=tasks" class="cta-button">Ir para Tarefas</a>
         </div>
         <div class="footer">
-            <p>Este é um email automático. Não responda diretamente a este email.</p>
+            <p>Este Ã© um email automÃ¡tico. NÃ£o responda diretamente a este email.</p>
             <p><a href="{$appUrl}">Tera-Tech</a></p>
         </div>
     </div>
@@ -199,25 +233,25 @@ HTML;
 <body>
     <div class="container">
         <div class="header">
-            <h1>📚 Novo Material Disponível</h1>
+            <h1>ðŸ“š Novo Material DisponÃ­vel</h1>
         </div>
         <div class="content">
-            <div class="greeting">Olá <strong>{$patientName}</strong>,</div>
+            <div class="greeting">OlÃ¡ <strong>{$patientName}</strong>,</div>
             <p>Seu terapeuta compartilhou um novo material de apoio para sua terapia:</p>
 
             <div class="material-card">
                 <h3>{$materialTitle}</h3>
-                <p><span class="material-label">Descrição:</span><br>{$materialDescription}</p>
+                <p><span class="material-label">DescriÃ§Ã£o:</span><br>{$materialDescription}</p>
             </div>
 
             <p style="color: #666; line-height: 1.6;">
-                Acesse a seção de materiais no portal do paciente para visualizar documentos, vídeos, exercícios e outros recursos.
+                Acesse a seÃ§Ã£o de materiais no portal do paciente para visualizar documentos, vÃ­deos, exercÃ­cios e outros recursos.
             </p>
 
             <a href="{$appUrl}/patient.php?action=materials" class="cta-button">Ver Materiais</a>
         </div>
         <div class="footer">
-            <p>Este é um email automático. Não responda diretamente a este email.</p>
+            <p>Este Ã© um email automÃ¡tico. NÃ£o responda diretamente a este email.</p>
             <p><a href="{$appUrl}">Tera-Tech</a></p>
         </div>
     </div>
@@ -256,25 +290,25 @@ HTML;
 <body>
     <div class="container">
         <div class="header">
-            <h1>✅ Devolutiva da Tarefa Recebida</h1>
+            <h1>âœ… Devolutiva da Tarefa Recebida</h1>
         </div>
         <div class="content">
-            <div class="greeting">Olá <strong>{$therapistName}</strong>,</div>
+            <div class="greeting">OlÃ¡ <strong>{$therapistName}</strong>,</div>
             <p><strong>{$patientName}</strong> enviou sua devolutiva para a seguinte tarefa:</p>
 
             <div class="response-card">
                 <h3>{$taskTitle}</h3>
-                <p><span class="response-label">Status:</span> Devolutiva recebida e pronta para análise</p>
+                <p><span class="response-label">Status:</span> Devolutiva recebida e pronta para anÃ¡lise</p>
             </div>
 
             <p style="color: #666; line-height: 1.6;">
-                Faça o login no painel de administração para visualizar a devolutiva, anexos e demais detalhes fornecidos pelo paciente.
+                FaÃ§a o login no painel de administraÃ§Ã£o para visualizar a devolutiva, anexos e demais detalhes fornecidos pelo paciente.
             </p>
 
             <a href="{$appUrl}/dashboard.php?action=therapist-patients" class="cta-button">Ver Devolutiva</a>
         </div>
         <div class="footer">
-            <p>Este é um email automático. Não responda diretamente a este email.</p>
+            <p>Este Ã© um email automÃ¡tico. NÃ£o responda diretamente a este email.</p>
             <p><a href="{$appUrl}">Tera-Tech</a></p>
         </div>
     </div>
@@ -307,13 +341,13 @@ HTML;
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎉 Bem-vindo(a)!</h1>
+            <h1>ðŸŽ‰ Bem-vindo(a)!</h1>
         </div>
         <div class="content">
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Olá <strong>{$patientName}</strong>,</p>
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">OlÃ¡ <strong>{$patientName}</strong>,</p>
             
             <p style="color: #666; line-height: 1.6; margin-bottom: 15px;">
-                Sua conta foi criada com sucesso na Tera-Tech. Você já pode acessar seu portal para visualizar tarefas, 
+                Sua conta foi criada com sucesso na Tera-Tech. VocÃª jÃ¡ pode acessar seu portal para visualizar tarefas, 
                 materiais de apoio e manter contato com seu terapeuta.
             </p>
 
@@ -323,13 +357,13 @@ HTML;
             </div>
 
             <p style="color: #666; line-height: 1.6;">
-                Caso tenha dúvidas sobre como usar a plataforma, consulte a seção de ajuda ou entre em contato com seu terapeuta.
+                Caso tenha dÃºvidas sobre como usar a plataforma, consulte a seÃ§Ã£o de ajuda ou entre em contato com seu terapeuta.
             </p>
 
             <a href="{$loginUrl}" class="cta-button">Acessar Portal</a>
         </div>
         <div class="footer">
-            <p>Este é um email automático. Não responda diretamente a este email.</p>
+            <p>Este Ã© um email automÃ¡tico. NÃ£o responda diretamente a este email.</p>
         </div>
     </div>
 </body>

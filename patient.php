@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 $bootstrapLogFile = __DIR__ . '/bootstrap-error.log';
 
@@ -85,3 +85,4 @@ match ($action) {
     'virtual-task-complete' => $portal->completeVirtualTask(),
     default => $portal->dashboard(),
 };
+

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Controllers;
 
@@ -109,7 +109,7 @@ class PatientPortalController extends Controller
 
     private function enforceActiveSubscription(): void
     {
-        // Ações que não exigem assinatura ativa (plano gratuito + gerenciamento de assinatura)
+        // AÃ§Ãµes que nÃ£o exigem assinatura ativa (plano gratuito + gerenciamento de assinatura)
         $freeActions = [
             'tasks',
             'task-material',
@@ -143,15 +143,15 @@ class PatientPortalController extends Controller
         if ($activeSubscription) {
             $_SESSION['patient_has_active_plan'] = true;
             if (in_array($action, $subscriptionActions, true)) {
-                $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=success&msg=' . urlencode('Sua assinatura está ativa.'));
+                $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=success&msg=' . urlencode('Sua assinatura estÃ¡ ativa.'));
             }
             return;
         }
 
-        // Sem plano ativo: marcar sessão como free-tier
+        // Sem plano ativo: marcar sessÃ£o como free-tier
         $_SESSION['patient_has_active_plan'] = false;
 
-        // Redirecionar para os planos quando não houver assinatura ativa.
+        // Redirecionar para os planos quando nÃ£o houver assinatura ativa.
         if (!in_array($action, $alwaysAllowed, true)) {
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Escolha um plano para continuar usando a plataforma.'));
         }
@@ -289,7 +289,7 @@ class PatientPortalController extends Controller
             $rows .= '<h4>Dia ' . $day . '</h4>' . $content . '<hr>';
         }
 
-        return '<h3>Diário de gratidão (30 dias)</h3>'
+        return '<h3>DiÃ¡rio de gratidÃ£o (30 dias)</h3>'
             . '<p><strong>Paciente:</strong> ' . htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8') . '</p>'
             . '<p><strong>Ciclo:</strong> ' . $cycleNumber . '</p>'
             . $rows;
@@ -300,7 +300,7 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $context = $this->resolveGratitudeCycleContext($patientId);
@@ -320,19 +320,19 @@ class PatientPortalController extends Controller
     public function storeGratitudeEntry(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Método não permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         $contentHtml = $this->sanitizeRichText((string) ($_POST['content_html'] ?? ''));
         if (trim(strip_tags($contentHtml)) === '') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Escreva sua gratidão antes de salvar.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Escreva sua gratidÃ£o antes de salvar.'));
         }
 
         $context = $this->resolveGratitudeCycleContext($patientId);
@@ -350,7 +350,7 @@ class PatientPortalController extends Controller
         ]);
 
         if (!$saved) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Falha ao salvar o registro de gratidão.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Falha ao salvar o registro de gratidÃ£o.'));
         }
 
         if ($targetDay >= 30) {
@@ -360,8 +360,8 @@ class PatientPortalController extends Controller
                 'therapist_id' => $therapistId,
                 'patient_id' => $patientId,
                 'due_date' => date('Y-m-d'),
-                'title' => 'Diário de gratidão (30 dias)',
-                'description' => 'Resumo do diário de gratidão do paciente (ciclo ' . $targetCycle . ').',
+                'title' => 'DiÃ¡rio de gratidÃ£o (30 dias)',
+                'description' => 'Resumo do diÃ¡rio de gratidÃ£o do paciente (ciclo ' . $targetCycle . ').',
                 'patient_response_html' => $compiledHtml,
                 'responded_at' => date('Y-m-d H:i:s'),
                 'send_to_patient' => 0,
@@ -381,7 +381,7 @@ class PatientPortalController extends Controller
         $entryId = (int) ($_GET['id'] ?? 0);
         $entry = $this->patientGratitudeEntryModel->findByPatientAndId($patientId, $entryId);
         if (!$entry) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro nÃ£o encontrado.'));
         }
 
         $this->view('patient/gratitude-show', [
@@ -396,12 +396,12 @@ class PatientPortalController extends Controller
         $entryId = (int) ($_GET['id'] ?? 0);
         $entry = $this->patientGratitudeEntryModel->findByPatientAndId($patientId, $entryId);
         if (!$entry) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro nÃ£o encontrado.'));
         }
 
         $stats = $this->patientGratitudeEntryModel->getCycleStatsByPatient($patientId, (int) ($entry['cycle_number'] ?? 0));
         if ((int) ($stats['max_day'] ?? 0) >= 30) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Após 30 dias, o diário é bloqueado para edição.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('ApÃ³s 30 dias, o diÃ¡rio Ã© bloqueado para ediÃ§Ã£o.'));
         }
 
         $this->view('patient/gratitude-edit', [
@@ -413,24 +413,24 @@ class PatientPortalController extends Controller
     public function updateGratitudeEntry(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Método não permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
         $entryId = (int) ($_POST['id'] ?? 0);
         $entry = $this->patientGratitudeEntryModel->findByPatientAndId($patientId, $entryId);
         if (!$entry) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro nÃ£o encontrado.'));
         }
 
         $stats = $this->patientGratitudeEntryModel->getCycleStatsByPatient($patientId, (int) ($entry['cycle_number'] ?? 0));
         if ((int) ($stats['max_day'] ?? 0) >= 30) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Após 30 dias, o diário é bloqueado para edição.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('ApÃ³s 30 dias, o diÃ¡rio Ã© bloqueado para ediÃ§Ã£o.'));
         }
 
         $contentHtml = $this->sanitizeRichText((string) ($_POST['content_html'] ?? ''));
         if (trim(strip_tags($contentHtml)) === '') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude-edit&id=' . $entryId . '&status=error&msg=' . urlencode('Escreva sua gratidão antes de salvar.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude-edit&id=' . $entryId . '&status=error&msg=' . urlencode('Escreva sua gratidÃ£o antes de salvar.'));
         }
 
         $updated = $this->patientGratitudeEntryModel->updateById($entryId, [
@@ -451,12 +451,12 @@ class PatientPortalController extends Controller
         $entryId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
         $entry = $this->patientGratitudeEntryModel->findByPatientAndId($patientId, $entryId);
         if (!$entry) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Registro nÃ£o encontrado.'));
         }
 
         $stats = $this->patientGratitudeEntryModel->getCycleStatsByPatient($patientId, (int) ($entry['cycle_number'] ?? 0));
         if ((int) ($stats['max_day'] ?? 0) >= 30) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Após 30 dias, o diário é bloqueado para exclusão.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('ApÃ³s 30 dias, o diÃ¡rio Ã© bloqueado para exclusÃ£o.'));
         }
 
         $deleted = $this->patientGratitudeEntryModel->deleteByPatientAndId($patientId, $entryId);
@@ -464,7 +464,7 @@ class PatientPortalController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=error&msg=' . urlencode('Falha ao excluir registro.'));
         }
 
-        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=success&msg=' . urlencode('Registro excluído com sucesso.'));
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=gratitude&status=success&msg=' . urlencode('Registro excluÃ­do com sucesso.'));
     }
 
     private function sanitizeRichText(string $html): string
@@ -675,11 +675,11 @@ class PatientPortalController extends Controller
         $plan = $this->planModel->findPatientPlanById($planId);
 
         if (!$plan || (int) ($plan['is_active'] ?? 0) !== 1 || (int) ($plan['therapist_id'] ?? 0) !== $therapistId) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Plano inválido para este paciente.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Plano invÃ¡lido para este paciente.'));
         }
 
         if (!$this->mercadoPagoGateway->isConfigured()) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Pagamento indisponível no momento. Contate o suporte.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Pagamento indisponÃ­vel no momento. Contate o suporte.'));
         }
 
         $providerReference = 'PATSUB-' . $patientId . '-' . time() . '-' . strtoupper(bin2hex(random_bytes(3)));
@@ -694,7 +694,7 @@ class PatientPortalController extends Controller
         );
 
         if (!$paymentId) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Não foi possível iniciar o pagamento.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('NÃ£o foi possÃ­vel iniciar o pagamento.'));
         }
 
         $subscriptionId = $this->patientSubscriptionModel->insert([
@@ -737,7 +737,7 @@ class PatientPortalController extends Controller
             'items' => [[
                 'id' => (string) $plan['id'],
                 'title' => (string) $plan['name'],
-                'description' => (string) ($plan['description_text'] ?? 'Assinatura de acesso ao conteúdo terapêutico'),
+                'description' => (string) ($plan['description_text'] ?? 'Assinatura de acesso ao conteÃºdo terapÃªutico'),
                 'quantity' => 1,
                 'currency_id' => (string) Config::get('MP_CURRENCY_ID', 'BRL'),
                 'unit_price' => (float) $amount,
@@ -780,7 +780,7 @@ class PatientPortalController extends Controller
         if ($checkoutUrl === '') {
             $this->paymentModel->markStatusById((int) $paymentId, 'failed');
             $this->patientSubscriptionModel->markStatusById((int) $subscriptionId, 'failed');
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Checkout do Mercado Pago indisponível.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=error&msg=' . urlencode('Checkout do Mercado Pago indisponÃ­vel.'));
         }
 
         $this->patientSubscriptionModel->updateById((int) $subscriptionId, [
@@ -807,9 +807,9 @@ class PatientPortalController extends Controller
 
         $status = strtolower((string) ($_GET['status'] ?? 'pending'));
         $message = match ($status) {
-            'approved' => 'Pagamento recebido. Estamos finalizando a ativação da assinatura.',
-            'failure' => 'Pagamento não concluído. Tente novamente.',
-            default => 'Pagamento pendente. Assim que confirmado, sua assinatura será ativada.',
+            'approved' => 'Pagamento recebido. Estamos finalizando a ativaÃ§Ã£o da assinatura.',
+            'failure' => 'Pagamento nÃ£o concluÃ­do. Tente novamente.',
+            default => 'Pagamento pendente. Assim que confirmado, sua assinatura serÃ¡ ativada.',
         };
 
         $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=subscription-plans&status=' . ($status === 'failure' ? 'error' : 'success') . '&msg=' . urlencode($message));
@@ -897,7 +897,7 @@ class PatientPortalController extends Controller
         $absolutePath = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
         if (!is_file($absolutePath)) {
             http_response_code(404);
-            echo 'Arquivo não encontrado.';
+            echo 'Arquivo nÃ£o encontrado.';
             exit;
         }
 
@@ -915,7 +915,7 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
@@ -940,7 +940,7 @@ class PatientPortalController extends Controller
 
         if (!$book || empty($book['pdf_path'])) {
             http_response_code(404);
-            echo 'Livro não encontrado.';
+            echo 'Livro nÃ£o encontrado.';
             exit;
         }
 
@@ -951,7 +951,7 @@ class PatientPortalController extends Controller
     public function toggleBookFavorite(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=books&status=error&msg=' . urlencode('Método não permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=books&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
@@ -963,13 +963,13 @@ class PatientPortalController extends Controller
         }
 
         if (!$book) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=books&status=error&msg=' . urlencode('Livro não encontrado ou indisponível.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=books&status=error&msg=' . urlencode('Livro nÃ£o encontrado ou indisponÃ­vel.'));
         }
 
         $wasFavorite = $this->patientBookFavoriteModel->exists($patientId, $bookId);
         if ($wasFavorite) {
             $this->patientBookFavoriteModel->deleteByPatientAndBook($patientId, $bookId);
-            $message = 'Livro removido de Meus conteúdos.';
+            $message = 'Livro removido de Meus conteÃºdos.';
         } else {
             $patient = $this->patientModel->findById($patientId);
             $therapistId = (int) ($patient['therapist_id'] ?? 0);
@@ -979,7 +979,7 @@ class PatientPortalController extends Controller
                 'therapist_id' => $therapistId,
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
-            $message = 'Livro salvo em Meus conteúdos.';
+            $message = 'Livro salvo em Meus conteÃºdos.';
         }
 
         $query = 'action=' . urlencode($redirectAction);
@@ -1006,7 +1006,7 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $entries = $this->patientMessageEntryModel->listByPatient($patientId);
@@ -1027,17 +1027,17 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->error('Paciente não encontrado', 404);
+            $this->error('Paciente nÃ£o encontrado', 404);
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         if ($therapistId <= 0) {
-            $this->error('Terapeuta não encontrado', 404);
+            $this->error('Terapeuta nÃ£o encontrado', 404);
         }
 
         $allMessageIds = $this->dailyMessageModel->listIdsByTherapist($therapistId);
         if ($allMessageIds === []) {
-            $this->error('Nenhuma mensagem disponível para sorteio.', 404);
+            $this->error('Nenhuma mensagem disponÃ­vel para sorteio.', 404);
         }
 
         $cycleDrawnIds = $this->getMessengerCycleDrawnIds($patientId);
@@ -1052,7 +1052,7 @@ class PatientPortalController extends Controller
 
         $message = $this->dailyMessageModel->randomByTherapistExcludingIds($therapistId, $cycleDrawnIds);
         if (!$message) {
-            $this->error('Nenhuma mensagem disponível para sorteio.', 404);
+            $this->error('Nenhuma mensagem disponÃ­vel para sorteio.', 404);
         }
 
         $messageId = (int) ($message['id'] ?? 0);
@@ -1083,18 +1083,18 @@ class PatientPortalController extends Controller
     public function saveMessengerEntry(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Método não permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         if ($therapistId <= 0) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Terapeuta não vinculado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Terapeuta nÃ£o vinculado.'));
         }
 
         $messageId = (int) ($_POST['message_id'] ?? 0);
@@ -1104,7 +1104,7 @@ class PatientPortalController extends Controller
         $shareWithTherapist = isset($_POST['share_with_therapist']) ? 1 : 0;
 
         if ($messageText === '' || $patientNote === '') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('A mensagem sorteada e sua reflexão são obrigatórias.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('A mensagem sorteada e sua reflexÃ£o sÃ£o obrigatÃ³rias.'));
         }
 
         $saved = $this->patientMessageEntryModel->insert([
@@ -1120,7 +1120,7 @@ class PatientPortalController extends Controller
         ]);
 
         if (!$saved) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Falha ao salvar reflexão.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=messenger&status=error&msg=' . urlencode('Falha ao salvar reflexÃ£o.'));
         }
 
         if ($shareWithTherapist === 1) {
@@ -1141,8 +1141,8 @@ class PatientPortalController extends Controller
 
             $therapist = $this->userModel->findById($therapistId);
             if ($therapist) {
-                $subject = 'Nova reflexão no Mensageiro';
-                $message = 'Seu paciente compartilhou uma nova reflexão no Mensageiro. Acesse o painel para visualizar.';
+                $subject = 'Nova reflexÃ£o no Mensageiro';
+                $message = 'Seu paciente compartilhou uma nova reflexÃ£o no Mensageiro. Acesse o painel para visualizar.';
                 AlertDispatcher::dispatch(['email'], (string) ($therapist['email'] ?? ''), null, $subject, $message);
             }
         }
@@ -1155,7 +1155,7 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $entries = $this->patientFaithEntryModel->listByPatient($patientId);
@@ -1171,7 +1171,7 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
@@ -1195,18 +1195,18 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         $meditationId = (int) ($_GET['id'] ?? 0);
         if ($therapistId <= 0 || $meditationId <= 0) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Meditação inválida.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('MeditaÃ§Ã£o invÃ¡lida.'));
         }
 
         $meditation = $this->guidedMeditationModel->findByTherapistAndId($therapistId, $meditationId);
         if (!$meditation) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Meditação não encontrada.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('MeditaÃ§Ã£o nÃ£o encontrada.'));
         }
 
         $therapist = $this->userModel->findById($therapistId);
@@ -1225,27 +1225,27 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->error('Paciente não encontrado', 404);
+            $this->error('Paciente nÃ£o encontrado', 404);
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         if ($therapistId <= 0) {
-            $this->error('Terapeuta não encontrado', 404);
+            $this->error('Terapeuta nÃ£o encontrado', 404);
         }
 
         $meditationId = (int) ($_GET['meditation_id'] ?? 0);
         if ($meditationId <= 0) {
-            $this->error('Meditação inválida', 422);
+            $this->error('MeditaÃ§Ã£o invÃ¡lida', 422);
         }
 
         $meditation = $this->guidedMeditationModel->findByTherapistAndId($therapistId, $meditationId);
         if (!$meditation) {
-            $this->error('Meditação não encontrada', 404);
+            $this->error('MeditaÃ§Ã£o nÃ£o encontrada', 404);
         }
 
         $allLetterIds = $this->healingLetterModel->listIdsByTherapist($therapistId);
         if ($allLetterIds === []) {
-            $this->error('Nenhuma carta de cura disponível para sorteio.', 404);
+            $this->error('Nenhuma carta de cura disponÃ­vel para sorteio.', 404);
         }
 
         $cycleDrawnIds = $this->getHealingLettersCycleDrawnIds($patientId);
@@ -1260,7 +1260,7 @@ class PatientPortalController extends Controller
 
         $letter = $this->healingLetterModel->randomByTherapistExcludingIds($therapistId, $cycleDrawnIds);
         if (!$letter) {
-            $this->error('Nenhuma carta de cura disponível para sorteio.', 404);
+            $this->error('Nenhuma carta de cura disponÃ­vel para sorteio.', 404);
         }
 
         $letterId = (int) ($letter['id'] ?? 0);
@@ -1288,24 +1288,24 @@ class PatientPortalController extends Controller
     public function saveGuidedMeditationEntry(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Método não permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         if ($therapistId <= 0) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Terapeuta não vinculado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Terapeuta nÃ£o vinculado.'));
         }
 
         $meditationId = (int) ($_POST['meditation_id'] ?? 0);
         $meditation = $this->guidedMeditationModel->findByTherapistAndId($therapistId, $meditationId);
         if (!$meditation) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('Meditação não encontrada.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditations&status=error&msg=' . urlencode('MeditaÃ§Ã£o nÃ£o encontrada.'));
         }
 
         $letterId = (int) ($_POST['letter_id'] ?? 0);
@@ -1315,7 +1315,7 @@ class PatientPortalController extends Controller
         $shareWithTherapist = isset($_POST['share_with_therapist']) ? 1 : 0;
 
         if ($letterText === '' || $patientNote === '') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditation-show&id=' . $meditationId . '&status=error&msg=' . urlencode('Carta e reflexão são obrigatórias.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditation-show&id=' . $meditationId . '&status=error&msg=' . urlencode('Carta e reflexÃ£o sÃ£o obrigatÃ³rias.'));
         }
 
         $saved = $this->patientGuidedMeditationEntryModel->insert([
@@ -1332,7 +1332,7 @@ class PatientPortalController extends Controller
         ]);
 
         if (!$saved) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditation-show&id=' . $meditationId . '&status=error&msg=' . urlencode('Falha ao salvar reflexão.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditation-show&id=' . $meditationId . '&status=error&msg=' . urlencode('Falha ao salvar reflexÃ£o.'));
         }
 
         if ($shareWithTherapist === 1) {
@@ -1340,8 +1340,8 @@ class PatientPortalController extends Controller
                 'therapist_id' => $therapistId,
                 'patient_id' => $patientId,
                 'due_date' => date('Y-m-d'),
-                'title' => 'Reflexão Meditação Guiada',
-                'description' => (string) ($meditation['title'] ?? 'Meditação') . "\n\n" . $letterText,
+                'title' => 'ReflexÃ£o MeditaÃ§Ã£o Guiada',
+                'description' => (string) ($meditation['title'] ?? 'MeditaÃ§Ã£o') . "\n\n" . $letterText,
                 'patient_response_html' => $patientNote,
                 'responded_at' => date('Y-m-d H:i:s'),
                 'send_to_patient' => 0,
@@ -1353,13 +1353,13 @@ class PatientPortalController extends Controller
 
             $therapist = $this->userModel->findById($therapistId);
             if ($therapist) {
-                $subject = 'Nova reflexão em Meditação Guiada';
-                $message = 'Seu paciente compartilhou uma nova reflexão no módulo de Meditação Guiada. Acesse o painel para visualizar.';
+                $subject = 'Nova reflexÃ£o em MeditaÃ§Ã£o Guiada';
+                $message = 'Seu paciente compartilhou uma nova reflexÃ£o no mÃ³dulo de MeditaÃ§Ã£o Guiada. Acesse o painel para visualizar.';
                 AlertDispatcher::dispatch(['email'], (string) ($therapist['email'] ?? ''), null, $subject, $message);
             }
         }
 
-        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditation-show&id=' . $meditationId . '&status=success&msg=' . urlencode('Reflexão salva com sucesso.'));
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=guided-meditation-show&id=' . $meditationId . '&status=success&msg=' . urlencode('ReflexÃ£o salva com sucesso.'));
     }
 
     public function prayers(): void
@@ -1367,7 +1367,7 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=dashboard&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
@@ -1384,18 +1384,18 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         $prayerId = (int) ($_GET['id'] ?? 0);
         if ($therapistId <= 0 || $prayerId <= 0) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Oração inválida.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('OraÃ§Ã£o invÃ¡lida.'));
         }
 
         $prayer = $this->prayerModel->findByTherapistAndId($therapistId, $prayerId);
         if (!$prayer) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Oração não encontrada.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('OraÃ§Ã£o nÃ£o encontrada.'));
         }
 
         $therapist = $this->userModel->findById($therapistId);
@@ -1412,31 +1412,31 @@ class PatientPortalController extends Controller
     public function savePrayerEntry(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Método não permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         if ($therapistId <= 0) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Terapeuta não vinculado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Terapeuta nÃ£o vinculado.'));
         }
 
         $prayerId = (int) ($_POST['prayer_id'] ?? 0);
         $prayer = $this->prayerModel->findByTherapistAndId($therapistId, $prayerId);
         if (!$prayer) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('Oração não encontrada.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayers&status=error&msg=' . urlencode('OraÃ§Ã£o nÃ£o encontrada.'));
         }
 
         $patientNote = trim((string) ($_POST['patient_note'] ?? ''));
         $shareWithTherapist = isset($_POST['share_with_therapist']) ? 1 : 0;
 
         if ($patientNote === '') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayer-show&id=' . $prayerId . '&status=error&msg=' . urlencode('A reflexão é obrigatória.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayer-show&id=' . $prayerId . '&status=error&msg=' . urlencode('A reflexÃ£o Ã© obrigatÃ³ria.'));
         }
 
         $saved = $this->patientPrayerEntryModel->insert([
@@ -1450,7 +1450,7 @@ class PatientPortalController extends Controller
         ]);
 
         if (!$saved) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayer-show&id=' . $prayerId . '&status=error&msg=' . urlencode('Falha ao salvar reflexão.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayer-show&id=' . $prayerId . '&status=error&msg=' . urlencode('Falha ao salvar reflexÃ£o.'));
         }
 
         if ($shareWithTherapist === 1) {
@@ -1458,8 +1458,8 @@ class PatientPortalController extends Controller
                 'therapist_id' => $therapistId,
                 'patient_id' => $patientId,
                 'due_date' => date('Y-m-d'),
-                'title' => 'Reflexão Oração',
-                'description' => (string) ($prayer['title'] ?? 'Oração'),
+                'title' => 'ReflexÃ£o OraÃ§Ã£o',
+                'description' => (string) ($prayer['title'] ?? 'OraÃ§Ã£o'),
                 'patient_response_html' => $patientNote,
                 'responded_at' => date('Y-m-d H:i:s'),
                 'send_to_patient' => 0,
@@ -1471,13 +1471,13 @@ class PatientPortalController extends Controller
 
             $therapist = $this->userModel->findById($therapistId);
             if ($therapist) {
-                $subject = 'Nova reflexão em Orações';
-                $message = 'Seu paciente compartilhou uma nova reflexão no módulo de Orações. Acesse o painel para visualizar.';
+                $subject = 'Nova reflexÃ£o em OraÃ§Ãµes';
+                $message = 'Seu paciente compartilhou uma nova reflexÃ£o no mÃ³dulo de OraÃ§Ãµes. Acesse o painel para visualizar.';
                 AlertDispatcher::dispatch(['email'], (string) ($therapist['email'] ?? ''), null, $subject, $message);
             }
         }
 
-        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayer-show&id=' . $prayerId . '&status=success&msg=' . urlencode('Reflexão salva com sucesso.'));
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=prayer-show&id=' . $prayerId . '&status=success&msg=' . urlencode('ReflexÃ£o salva com sucesso.'));
     }
 
     public function drawFatherWord(): void
@@ -1485,17 +1485,17 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->error('Paciente não encontrado', 404);
+            $this->error('Paciente nÃ£o encontrado', 404);
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         if ($therapistId <= 0) {
-            $this->error('Terapeuta não encontrado', 404);
+            $this->error('Terapeuta nÃ£o encontrado', 404);
         }
 
         $allWordIds = $this->faithWordModel->listIdsByTherapist($therapistId);
         if ($allWordIds === []) {
-            $this->error('Nenhuma palavra disponível para sorteio.', 404);
+            $this->error('Nenhuma palavra disponÃ­vel para sorteio.', 404);
         }
 
         $cycleDrawnIds = $this->getFatherWordCycleDrawnIds($patientId);
@@ -1510,7 +1510,7 @@ class PatientPortalController extends Controller
 
         $word = $this->faithWordModel->randomByTherapistExcludingIds($therapistId, $cycleDrawnIds);
         if (!$word) {
-            $this->error('Nenhuma palavra disponível para sorteio.', 404);
+            $this->error('Nenhuma palavra disponÃ­vel para sorteio.', 404);
         }
 
         $wordId = (int) ($word['id'] ?? 0);
@@ -1538,18 +1538,18 @@ class PatientPortalController extends Controller
     public function saveFatherWordEntry(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Método não permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
         $patient = $this->patientModel->findById($patientId);
         if (!$patient) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Paciente não encontrado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Paciente nÃ£o encontrado.'));
         }
 
         $therapistId = (int) ($patient['therapist_id'] ?? 0);
         if ($therapistId <= 0) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Terapeuta não vinculado.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Terapeuta nÃ£o vinculado.'));
         }
 
         $wordId = (int) ($_POST['word_id'] ?? 0);
@@ -1559,7 +1559,7 @@ class PatientPortalController extends Controller
         $shareWithTherapist = isset($_POST['share_with_therapist']) ? 1 : 0;
 
         if ($wordReference === '' || $wordText === '' || $patientNote === '') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Palavra e reflexão são obrigatórias.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Palavra e reflexÃ£o sÃ£o obrigatÃ³rias.'));
         }
 
         $saved = $this->patientFaithEntryModel->insert([
@@ -1575,7 +1575,7 @@ class PatientPortalController extends Controller
         ]);
 
         if (!$saved) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Falha ao salvar reflexão.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=error&msg=' . urlencode('Falha ao salvar reflexÃ£o.'));
         }
 
         if ($shareWithTherapist === 1) {
@@ -1596,13 +1596,13 @@ class PatientPortalController extends Controller
 
             $therapist = $this->userModel->findById($therapistId);
             if ($therapist) {
-                $subject = 'Nova reflexão em Pai, fala comigo';
-                $message = 'Seu paciente compartilhou uma nova reflexão em Pai, fala comigo. Acesse o painel para visualizar.';
+                $subject = 'Nova reflexÃ£o em Pai, fala comigo';
+                $message = 'Seu paciente compartilhou uma nova reflexÃ£o em Pai, fala comigo. Acesse o painel para visualizar.';
                 AlertDispatcher::dispatch(['email'], (string) ($therapist['email'] ?? ''), null, $subject, $message);
             }
         }
 
-        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=success&msg=' . urlencode('Palavra e reflexão salvas com sucesso.'));
+        $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=father-word&status=success&msg=' . urlencode('Palavra e reflexÃ£o salvas com sucesso.'));
     }
 
     public function showTaskMaterial(): void
@@ -1640,7 +1640,7 @@ class PatientPortalController extends Controller
 
         $task = $this->taskModel->findInboxTaskByPatientAndId($patientId, $taskId, 'task');
         if (!$task) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa não encontrada.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa nÃ£o encontrada.'));
         }
 
         $therapistFiles = $this->fileModel->listByTaskAndSourceRole($taskId, 'therapist');
@@ -1658,19 +1658,19 @@ class PatientPortalController extends Controller
     public function submitTaskResponse(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Método não permitido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('MÃ©todo nÃ£o permitido.'));
         }
 
         $patientId = (int) Auth::patientId();
         $taskId = (int) ($_POST['task_id'] ?? 0);
         $task = $this->taskModel->findInboxTaskByPatientAndId($patientId, $taskId, 'task');
         if (!$task) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa inválida.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa invÃ¡lida.'));
         }
 
         $responseHtml = $this->sanitizeRichText((string) ($_POST['response_html'] ?? ''));
         if ($responseHtml === '') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=task-respond&id=' . $taskId . '&status=error&msg=' . urlencode('A resposta é obrigatória.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=task-respond&id=' . $taskId . '&status=error&msg=' . urlencode('A resposta Ã© obrigatÃ³ria.'));
         }
 
         $updated = $this->updateTaskResponseSafely($taskId, $responseHtml);
@@ -1700,17 +1700,17 @@ class PatientPortalController extends Controller
         $taskId = (int) ($_GET['id'] ?? 0);
 
         if ($taskId <= 0) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa inválida.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa invÃ¡lida.'));
         }
 
         $task = $this->taskModel->findInboxTaskByPatientAndId($patientId, $taskId, 'task');
         if (!$task) {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa não encontrada.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tarefa nÃ£o encontrada.'));
         }
 
         $taskType = (string) ($task['task_type'] ?? 'regular');
         if ($taskType !== 'virtual_tree_of_life') {
-            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tipo de tarefa inválido.'));
+            $this->redirect(Config::get('APP_URL', '') . '/patient.php?action=tasks&status=error&msg=' . urlencode('Tipo de tarefa invÃ¡lido.'));
         }
 
         if ((string) ($task['status'] ?? '') === 'done' || (int) ($task['is_active'] ?? 1) === 0) {
@@ -1733,12 +1733,12 @@ class PatientPortalController extends Controller
     public function completeVirtualTask(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->error('Método não permitido', 405);
+            $this->error('MÃ©todo nÃ£o permitido', 405);
         }
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         if (!is_array($input)) {
-            $this->error('Entrada inválida', 400);
+            $this->error('Entrada invÃ¡lida', 400);
         }
 
         $patientId = (int) Auth::patientId();
@@ -1748,16 +1748,16 @@ class PatientPortalController extends Controller
         $answers = $input['answers'] ?? [];
 
         if ($taskId <= 0) {
-            $this->error('Tarefa inválida', 422);
+            $this->error('Tarefa invÃ¡lida', 422);
         }
 
         $task = $this->taskModel->findInboxTaskByPatientAndId($patientId, $taskId, 'task');
         if (!$task) {
-            $this->error('Tarefa não encontrada', 404);
+            $this->error('Tarefa nÃ£o encontrada', 404);
         }
 
         if ((string) ($task['task_type'] ?? 'regular') !== 'virtual_tree_of_life') {
-            $this->error('Tipo de tarefa inválido', 422);
+            $this->error('Tipo de tarefa invÃ¡lido', 422);
         }
 
         $reflectionHtml = $this->sanitizeRichText($reflectionHtml);
@@ -1792,14 +1792,14 @@ class PatientPortalController extends Controller
 
                 $plainAnswer = trim(strip_tags((string) ($finalReflections[$blockKey] ?? '')));
                 if (strlen($plainAnswer) < 10) {
-                    $this->error('Preencha as reflexões de passado, presente e futuro para concluir.', 422);
+                    $this->error('Preencha as reflexÃµes de passado, presente e futuro para concluir.', 422);
                 }
             }
         }
 
         $answersBySection = [];
 
-        // Salva respostas por seção na tabela virtual_task_responses
+        // Salva respostas por seÃ§Ã£o na tabela virtual_task_responses
         if (is_array($answers) && $answers !== []) {
             $therapistId = (int) ($task['therapist_id'] ?? 0);
             foreach ($answers as $sectionName => $sectionAnswers) {
@@ -1844,13 +1844,14 @@ class PatientPortalController extends Controller
 
         $therapist = $this->userModel->findById((int) ($task['therapist_id'] ?? 0));
         if ($therapist) {
-            $this->dispatchTaskAlertSafely($therapist, (string) ($task['title'] ?? 'Tarefa dinâmica'), ['email']);
+            $this->dispatchTaskAlertSafely($therapist, (string) ($task['title'] ?? 'Tarefa dinÃ¢mica'), ['email']);
         }
 
         $this->json([
             'success' => true,
-            'message' => 'Tarefa virtual concluída com sucesso',
-            'redirect' => Config::get('APP_URL', '') . '/patient.php?action=tasks&status=success&msg=' . urlencode('Tarefa concluída!'),
+            'message' => 'Tarefa virtual concluÃ­da com sucesso',
+            'redirect' => Config::get('APP_URL', '') . '/patient.php?action=tasks&status=success&msg=' . urlencode('Tarefa concluÃ­da!'),
         ]);
     }
 }
+
