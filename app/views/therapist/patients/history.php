@@ -204,6 +204,7 @@
         <div class="modal-body pt-3 task-modal-body">
           <input type="hidden" name="patient_id" value="<?php echo (int) $patient['id']; ?>">
           <input type="hidden" name="description" id="taskDescriptionInput">
+          <input type="hidden" name="predefined_task_id" id="predefinedTaskIdInput" value="">
 
           <div class="row g-3">
             <div class="col-lg-7 d-grid gap-3">
@@ -223,6 +224,8 @@
                             data-delivery-kind="<?php echo htmlspecialchars((string) ($predefinedTask['delivery_kind'] ?? 'task')); ?>"
                             data-status="<?php echo htmlspecialchars((string) ($predefinedTask['status'] ?? 'pending')); ?>"
                             data-send-to-patient="<?php echo (int) ($predefinedTask['send_to_patient'] ?? 0); ?>"
+                            data-cover-image-path="<?php echo htmlspecialchars((string) ($predefinedTask['cover_image_path'] ?? ''), ENT_QUOTES); ?>"
+                            data-cover-image-name="<?php echo htmlspecialchars((string) ($predefinedTask['cover_image_name'] ?? ''), ENT_QUOTES); ?>"
                           >
                             <?php echo htmlspecialchars((string) ($predefinedTask['title'] ?? 'Modelo sem título')); ?>
                           </option>
@@ -251,6 +254,12 @@
                         <option value="task" selected>Envio de tarefa (com devolutiva)</option>
                         <option value="material">Envio de material (consulta do paciente)</option>
                       </select>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Imagem de capa (opcional)</label>
+                      <input class="form-control" type="file" name="cover_image" id="task_cover_image" accept="image/*">
+                      <div class="form-text">Se não enviar uma nova imagem, a capa do modelo selecionado será usada automaticamente (quando existir).</div>
+                      <div id="predefinedTaskCoverHint" class="small text-muted mt-2 d-none"></div>
                     </div>
                     <div class="col-12">
                       <label class="form-label">Descrição</label>
@@ -355,6 +364,8 @@
 <script>
 window.addEventListener('load', function() {
   const predefinedTaskSelect = document.getElementById('predefinedTaskSelect');
+  const predefinedTaskIdInput = document.getElementById('predefinedTaskIdInput');
+  const predefinedTaskCoverHint = document.getElementById('predefinedTaskCoverHint');
   const taskTitleInput = document.getElementById('task_title');
   const taskStatusInput = document.getElementById('task_status');
   const taskDeliveryKindInput = document.getElementById('delivery_kind');
@@ -413,7 +424,18 @@ window.addEventListener('load', function() {
     predefinedTaskSelect.addEventListener('change', function() {
       const selectedOption = predefinedTaskSelect.options[predefinedTaskSelect.selectedIndex];
       if (!selectedOption || selectedOption.value === '') {
+        if (predefinedTaskIdInput) {
+          predefinedTaskIdInput.value = '';
+        }
+        if (predefinedTaskCoverHint) {
+          predefinedTaskCoverHint.classList.add('d-none');
+          predefinedTaskCoverHint.textContent = '';
+        }
         return;
+      }
+
+      if (predefinedTaskIdInput) {
+        predefinedTaskIdInput.value = selectedOption.value || '';
       }
 
       taskTitleInput.value = selectedOption.dataset.title || '';
@@ -428,6 +450,17 @@ window.addEventListener('load', function() {
 
       const descriptionHtml = selectedOption.dataset.description || '';
       taskQuill.root.innerHTML = descriptionHtml;
+
+      if (predefinedTaskCoverHint) {
+        const coverName = selectedOption.dataset.coverImageName || '';
+        if (coverName !== '') {
+          predefinedTaskCoverHint.classList.remove('d-none');
+          predefinedTaskCoverHint.textContent = 'Capa do modelo disponível: ' + coverName + '. Ela será aplicada se você não enviar outra imagem.';
+        } else {
+          predefinedTaskCoverHint.classList.add('d-none');
+          predefinedTaskCoverHint.textContent = '';
+        }
+      }
     });
   }
 

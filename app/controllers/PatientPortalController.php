@@ -600,6 +600,7 @@ class PatientPortalController extends Controller
 
         $updated = $this->taskModel->updateById($taskId, $data);
         if ($updated) {
+            $this->purgeTaskCoverImageIfDone($taskId);
             return true;
         }
 
@@ -607,7 +608,12 @@ class PatientPortalController extends Controller
         $fallback = [
             'status' => 'done',
         ];
-        return $this->taskModel->updateById($taskId, $fallback);
+        $updatedFallback = $this->taskModel->updateById($taskId, $fallback);
+        if ($updatedFallback) {
+            $this->purgeTaskCoverImageIfDone($taskId);
+        }
+
+        return $updatedFallback;
     }
 
     private function storeTaskAttachmentsSafely(int $therapistId, int $patientId, int $taskId): void
@@ -617,6 +623,32 @@ class PatientPortalController extends Controller
         } catch (\Throwable $e) {
             error_log('Error storing task attachments for task ' . $taskId . ': ' . $e->getMessage());
         }
+    }
+
+    private function purgeTaskCoverImageIfDone(int $taskId): void
+    {
+        $task = $this->taskModel->findById($taskId);
+        if (!$task || (string) ($task['status'] ?? '') !== 'done') {
+            return;
+        }
+
+        $coverPath = trim((string) ($task['cover_image_path'] ?? ''));
+        if ($coverPath === '') {
+            return;
+        }
+
+        if (str_starts_with($coverPath, 'uploads/task-covers/')) {
+            $absolutePath = dirname(__DIR__, 2) . '/' . ltrim($coverPath, '/');
+            if (is_file($absolutePath)) {
+                @unlink($absolutePath);
+            }
+        }
+
+        $this->taskModel->updateById($taskId, [
+            'cover_image_path' => null,
+            'cover_image_name' => null,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
     }
 
     private function dispatchTaskAlertSafely(array $therapist, string $taskTitle, array $channels): string
@@ -873,10 +905,23 @@ class PatientPortalController extends Controller
         $patientId = (int) Auth::patientId();
         $tasks = $this->taskModel->listInboxByPatientAndKind($patientId, 'task');
         $taskIds = array_map(static fn (array $task): int => (int) ($task['id'] ?? 0), $tasks);
+        $therapistLogoMap = [];
+
+        foreach ($tasks as $task) {
+            $therapistId = (int) ($task['therapist_id'] ?? 0);
+            if ($therapistId <= 0 || array_key_exists($therapistId, $therapistLogoMap)) {
+                continue;
+            }
+
+            $therapist = $this->userModel->findTherapistById($therapistId);
+            $therapistLogoMap[$therapistId] = trim((string) ($therapist['company_logo_path'] ?? ''));
+        }
+
         $this->view('patient/tasks', [
             'appUrl' => Config::get('APP_URL', ''),
             'tasks' => $tasks,
             'taskLinkedMaterials' => $this->taskModel->listLinkedMaterialsGroupedByTask($taskIds),
+            'therapistLogoMap' => $therapistLogoMap,
         ]);
     }
 
@@ -2079,6 +2124,8 @@ class PatientPortalController extends Controller
         if (!$updated) {
             $this->error('Falha ao completar tarefa', 500);
         }
+
+        $this->purgeTaskCoverImageIfDone($taskId);
 
         $therapist = $this->userModel->findById((int) ($task['therapist_id'] ?? 0));
         if ($therapist) {

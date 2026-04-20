@@ -10,6 +10,19 @@
     <a class="btn btn-outline-dark" href="<?php echo $appUrl; ?>/patient.php?action=tasks"><i class="fa-solid fa-arrow-left me-1"></i>Voltar</a>
   </div>
 
+  <?php if (!empty($task['cover_image_path'])): ?>
+    <?php $coverUrl = $appUrl . '/' . ltrim((string) $task['cover_image_path'], '/'); ?>
+    <div class="card mb-3">
+      <div class="card-header bg-transparent"><strong>Capa da tarefa</strong></div>
+      <div class="card-body">
+        <button type="button" class="btn btn-link p-0 border-0" data-bs-toggle="modal" data-bs-target="#taskCoverModal" title="Clique para ampliar">
+          <img src="<?php echo htmlspecialchars($coverUrl); ?>" alt="Capa da tarefa" style="width: 100%; max-height: 320px; object-fit: cover; border-radius: .8rem; border: 1px solid #dee2e6;">
+        </button>
+        <div class="small text-muted mt-2">Clique na imagem para visualizar em tamanho ampliado.</div>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <div class="card mb-3">
     <div class="card-body">
       <div class="row g-3">
@@ -152,6 +165,22 @@
     </div>
   <?php endif; ?>
 </div>
+
+<?php if (!empty($task['cover_image_path'])): ?>
+  <div class="modal fade" id="taskCoverModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Capa da tarefa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img src="<?php echo htmlspecialchars($coverUrl); ?>" alt="Capa da tarefa" style="max-width: 100%; height: auto; border-radius: .7rem;">
+        </div>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
 
 <script>
 window.addEventListener('load', function() {

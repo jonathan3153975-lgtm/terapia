@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS predefined_tasks (
     therapist_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     description MEDIUMTEXT NOT NULL,
+    cover_image_path VARCHAR(500) NULL,
+    cover_image_name VARCHAR(255) NULL,
     delivery_kind ENUM('task', 'material') NOT NULL DEFAULT 'task',
     status ENUM('pending', 'done') NOT NULL DEFAULT 'pending',
     send_to_patient TINYINT(1) NOT NULL DEFAULT 1,

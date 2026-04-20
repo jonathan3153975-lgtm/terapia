@@ -42,6 +42,21 @@
                         </select>
                       </div>
                       <div class="col-12">
+                        <label class="form-label">Imagem de capa (opcional)</label>
+                        <input class="form-control" type="file" name="cover_image" accept="image/*">
+                        <?php if (!empty($task['cover_image_path'])): ?>
+                          <div class="mt-2 d-flex flex-column gap-2">
+                            <a href="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $task['cover_image_path']); ?>" target="_blank" rel="noopener noreferrer" class="d-inline-block">
+                              <img src="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $task['cover_image_path']); ?>" alt="Capa da tarefa" style="max-width: 220px; max-height: 140px; border-radius: .6rem; border: 1px solid #dee2e6; object-fit: cover;">
+                            </a>
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" name="remove_cover_image" id="remove_cover_image" value="1">
+                              <label class="form-check-label" for="remove_cover_image">Remover capa atual</label>
+                            </div>
+                          </div>
+                        <?php endif; ?>
+                      </div>
+                      <div class="col-12">
                         <label class="form-label">Descrição</label>
                         <div id="taskDescriptionEditor" class="task-description-editor"></div>
                       </div>

@@ -22,13 +22,32 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table mb-0">
-        <thead><tr><th>Data</th><th>Título</th><th>Status</th><th>Material</th><th>Ação</th></tr></thead>
+        <thead><tr><th>Miniatura</th><th>Data</th><th>Título</th><th>Status</th><th>Material</th><th>Ação</th></tr></thead>
         <tbody>
           <?php if (empty($tasks)): ?>
-          <tr><td colspan="5" class="text-center py-4 text-muted">Nenhuma tarefa recebida.</td></tr>
+          <tr><td colspan="6" class="text-center py-4 text-muted">Nenhuma tarefa recebida.</td></tr>
           <?php else: foreach ($tasks as $task): ?>
           <?php $linkedMaterials = $taskLinkedMaterials[(int) $task['id']] ?? []; ?>
+          <?php
+            $coverPath = trim((string) ($task['cover_image_path'] ?? ''));
+            $therapistId = (int) ($task['therapist_id'] ?? 0);
+            $therapistLogoPath = trim((string) (($therapistLogoMap[$therapistId] ?? '') ?: ''));
+            $thumbPath = $coverPath !== '' ? $coverPath : $therapistLogoPath;
+          ?>
           <tr>
+            <td>
+              <?php if ($thumbPath !== ''): ?>
+                <img
+                  src="<?php echo $appUrl; ?>/<?php echo htmlspecialchars(ltrim($thumbPath, '/')); ?>"
+                  alt="Miniatura da tarefa"
+                  style="width: 72px; height: 48px; object-fit: cover; border-radius: .45rem; border: 1px solid #dee2e6;"
+                >
+              <?php else: ?>
+                <div class="d-inline-flex align-items-center justify-content-center" style="width:72px;height:48px;border-radius:.45rem;border:1px solid #dee2e6;background:#f8f9fa;color:#6c757d;">
+                  <i class="fa-solid fa-image"></i>
+                </div>
+              <?php endif; ?>
+            </td>
             <td><?php echo htmlspecialchars((string) date('d/m/Y', strtotime((string) $task['due_date']))); ?></td>
             <td><?php echo htmlspecialchars($task['title']); ?></td>
             <td>

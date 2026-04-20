@@ -13,7 +13,7 @@
         <div class="card-body">
           <h5 class="card-title mb-2">Nova tarefa pré-definida</h5>
           <p class="text-muted small mb-3">Crie modelos para agilizar o cadastro de tarefas dos pacientes.</p>
-          <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-predefined-tasks-store" id="predefinedTaskCreateForm">
+          <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-predefined-tasks-store" id="predefinedTaskCreateForm" enctype="multipart/form-data">
             <div class="mb-2">
               <label class="form-label">Título</label>
               <input class="form-control" name="title" required>
@@ -41,6 +41,10 @@
             <div class="mb-3">
               <label class="form-label">Descrição</label>
               <textarea class="form-control" name="description" rows="5" required placeholder="Descreva a tarefa pré-definida..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Imagem de capa (opcional)</label>
+              <input class="form-control" type="file" name="cover_image" accept="image/*">
             </div>
             <button class="btn btn-primary" type="submit" id="predefinedTaskCreateBtn"><i class="fa-solid fa-floppy-disk me-1"></i>Salvar modelo</button>
           </form>
@@ -73,7 +77,8 @@
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
-              <th style="width: 26%;">Título</th>
+              <th style="width: 80px;">Capa</th>
+              <th style="width: 22%;">Título</th>
               <th>Descrição</th>
               <th style="width: 120px;">Tipo</th>
               <th style="width: 110px;">Status</th>
@@ -84,11 +89,20 @@
           <tbody>
           <?php if (empty($tasks)): ?>
             <tr>
-              <td colspan="6" class="text-center text-muted py-4">Nenhuma tarefa pré-definida cadastrada.</td>
+              <td colspan="7" class="text-center text-muted py-4">Nenhuma tarefa pré-definida cadastrada.</td>
             </tr>
           <?php else: ?>
             <?php foreach ($tasks as $task): ?>
               <tr>
+                <td>
+                  <?php if (!empty($task['cover_image_path'])): ?>
+                    <a href="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $task['cover_image_path']); ?>" target="_blank" rel="noopener noreferrer">
+                      <img src="<?php echo $appUrl; ?>/<?php echo htmlspecialchars((string) $task['cover_image_path']); ?>" alt="Capa" style="width: 56px; height: 40px; object-fit: cover; border-radius: .35rem; border: 1px solid #dee2e6;">
+                    </a>
+                  <?php else: ?>
+                    <span class="text-muted">-</span>
+                  <?php endif; ?>
+                </td>
                 <td><?php echo htmlspecialchars((string) ($task['title'] ?? '')); ?></td>
                 <td><?php echo nl2br(htmlspecialchars((string) strip_tags((string) ($task['description'] ?? '')))); ?></td>
                 <td>
@@ -109,6 +123,8 @@
                       data-delivery-kind="<?php echo htmlspecialchars((string) ($task['delivery_kind'] ?? 'task')); ?>"
                       data-status="<?php echo htmlspecialchars((string) ($task['status'] ?? 'pending')); ?>"
                       data-send-to-patient="<?php echo (int) ($task['send_to_patient'] ?? 0); ?>"
+                      data-cover-image-path="<?php echo htmlspecialchars((string) ($task['cover_image_path'] ?? ''), ENT_QUOTES); ?>"
+                      data-cover-image-name="<?php echo htmlspecialchars((string) ($task['cover_image_name'] ?? ''), ENT_QUOTES); ?>"
                       data-bs-toggle="modal"
                       data-bs-target="#editPredefinedTaskModal"
                       title="Editar"
@@ -141,7 +157,7 @@
         <h5 class="modal-title">Editar tarefa pré-definida</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
-      <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-predefined-tasks-update" id="editPredefinedTaskForm">
+      <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=therapist-predefined-tasks-update" id="editPredefinedTaskForm" enctype="multipart/form-data">
         <div class="modal-body">
           <input type="hidden" name="id" id="editPredefinedTaskId" value="">
 
@@ -173,6 +189,19 @@
             <label class="form-label">Descrição</label>
             <textarea class="form-control" name="description" id="editPredefinedTaskDescription" rows="6" required></textarea>
           </div>
+          <div class="mt-3">
+            <label class="form-label">Imagem de capa (opcional)</label>
+            <input class="form-control" type="file" name="cover_image" accept="image/*">
+            <div id="editPredefinedTaskCoverWrap" class="mt-2 d-none">
+              <a id="editPredefinedTaskCoverLink" href="#" target="_blank" rel="noopener noreferrer" class="d-inline-block">
+                <img id="editPredefinedTaskCoverImg" src="" alt="Capa atual" style="max-width: 220px; max-height: 140px; border-radius: .6rem; border: 1px solid #dee2e6; object-fit: cover;">
+              </a>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="remove_cover_image" id="editPredefinedTaskRemoveCover" value="1">
+                <label class="form-check-label" for="editPredefinedTaskRemoveCover">Remover capa atual</label>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
@@ -196,6 +225,10 @@ window.addEventListener('load', function () {
   var editDeliveryInput = document.getElementById('editPredefinedTaskDeliveryKind');
   var editStatusInput = document.getElementById('editPredefinedTaskStatus');
   var editSendInput = document.getElementById('editPredefinedTaskSendToPatient');
+  var editCoverWrap = document.getElementById('editPredefinedTaskCoverWrap');
+  var editCoverLink = document.getElementById('editPredefinedTaskCoverLink');
+  var editCoverImg = document.getElementById('editPredefinedTaskCoverImg');
+  var editRemoveCover = document.getElementById('editPredefinedTaskRemoveCover');
 
   if (createForm && createBtn) {
     createForm.addEventListener('submit', function () {
@@ -222,6 +255,21 @@ window.addEventListener('load', function () {
       editDeliveryInput.value = btn.getAttribute('data-delivery-kind') || 'task';
       editStatusInput.value = btn.getAttribute('data-status') || 'pending';
       editSendInput.checked = (btn.getAttribute('data-send-to-patient') || '0') === '1';
+
+      var coverPath = btn.getAttribute('data-cover-image-path') || '';
+      if (editCoverWrap && editCoverLink && editCoverImg && editRemoveCover) {
+        editRemoveCover.checked = false;
+        if (coverPath !== '') {
+          var fullCoverUrl = '<?php echo $appUrl; ?>/' + coverPath.replace(/^\/+/, '');
+          editCoverLink.href = fullCoverUrl;
+          editCoverImg.src = fullCoverUrl;
+          editCoverWrap.classList.remove('d-none');
+        } else {
+          editCoverLink.href = '#';
+          editCoverImg.src = '';
+          editCoverWrap.classList.add('d-none');
+        }
+      }
 
       if (editSaveBtn) {
         editSaveBtn.disabled = false;

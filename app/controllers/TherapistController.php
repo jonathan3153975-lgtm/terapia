@@ -3885,20 +3885,33 @@ class TherapistController extends Controller
             $status = 'pending';
         }
 
+        $coverData = $this->uploadTaskCoverFromRequest('cover_image');
+
         if ($title === '' || trim(strip_tags($description)) === '') {
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Título e descrição são obrigatórios.'));
         }
 
-        $saved = $this->predefinedTaskModel->insert([
+        $payload = [
             'therapist_id' => $therapistId,
             'title' => $title,
             'description' => $description,
+            'cover_image_path' => $coverData['path'] ?? null,
+            'cover_image_name' => $coverData['name'] ?? null,
             'delivery_kind' => $deliveryKind,
             'status' => $status,
             'send_to_patient' => $sendToPatient,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
-        ]);
+        ];
+
+        $saved = $this->predefinedTaskModel->insert($payload);
+        if (!$saved && (array_key_exists('cover_image_path', $payload) || array_key_exists('cover_image_name', $payload))) {
+            unset($payload['cover_image_path'], $payload['cover_image_name']);
+            $saved = $this->predefinedTaskModel->insert($payload);
+            if ($saved && !empty($coverData['path'])) {
+                $this->deleteTaskCoverFile((string) $coverData['path']);
+            }
+        }
 
         if (!$saved) {
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Falha ao cadastrar tarefa pré-definida.'));
@@ -3925,23 +3938,49 @@ class TherapistController extends Controller
         $deliveryKind = $this->normalizeDeliveryKind((string) ($_POST['delivery_kind'] ?? 'task'));
         $status = Utils::sanitize($_POST['status'] ?? 'pending');
         $sendToPatient = isset($_POST['send_to_patient']) ? 1 : 0;
+        $removeCoverImage = isset($_POST['remove_cover_image']);
 
         if (!in_array($status, ['pending', 'done'], true)) {
             $status = 'pending';
+        }
+
+        $coverPath = (string) ($task['cover_image_path'] ?? '');
+        $coverName = (string) ($task['cover_image_name'] ?? '');
+        $newCoverData = $this->uploadTaskCoverFromRequest('cover_image');
+        if ($newCoverData !== null) {
+            if ($coverPath !== '') {
+                $this->deleteTaskCoverFile($coverPath);
+            }
+            $coverPath = (string) ($newCoverData['path'] ?? '');
+            $coverName = (string) ($newCoverData['name'] ?? '');
+        } elseif ($removeCoverImage) {
+            if ($coverPath !== '') {
+                $this->deleteTaskCoverFile($coverPath);
+            }
+            $coverPath = '';
+            $coverName = '';
         }
 
         if ($title === '' || trim(strip_tags($description)) === '') {
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Título e descrição são obrigatórios.'));
         }
 
-        $updated = $this->predefinedTaskModel->updateById($taskId, [
+        $payload = [
             'title' => $title,
             'description' => $description,
+            'cover_image_path' => $coverPath !== '' ? $coverPath : null,
+            'cover_image_name' => $coverName !== '' ? $coverName : null,
             'delivery_kind' => $deliveryKind,
             'status' => $status,
             'send_to_patient' => $sendToPatient,
             'updated_at' => date('Y-m-d H:i:s'),
-        ]);
+        ];
+
+        $updated = $this->predefinedTaskModel->updateById($taskId, $payload);
+        if (!$updated && (array_key_exists('cover_image_path', $payload) || array_key_exists('cover_image_name', $payload))) {
+            unset($payload['cover_image_path'], $payload['cover_image_name']);
+            $updated = $this->predefinedTaskModel->updateById($taskId, $payload);
+        }
 
         if (!$updated) {
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Falha ao atualizar tarefa pré-definida.'));
@@ -3963,9 +4002,14 @@ class TherapistController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Tarefa pré-definida não encontrada.'));
         }
 
+        $coverPath = (string) ($task['cover_image_path'] ?? '');
         $deleted = $this->predefinedTaskModel->deleteByTherapistAndId($therapistId, $taskId);
         if (!$deleted) {
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=error&msg=' . urlencode('Falha ao excluir tarefa pré-definida.'));
+        }
+
+        if ($coverPath !== '') {
+            $this->deleteTaskCoverFile($coverPath);
         }
 
         $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=therapist-predefined-tasks&status=success&msg=' . urlencode('Tarefa pré-definida excluída com sucesso.'));
@@ -4256,6 +4300,102 @@ class TherapistController extends Controller
         }
     }
 
+    private function taskCoverUploadBasePath(): string
+    {
+        $base = dirname(__DIR__, 2) . '/uploads/task-covers';
+        if (!is_dir($base)) {
+            @mkdir($base, 0775, true);
+        }
+
+        return $base;
+    }
+
+    private function uploadTaskCoverFromRequest(string $fieldName = 'cover_image'): ?array
+    {
+        if (!isset($_FILES[$fieldName])) {
+            return null;
+        }
+
+        $fileError = (int) ($_FILES[$fieldName]['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($fileError === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+
+        if ($fileError !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        $tmpName = (string) ($_FILES[$fieldName]['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            return null;
+        }
+
+        $originalName = (string) ($_FILES[$fieldName]['name'] ?? 'capa');
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        if (!in_array($ext, $allowed, true)) {
+            return null;
+        }
+
+        $imageInfo = @getimagesize($tmpName);
+        if (!is_array($imageInfo)) {
+            return null;
+        }
+
+        $safeName = uniqid('task_cover_', true) . '.' . $ext;
+        $target = $this->taskCoverUploadBasePath() . '/' . $safeName;
+        if (!@move_uploaded_file($tmpName, $target)) {
+            return null;
+        }
+
+        return [
+            'path' => 'uploads/task-covers/' . $safeName,
+            'name' => $originalName,
+        ];
+    }
+
+    private function cloneTaskCoverFromPath(string $relativePath, string $originalName = ''): ?array
+    {
+        $relativePath = trim($relativePath);
+        if ($relativePath === '') {
+            return null;
+        }
+
+        $source = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        if (!is_file($source)) {
+            return null;
+        }
+
+        $ext = strtolower(pathinfo($source, PATHINFO_EXTENSION));
+        if ($ext === '') {
+            $ext = 'jpg';
+        }
+
+        $safeName = uniqid('task_cover_', true) . '.' . $ext;
+        $target = $this->taskCoverUploadBasePath() . '/' . $safeName;
+        if (!@copy($source, $target)) {
+            return null;
+        }
+
+        return [
+            'path' => 'uploads/task-covers/' . $safeName,
+            'name' => $originalName !== '' ? $originalName : basename($source),
+        ];
+    }
+
+    private function deleteTaskCoverFile(?string $relativePath): void
+    {
+        $relativePath = trim((string) $relativePath);
+        if ($relativePath === '' || !str_starts_with($relativePath, 'uploads/task-covers/')) {
+            return;
+        }
+
+        $absolutePath = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        if (is_file($absolutePath)) {
+            @unlink($absolutePath);
+        }
+    }
+
     private function normalizeDeliveryKind(string $kind): string
     {
         return $kind === 'material' ? 'material' : 'task';
@@ -4316,6 +4456,14 @@ class TherapistController extends Controller
 
         if (array_key_exists('delivery_kind', $data)) {
             unset($data['delivery_kind']);
+            $inserted = $this->taskModel->insert($data);
+            if ($inserted !== false) {
+                return $inserted;
+            }
+        }
+
+        if (array_key_exists('cover_image_path', $data) || array_key_exists('cover_image_name', $data)) {
+            unset($data['cover_image_path'], $data['cover_image_name']);
             return $this->taskModel->insert($data);
         }
 
@@ -4331,6 +4479,14 @@ class TherapistController extends Controller
 
         if (array_key_exists('delivery_kind', $data)) {
             unset($data['delivery_kind']);
+            $updated = $this->taskModel->updateById($taskId, $data);
+            if ($updated) {
+                return true;
+            }
+        }
+
+        if (array_key_exists('cover_image_path', $data) || array_key_exists('cover_image_name', $data)) {
+            unset($data['cover_image_path'], $data['cover_image_name']);
             return $this->taskModel->updateById($taskId, $data);
         }
 
@@ -4389,8 +4545,21 @@ class TherapistController extends Controller
             $materialIds = [];
         }
         $status = Utils::sanitize($_POST['status'] ?? 'pending');
+        $predefinedTaskId = (int) ($_POST['predefined_task_id'] ?? 0);
+        $predefinedTask = null;
+        if ($predefinedTaskId > 0) {
+            $predefinedTask = $this->predefinedTaskModel->findByTherapistAndId($therapistId, $predefinedTaskId);
+        }
         if (!in_array($status, ['pending', 'done'], true)) {
             $status = 'pending';
+        }
+
+        $coverData = $this->uploadTaskCoverFromRequest('cover_image');
+        if ($coverData === null && $predefinedTask) {
+            $coverData = $this->cloneTaskCoverFromPath(
+                (string) ($predefinedTask['cover_image_path'] ?? ''),
+                (string) ($predefinedTask['cover_image_name'] ?? '')
+            );
         }
 
         $validatedMaterialIds = [];
@@ -4426,6 +4595,8 @@ class TherapistController extends Controller
             'due_date' => $dueDate,
             'title' => $title,
             'description' => $description,
+            'cover_image_path' => $coverData['path'] ?? null,
+            'cover_image_name' => $coverData['name'] ?? null,
             'send_to_patient' => $sendToPatient,
             'delivery_kind' => $deliveryKind,
             'status' => $status,
@@ -4555,8 +4726,26 @@ class TherapistController extends Controller
             $materialIds = [];
         }
         $status = Utils::sanitize($_POST['status'] ?? 'pending');
+        $removeCoverImage = isset($_POST['remove_cover_image']);
         if (!in_array($status, ['pending', 'done'], true)) {
             $status = 'pending';
+        }
+
+        $coverPath = (string) ($task['cover_image_path'] ?? '');
+        $coverName = (string) ($task['cover_image_name'] ?? '');
+        $newCoverData = $this->uploadTaskCoverFromRequest('cover_image');
+        if ($newCoverData !== null) {
+            if ($coverPath !== '') {
+                $this->deleteTaskCoverFile($coverPath);
+            }
+            $coverPath = (string) ($newCoverData['path'] ?? '');
+            $coverName = (string) ($newCoverData['name'] ?? '');
+        } elseif ($removeCoverImage) {
+            if ($coverPath !== '') {
+                $this->deleteTaskCoverFile($coverPath);
+            }
+            $coverPath = '';
+            $coverName = '';
         }
 
         $validatedMaterialIds = [];
@@ -4589,6 +4778,8 @@ class TherapistController extends Controller
             'due_date' => $dueDate,
             'title' => $title,
             'description' => $description,
+            'cover_image_path' => $coverPath !== '' ? $coverPath : null,
+            'cover_image_name' => $coverName !== '' ? $coverName : null,
             'material_id' => !empty($validatedMaterialIds) ? (int) reset($validatedMaterialIds) : null,
             'send_to_patient' => $sendToPatient,
             'delivery_kind' => $deliveryKind,
@@ -4639,6 +4830,7 @@ class TherapistController extends Controller
             $this->redirect($redirectWithStatus($redirectHistoryBase, 'error', 'Tarefa não encontrada.'));
         }
 
+        $coverPath = (string) ($task['cover_image_path'] ?? '');
         $deleted = $this->taskModel->deleteByTherapistPatientAndId($therapistId, $patientId, $taskId);
         if (!$deleted) {
             if ($isAjax) {
@@ -4649,6 +4841,10 @@ class TherapistController extends Controller
 
         if ($isAjax) {
             $this->success('Tarefa excluída', ['redirect' => $redirectHistoryBase]);
+        }
+
+        if ($coverPath !== '') {
+            $this->deleteTaskCoverFile($coverPath);
         }
 
         $this->redirect($redirectWithStatus($redirectHistoryBase, 'success', 'Tarefa excluída com sucesso.'));
