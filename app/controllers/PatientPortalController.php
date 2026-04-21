@@ -1269,7 +1269,7 @@ class PatientPortalController extends Controller
             if ($materialId <= 0 || isset($assetsByMaterial[$materialId])) {
                 continue;
             }
-            $assetsByMaterial[$materialId] = $this->materialModel->listAssets($materialId);
+            $assetsByMaterial[$materialId] = $this->decorateMaterialAssetsForPatient($this->materialModel->listAssets($materialId));
         }
 
         $this->view('patient/materials', [
@@ -1283,10 +1283,15 @@ class PatientPortalController extends Controller
 
     private function streamPdfFile(string $relativePath, string $downloadName): void
     {
+        $this->streamInlineFile($relativePath, $downloadName, 'application/pdf');
+    }
+
+    private function streamInlineFile(string $relativePath, string $downloadName, string $mimeType): void
+    {
         $absolutePath = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
         if (!is_file($absolutePath)) {
             http_response_code(404);
-            echo 'Arquivo nÃ£o encontrado.';
+            echo 'Arquivo não encontrado.';
             exit;
         }
 
@@ -1294,13 +1299,52 @@ class PatientPortalController extends Controller
             ob_end_clean();
         }
 
-        header('Content-Type: application/pdf');
+        header('Content-Type: ' . $mimeType);
         header('Content-Length: ' . (string) filesize($absolutePath));
         header('Content-Disposition: inline; filename="' . rawurlencode($downloadName) . '"');
+        header('Cache-Control: private, no-store, no-cache, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: SAMEORIGIN');
+        header("Content-Security-Policy: frame-ancestors 'self'");
         readfile($absolutePath);
         exit;
+    }
+
+    private function buildMaterialAssetViewUrl(int $assetId): string
+    {
+        return Config::get('APP_URL', '') . '/patient.php?action=material-asset-view&id=' . $assetId;
+    }
+
+    private function decorateMaterialAssetsForPatient(array $assets): array
+    {
+        foreach ($assets as &$asset) {
+            $assetId = (int) ($asset['id'] ?? 0);
+            $assetType = (string) ($asset['asset_type'] ?? '');
+            $filePath = trim((string) ($asset['file_path'] ?? ''));
+
+            $asset['view_url'] = '';
+            $asset['preview_url'] = '';
+
+            if ($assetType === 'url') {
+                $asset['view_url'] = (string) ($asset['file_url'] ?? '');
+                continue;
+            }
+
+            if ($assetId <= 0 || $filePath === '') {
+                continue;
+            }
+
+            $viewUrl = $this->buildMaterialAssetViewUrl($assetId);
+            $asset['view_url'] = $viewUrl;
+            $asset['preview_url'] = $assetType === 'pdf'
+                ? $viewUrl . '#toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0'
+                : $viewUrl;
+        }
+        unset($asset);
+
+        return $assets;
     }
 
     private function bookPdfExists(array $book): bool
@@ -1316,20 +1360,12 @@ class PatientPortalController extends Controller
 
     private function streamVideoFile(string $relativePath, string $downloadName, string $mimeType = 'video/mp4'): void
     {
-        $absolutePath = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
-        if (!is_file($absolutePath)) {
-            http_response_code(404);
-            echo 'Arquivo não encontrado.';
-            exit;
-        }
+        $this->streamInlineFile($relativePath, $downloadName, $mimeType);
+    }
 
-        header('Content-Type: ' . $mimeType);
-        header('Content-Length: ' . (string) filesize($absolutePath));
-        header('Content-Disposition: inline; filename="' . rawurlencode($downloadName) . '"');
-        header('X-Content-Type-Options: nosniff');
-        header('X-Frame-Options: SAMEORIGIN');
-        readfile($absolutePath);
-        exit;
+    private function streamAudioFile(string $relativePath, string $downloadName, string $mimeType = 'audio/mpeg'): void
+    {
+        $this->streamInlineFile($relativePath, $downloadName, $mimeType);
     }
 
     private function normalizeStarsValue(int $value): int
@@ -1374,6 +1410,43 @@ class PatientPortalController extends Controller
 
         $downloadName = (string) ($book['pdf_original_name'] ?? ($book['title'] ?? 'livro') . '.pdf');
         $this->streamPdfFile((string) $book['pdf_path'], $downloadName);
+    }
+
+    public function streamMaterialAsset(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $assetId = (int) ($_GET['id'] ?? 0);
+        $asset = $this->materialModel->findAssetByPatientAndId($patientId, $assetId);
+
+        if (!$asset || empty($asset['file_path'])) {
+            http_response_code(404);
+            echo 'Material não encontrado.';
+            exit;
+        }
+
+        $assetType = (string) ($asset['asset_type'] ?? '');
+        $downloadName = (string) ($asset['file_name'] ?? 'material');
+        $mimeType = trim((string) ($asset['mime_type'] ?? ''));
+
+        if ($assetType === 'pdf') {
+            $this->streamPdfFile((string) $asset['file_path'], $downloadName);
+        }
+
+        if ($assetType === 'video') {
+            $this->streamVideoFile((string) $asset['file_path'], $downloadName, $mimeType !== '' ? $mimeType : 'video/mp4');
+        }
+
+        if ($assetType === 'audio') {
+            $this->streamAudioFile((string) $asset['file_path'], $downloadName, $mimeType !== '' ? $mimeType : 'audio/mpeg');
+        }
+
+        if ($assetType === 'image') {
+            $this->streamInlineFile((string) $asset['file_path'], $downloadName, $mimeType !== '' ? $mimeType : 'image/jpeg');
+        }
+
+        http_response_code(415);
+        echo 'Tipo de material não suportado para visualização.';
+        exit;
     }
 
     public function toggleBookFavorite(): void
@@ -1849,6 +1922,30 @@ class PatientPortalController extends Controller
         ]);
     }
 
+    public function streamGuidedMeditationAudio(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        $meditationId = (int) ($_GET['id'] ?? 0);
+
+        if (!$patient || $meditationId <= 0) {
+            http_response_code(404);
+            echo 'Áudio não encontrado.';
+            exit;
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $meditation = $this->guidedMeditationModel->findByTherapistAndId($therapistId, $meditationId);
+        if (!$meditation || empty($meditation['audio_path'])) {
+            http_response_code(404);
+            echo 'Áudio não encontrado.';
+            exit;
+        }
+
+        $downloadName = (string) ($meditation['audio_name'] ?? ($meditation['title'] ?? 'meditacao') . '.mp3');
+        $this->streamAudioFile((string) $meditation['audio_path'], $downloadName);
+    }
+
     public function drawGuidedMeditationLetter(): void
     {
         $patientId = (int) Auth::patientId();
@@ -2036,6 +2133,30 @@ class PatientPortalController extends Controller
             'entries' => $entries,
             'therapist' => $therapist,
         ]);
+    }
+
+    public function streamPrayerAudio(): void
+    {
+        $patientId = (int) Auth::patientId();
+        $patient = $this->patientModel->findById($patientId);
+        $prayerId = (int) ($_GET['id'] ?? 0);
+
+        if (!$patient || $prayerId <= 0) {
+            http_response_code(404);
+            echo 'Áudio não encontrado.';
+            exit;
+        }
+
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $prayer = $this->prayerModel->findByTherapistAndId($therapistId, $prayerId);
+        if (!$prayer || empty($prayer['audio_path'])) {
+            http_response_code(404);
+            echo 'Áudio não encontrado.';
+            exit;
+        }
+
+        $downloadName = (string) ($prayer['audio_name'] ?? ($prayer['title'] ?? 'oracao') . '.mp3');
+        $this->streamAudioFile((string) $prayer['audio_path'], $downloadName);
     }
 
     public function savePrayerEntry(): void
@@ -2251,7 +2372,7 @@ class PatientPortalController extends Controller
 
         $assetsByMaterial = [];
         foreach ($materials as $material) {
-            $assetsByMaterial[(int) $material['id']] = $this->materialModel->listAssets((int) $material['id']);
+            $assetsByMaterial[(int) $material['id']] = $this->decorateMaterialAssetsForPatient($this->materialModel->listAssets((int) $material['id']));
         }
 
         $this->view('patient/task-material', [

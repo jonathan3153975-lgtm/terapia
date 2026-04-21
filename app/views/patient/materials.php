@@ -82,9 +82,9 @@
                               <?php if (($asset['asset_type'] ?? '') === 'url'): ?>
                                 <a class="btn btn-sm btn-outline-info" href="<?php echo htmlspecialchars((string) ($asset['file_url'] ?? '#')); ?>" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link me-1"></i>Link</a>
                               <?php else: ?>
-                                <?php $path = (string) ($asset['file_path'] ?? ''); ?>
-                                <?php if ($path !== ''): ?>
-                                  <a class="btn btn-sm btn-outline-secondary" href="<?php echo $appUrl; ?>/<?php echo htmlspecialchars($path); ?>" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-file-arrow-down me-1"></i>Abrir</a>
+                                <?php $viewUrl = (string) ($asset['view_url'] ?? ''); ?>
+                                <?php if ($viewUrl !== ''): ?>
+                                  <a class="btn btn-sm btn-outline-secondary" href="<?php echo htmlspecialchars($viewUrl); ?>" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-eye me-1"></i>Visualizar</a>
                                 <?php endif; ?>
                               <?php endif; ?>
                             <?php endforeach; ?>

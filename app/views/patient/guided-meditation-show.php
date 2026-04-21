@@ -23,8 +23,8 @@ include __DIR__ . '/../partials/nav.php';
   <section class="card guided-audio-card">
     <div class="card-body p-4">
       <h5 class="card-title mb-3">Audio da meditação</h5>
-      <audio id="guidedMeditationAudio" controls preload="metadata" class="w-100">
-        <source src="<?php echo $appUrl . '/' . ltrim((string) ($meditation['audio_path'] ?? ''), '/'); ?>">
+      <audio id="guidedMeditationAudio" controls controlsList="nodownload noremoteplayback" preload="metadata" class="w-100">
+        <source src="<?php echo $appUrl; ?>/patient.php?action=guided-meditation-audio&id=<?php echo (int) ($meditation['id'] ?? 0); ?>">
       </audio>
       <div class="small text-muted mt-2">Ao finalizar o áudio, o baralho será liberado automaticamente.</div>
     </div>

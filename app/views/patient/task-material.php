@@ -67,9 +67,9 @@
                     <?php foreach ($assets as $asset): ?>
             <?php
               $assetType = (string) ($asset['asset_type'] ?? '');
-              $filePath = !empty($asset['file_path']) ? ($appUrl . '/' . ltrim((string) $asset['file_path'], '/')) : '';
+              $previewUrl = (string) ($asset['preview_url'] ?? '');
               $fileUrl = !empty($asset['file_url']) ? (string) $asset['file_url'] : '';
-              $viewUrl = $fileUrl !== '' ? $fileUrl : $filePath;
+              $viewUrl = $fileUrl !== '' ? $fileUrl : (string) ($asset['view_url'] ?? '');
             ?>
             <div class="material-asset-view-card">
               <div class="material-asset-view-header">
@@ -92,12 +92,14 @@
                 <?php endif; ?>
               </div>
               <div class="material-asset-view-body">
-                <?php if ($assetType === 'image' && $filePath !== ''): ?>
-                  <a class="material-asset-open-link" target="_blank" rel="noopener noreferrer" href="<?php echo htmlspecialchars($filePath); ?>"><img class="material-view-image" src="<?php echo htmlspecialchars($filePath); ?>" alt="Imagem"></a>
-                <?php elseif ($assetType === 'video' && $filePath !== ''): ?>
-                  <video class="material-view-video" src="<?php echo htmlspecialchars($filePath); ?>" controls preload="metadata"></video>
-                <?php elseif ($assetType === 'pdf' && $filePath !== ''): ?>
-                  <iframe class="material-view-pdf" src="<?php echo htmlspecialchars($filePath); ?>#toolbar=0&navpanes=0"></iframe>
+                <?php if ($assetType === 'image' && $previewUrl !== ''): ?>
+                  <a class="material-asset-open-link" target="_blank" rel="noopener noreferrer" href="<?php echo htmlspecialchars($viewUrl); ?>"><img class="material-view-image" src="<?php echo htmlspecialchars($previewUrl); ?>" alt="Imagem"></a>
+                <?php elseif ($assetType === 'video' && $previewUrl !== ''): ?>
+                  <video class="material-view-video" src="<?php echo htmlspecialchars($previewUrl); ?>" controls controlsList="nodownload noremoteplayback" preload="metadata" disablepictureinpicture></video>
+                <?php elseif ($assetType === 'pdf' && $previewUrl !== ''): ?>
+                  <iframe class="material-view-pdf" src="<?php echo htmlspecialchars($previewUrl); ?>"></iframe>
+                <?php elseif ($assetType === 'audio' && $previewUrl !== ''): ?>
+                  <audio class="w-100" src="<?php echo htmlspecialchars($previewUrl); ?>" controls controlsList="nodownload noremoteplayback" preload="metadata"></audio>
                 <?php elseif ($assetType === 'url' && $fileUrl !== ''): ?>
                   <div class="material-view-link-box"><a target="_blank" rel="noopener noreferrer" href="<?php echo htmlspecialchars($fileUrl); ?>"><?php echo htmlspecialchars($fileUrl); ?></a></div>
                 <?php else: ?>

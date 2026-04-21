@@ -124,6 +124,34 @@ class Material extends Model
         return $row ?: null;
     }
 
+    public function findAssetByPatientAndId(int $patientId, int $assetId): ?array
+    {
+        $stmt = $this->query(
+            'SELECT DISTINCT a.*
+             FROM material_assets a
+             INNER JOIN materials m ON m.id = a.material_id
+             LEFT JOIN material_deliveries md
+                ON md.material_id = m.id
+               AND md.patient_id = ?
+             LEFT JOIN task_material_links tml
+                ON tml.material_id = m.id
+             LEFT JOIN tasks t
+                ON t.id = tml.task_id
+               AND t.patient_id = ?
+               AND t.send_to_patient = 1
+             WHERE a.id = ?
+               AND (md.id IS NOT NULL OR t.id IS NOT NULL)
+             LIMIT 1',
+            [$patientId, $patientId, $assetId]
+        );
+        if (!$stmt) {
+            return null;
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function deleteAssetById(int $assetId): bool
     {
         return (bool) $this->query('DELETE FROM material_assets WHERE id = ?', [$assetId]);

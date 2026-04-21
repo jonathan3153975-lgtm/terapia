@@ -23,8 +23,8 @@ include __DIR__ . '/../partials/nav.php';
   <section class="card guided-audio-card">
     <div class="card-body p-4">
       <h5 class="card-title mb-3">Áudio da oração</h5>
-      <audio id="prayerAudio" controls preload="metadata" class="w-100">
-        <source src="<?php echo $appUrl . '/' . ltrim((string) ($prayer['audio_path'] ?? ''), '/'); ?>">
+      <audio id="prayerAudio" controls controlsList="nodownload noremoteplayback" preload="metadata" class="w-100">
+        <source src="<?php echo $appUrl; ?>/patient.php?action=prayer-audio&id=<?php echo (int) ($prayer['id'] ?? 0); ?>">
       </audio>
       <div class="small text-muted mt-2">Depois de ouvir, registre sua reflexão e, se desejar, compartilhe com seu terapeuta.</div>
     </div>

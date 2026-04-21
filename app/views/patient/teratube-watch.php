@@ -68,7 +68,7 @@
           <iframe src="https://www.youtube.com/embed/<?php echo rawurlencode((string) $video['youtube_video_id']); ?>" title="Reprodução do vídeo" allowfullscreen></iframe>
         </div>
       <?php elseif (!empty($video['video_path'])): ?>
-        <video controls preload="metadata" style="width:100%;max-height:72vh;border-radius:.75rem;border:1px solid #dee2e6;" src="<?php echo $appUrl; ?>/patient.php?action=teratube-file&id=<?php echo (int) ($video['id'] ?? 0); ?>"></video>
+        <video controls controlsList="nodownload noremoteplayback" preload="metadata" disablepictureinpicture style="width:100%;max-height:72vh;border-radius:.75rem;border:1px solid #dee2e6;" src="<?php echo $appUrl; ?>/patient.php?action=teratube-file&id=<?php echo (int) ($video['id'] ?? 0); ?>"></video>
       <?php else: ?>
         <div class="text-muted">Conteúdo indisponível.</div>
       <?php endif; ?>
