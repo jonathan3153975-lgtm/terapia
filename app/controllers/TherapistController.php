@@ -135,6 +135,399 @@ class TherapistController extends Controller
         ]);
     }
 
+    public function systemManual(): void
+    {
+        $sections = $this->buildSystemManualSections();
+        $groupedSections = [];
+
+        foreach ($sections as $section) {
+            $group = (string) ($section['group'] ?? 'Outros');
+            if (!isset($groupedSections[$group])) {
+                $groupedSections[$group] = [];
+            }
+
+            $groupedSections[$group][] = $section;
+        }
+
+        $patientFacingCount = count(array_filter($sections, static fn (array $section): bool => !empty($section['patient_visible'])));
+
+        $this->view('therapist/system-manual', [
+            'appUrl' => Config::get('APP_URL', ''),
+            'groupedSections' => $groupedSections,
+            'sections' => $sections,
+            'initialSearch' => trim((string) ($_GET['q'] ?? '')),
+            'totalBlocks' => count($sections),
+            'patientFacingCount' => $patientFacingCount,
+            'internalOnlyCount' => count($sections) - $patientFacingCount,
+        ]);
+    }
+
+    private function buildSystemManualSections(): array
+    {
+        return [
+            [
+                'id' => 'manual-overview',
+                'group' => 'Comece aqui',
+                'title' => 'Visão geral do sistema',
+                'icon' => 'fa-solid fa-compass',
+                'summary' => 'Mapa rápido de como o terapeuta cadastra conteúdos, libera acessos e acompanha o que volta do portal do paciente.',
+                'patient_label' => 'Fluxo compartilhado terapeuta/paciente',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Os cadastros feitos nos módulos de conteúdo, pacientes, agenda e tarefas alimentam o ecossistema inteiro do consultório.'],
+                    ['label' => 'Editar', 'text' => 'Alterações em conteúdos, datas, planos e disponibilidade passam a valer nas telas do terapeuta e, quando aplicável, no portal do paciente.'],
+                    ['label' => 'Visualizar', 'text' => 'Use este manual para identificar em que bloco cada ação acontece, como o paciente recebe o conteúdo e qual área do sistema é impactada.'],
+                ],
+                'patient_delivery' => 'O paciente recebe somente o que foi liberado para o portal, enviado diretamente, publicado ou vinculado a uma tarefa/assinatura ativa.',
+                'impacts' => [
+                    'O sistema é multi-tenant: cada terapeuta enxerga apenas os próprios pacientes, materiais e registros.',
+                    'Assinaturas ativas liberam partes do portal do paciente, enquanto o modo preview permite ao terapeuta testar a experiência completa.',
+                    'Dashboards e indicadores são sempre consequência dos registros criados nos outros blocos.',
+                ],
+                'keywords' => ['fluxo geral', 'manual', 'portal do paciente', 'entrega de conteúdo', 'assinatura', 'preview'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-system-manual', 'Paciente: patient.php?action=dashboard'],
+            ],
+            [
+                'id' => 'manual-dashboard',
+                'group' => 'Comece aqui',
+                'title' => 'Dashboard',
+                'icon' => 'fa-solid fa-chart-line',
+                'summary' => 'Painel inicial do terapeuta com KPIs de pacientes, consultas, materiais, tarefas e evolução mensal.',
+                'patient_label' => 'Somente terapeuta',
+                'patient_visible' => false,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Não possui cadastro próprio. O dashboard é alimentado automaticamente pelos demais módulos.'],
+                    ['label' => 'Editar', 'text' => 'Não existe edição direta; para alterar os números é preciso ajustar os registros de pacientes, agenda, conteúdos ou tarefas.'],
+                    ['label' => 'Visualizar', 'text' => 'Mostra total de pacientes, pacientes ativos, consultas realizadas/agendadas, materiais, tarefas e gráfico dos últimos meses.'],
+                ],
+                'patient_delivery' => 'Não aparece para o paciente. É uma camada de gestão operacional do terapeuta.',
+                'impacts' => [
+                    'Ajuda a priorizar revisão de pacientes pendentes e acompanhar crescimento do consultório.',
+                    'Reflete em tempo real o volume cadastrado nos blocos de Pacientes, Agenda, Materiais e Tarefas.',
+                ],
+                'keywords' => ['indicadores', 'kpi', 'gráfico', 'pacientes ativos', 'consultas', 'materiais'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-dashboard'],
+            ],
+            [
+                'id' => 'manual-patient-preview',
+                'group' => 'Comece aqui',
+                'title' => 'Acessar como paciente',
+                'icon' => 'fa-solid fa-right-to-bracket',
+                'summary' => 'Atalho para o terapeuta abrir o portal exatamente como o paciente vê, sem precisar trocar de conta.',
+                'patient_label' => 'Modo preview do portal',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Não cria conteúdo. Este bloco inicia uma sessão de visualização a partir de um paciente já cadastrado.'],
+                    ['label' => 'Editar', 'text' => 'Não edita registros; serve para validar o que foi publicado, entregue ou liberado no portal.'],
+                    ['label' => 'Visualizar', 'text' => 'Permite testar menus, bloqueios por assinatura e a experiência do paciente antes do envio real.'],
+                ],
+                'patient_delivery' => 'É uma simulação do ambiente do paciente. O terapeuta entra no portal e consegue inspecionar o conteúdo liberado.',
+                'impacts' => [
+                    'Reduz erro operacional ao conferir se livros, vídeos, tarefas e telas do paciente estão corretos.',
+                    'Ignora restrições normais de assinatura durante o preview para facilitar a conferência do ambiente.',
+                ],
+                'keywords' => ['preview', 'visualização', 'entrar como paciente', 'teste do portal'],
+                'routes' => ['Terapeuta: dashboard.php?action=patients-preview-menu', 'Paciente: patient.php?action=dashboard'],
+            ],
+            [
+                'id' => 'manual-schedule',
+                'group' => 'Gestão clínica',
+                'title' => 'Agenda',
+                'icon' => 'fa-solid fa-calendar-days',
+                'summary' => 'Central de agendamentos com visualização semanal/diária, histórico do compromisso e controle de conflitos de horário.',
+                'patient_label' => 'Uso interno com reflexo financeiro',
+                'patient_visible' => false,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Cria compromissos para pacientes já cadastrados ou convidados sem cadastro, com data, hora e descrição.'],
+                    ['label' => 'Editar', 'text' => 'Permite alterar horário, paciente vinculado, descrição e histórico clínico do atendimento.'],
+                    ['label' => 'Visualizar', 'text' => 'Mostra agenda por semana ou por dia, detalhes do compromisso e navegação entre períodos.'],
+                ],
+                'patient_delivery' => 'Não há menu de agenda para o paciente. Os atendimentos alimentam o acompanhamento interno e o módulo Financeiro.',
+                'impacts' => [
+                    'Cada compromisso criado gera ou atualiza o controle financeiro da consulta.',
+                    'Consultas concluídas e agendadas entram nos indicadores do dashboard do terapeuta.',
+                    'O campo de histórico do atendimento concentra evolução clínica sem expor esse texto ao paciente no portal.',
+                ],
+                'keywords' => ['agendamento', 'consulta', 'histórico', 'semana', 'dia', 'conflito de horário'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-schedule'],
+            ],
+            [
+                'id' => 'manual-patients',
+                'group' => 'Gestão clínica',
+                'title' => 'Pacientes',
+                'icon' => 'fa-solid fa-users',
+                'summary' => 'Cadastro principal do consultório: dados pessoais, revisão do cadastro, assinatura, histórico, tarefas e acesso ao portal.',
+                'patient_label' => 'Base do portal do paciente',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Permite criar pacientes manualmente ou gerar links públicos de cadastro para autoinscrição revisada depois pelo terapeuta.'],
+                    ['label' => 'Editar', 'text' => 'Atualiza dados cadastrais, senha, status, plano vinculado e demais informações clínicas do paciente.'],
+                    ['label' => 'Visualizar', 'text' => 'Lista pacientes, mostra histórico, assinatura atual, pendências de revisão e atalhos para visualizar o ambiente do paciente.'],
+                ],
+                'patient_delivery' => 'O cadastro aprovado cria ou mantém o acesso do paciente ao portal. O plano atribuído define o que fica liberado no menu do paciente.',
+                'impacts' => [
+                    'Sem paciente ativo não há entrega de materiais, tarefas, meditações, mensagens ou assinatura.',
+                    'A aprovação do cadastro ativa o acesso do usuário paciente ao sistema.',
+                    'Planos atribuídos manualmente ou ativados depois controlam bloqueios e liberações no portal.',
+                ],
+                'keywords' => ['cadastro', 'aprovação', 'plano', 'assinatura', 'histórico', 'senha', 'link público'],
+                'routes' => ['Terapeuta: dashboard.php?action=patients', 'Paciente: patient.php?action=my-account'],
+            ],
+            [
+                'id' => 'manual-financial',
+                'group' => 'Gestão clínica',
+                'title' => 'Financeiro',
+                'icon' => 'fa-solid fa-wallet',
+                'summary' => 'Controle mensal dos pagamentos das consultas, com status pendente/pago, ticket médio e estimativa de receita.',
+                'patient_label' => 'Uso interno do terapeuta',
+                'patient_visible' => false,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Os registros financeiros surgem a partir dos agendamentos e podem receber valor e status de pagamento.'],
+                    ['label' => 'Editar', 'text' => 'Permite atualizar valor da consulta, confirmar pagamento ou excluir o lançamento vinculado ao atendimento.'],
+                    ['label' => 'Visualizar', 'text' => 'Exibe visão por mês com totais recebidos, pendentes, quantidade de consultas e ticket médio.'],
+                ],
+                'patient_delivery' => 'Não existe tela financeira equivalente no portal do paciente neste fluxo. O bloco é gerencial.',
+                'impacts' => [
+                    'Toda consulta agendada pode gerar um lançamento financeiro correspondente.',
+                    'A consistência entre Agenda e Financeiro melhora a leitura de receita do consultório.',
+                ],
+                'keywords' => ['pagamento', 'consulta paga', 'pendente', 'ticket médio', 'receita'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-financial'],
+            ],
+            [
+                'id' => 'manual-materials',
+                'group' => 'Conteúdos entregues ao paciente',
+                'title' => 'Materiais',
+                'icon' => 'fa-solid fa-book-open',
+                'summary' => 'Biblioteca de materiais do terapeuta com envio direto ao paciente e acompanhamento de entregas.',
+                'patient_label' => 'Portal do paciente',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Cria materiais com arquivo, descrição e metadados para uso terapêutico e distribuição posterior.'],
+                    ['label' => 'Editar', 'text' => 'Atualiza conteúdo, título, arquivo associado e demais dados do material salvo.'],
+                    ['label' => 'Visualizar', 'text' => 'Permite consultar os materiais cadastrados, abrir detalhes e verificar histórico de envio para pacientes.'],
+                ],
+                'patient_delivery' => 'O paciente recebe materiais enviados diretamente ou vinculados a tarefas e os encontra em Meus materiais no portal.',
+                'impacts' => [
+                    'As entregas contam para a experiência do paciente e para indicadores de materiais acessados.',
+                    'O mesmo material pode ser reutilizado em diferentes pacientes sem novo cadastro.',
+                ],
+                'keywords' => ['enviar material', 'meus materiais', 'biblioteca', 'arquivo', 'entrega'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-materials', 'Paciente: patient.php?action=materials'],
+            ],
+            [
+                'id' => 'manual-books',
+                'group' => 'Conteúdos entregues ao paciente',
+                'title' => 'Livros',
+                'icon' => 'fa-solid fa-book',
+                'summary' => 'Catálogo de livros em PDF com publicação controlada, visualização pelo paciente e favoritos.',
+                'patient_label' => 'Portal do paciente com publicação ativa',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Envia um livro em PDF com título, descrição e dados para compor a biblioteca digital do terapeuta.'],
+                    ['label' => 'Editar', 'text' => 'Atualiza informações do livro, substitui o arquivo e altera a disponibilidade para o paciente.'],
+                    ['label' => 'Visualizar', 'text' => 'Permite consultar catálogo, abrir detalhes e acompanhar quais livros estão publicados.'],
+                ],
+                'patient_delivery' => 'O paciente acessa apenas livros publicados, podendo abrir no portal e salvá-los em Meus conteúdos como favorito.',
+                'impacts' => [
+                    'Ao publicar, o livro passa a compor a biblioteca do portal do paciente.',
+                    'Os favoritos do paciente ajudam a mapear interesse e recorrência de uso do conteúdo.',
+                ],
+                'keywords' => ['pdf', 'publicar livro', 'favoritos', 'meus conteúdos', 'biblioteca'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-books', 'Paciente: patient.php?action=books'],
+            ],
+            [
+                'id' => 'manual-teratube',
+                'group' => 'Conteúdos entregues ao paciente',
+                'title' => 'teraTube',
+                'icon' => 'fa-solid fa-circle-play',
+                'summary' => 'Biblioteca de vídeos do terapeuta com upload ou YouTube, publicação controlada, comentários, avaliações e favoritos.',
+                'patient_label' => 'Portal do paciente com publicação ativa',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Cria vídeos próprios para o portal, usando upload interno ou link do YouTube.'],
+                    ['label' => 'Editar', 'text' => 'Permite trocar fonte do vídeo, metadados, capa e status de publicação.'],
+                    ['label' => 'Visualizar', 'text' => 'Mostra a vitrine de vídeos, dados de favoritos/comentários e o detalhe de cada conteúdo.'],
+                ],
+                'patient_delivery' => 'Vídeos publicados aparecem no portal do paciente, onde ele pode assistir, avaliar, comentar e salvar em Meus conteúdos.',
+                'impacts' => [
+                    'Comentários e notas do paciente retornam como sinal de engajamento do conteúdo.',
+                    'Publicar ou despublicar altera imediatamente a disponibilidade no portal.',
+                ],
+                'keywords' => ['vídeo', 'youtube', 'comentário', 'avaliação', 'favorito', 'publicação'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-teratube', 'Paciente: patient.php?action=teratube'],
+            ],
+            [
+                'id' => 'manual-predefined-tasks',
+                'group' => 'Tarefas e automações',
+                'title' => 'Tarefas pré-definidas',
+                'icon' => 'fa-solid fa-list-check',
+                'summary' => 'Banco de tarefas-modelo para acelerar prescrições recorrentes com descrição, capa e tipo de entrega.',
+                'patient_label' => 'Entrega indireta ao paciente',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Cria modelos reutilizáveis de tarefa com título, descrição rica, imagem de capa e configuração de envio.'],
+                    ['label' => 'Editar', 'text' => 'Permite ajustar texto, capa, tipo de entrega e status do modelo sem recriar a tarefa do zero.'],
+                    ['label' => 'Visualizar', 'text' => 'Exibe a biblioteca de modelos para consulta rápida e reaproveitamento na rotina clínica.'],
+                ],
+                'patient_delivery' => 'O paciente não vê o modelo diretamente. Ele vê apenas a tarefa real gerada ou enviada a partir desse modelo.',
+                'impacts' => [
+                    'Padroniza prescrições frequentes e reduz tempo de cadastro de tarefas individuais.',
+                    'Ajuda a manter consistência entre pacientes e ciclos terapêuticos semelhantes.',
+                ],
+                'keywords' => ['modelo de tarefa', 'template', 'prescrição', 'reutilizar', 'capa'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-predefined-tasks', 'Paciente: patient.php?action=tasks'],
+            ],
+            [
+                'id' => 'manual-virtual-tasks',
+                'group' => 'Tarefas e automações',
+                'title' => 'Tarefas dinâmicas',
+                'icon' => 'fa-solid fa-star',
+                'summary' => 'Editor de tarefas interativas, como Árvore da Vida, com preview antes do envio e visualização das respostas do paciente.',
+                'patient_label' => 'Portal do paciente',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Cria uma tarefa dinâmica, escolhe estrutura/template, seleciona paciente e envia diretamente ao portal.'],
+                    ['label' => 'Editar', 'text' => 'O fluxo atual privilegia criação e preview; a manutenção acontece recriando a experiência ou removendo tarefas já enviadas.'],
+                    ['label' => 'Visualizar', 'text' => 'Permite testar a atividade em modo preview e depois abrir as respostas estruturadas do paciente.'],
+                ],
+                'patient_delivery' => 'A tarefa aparece para o paciente na área de tarefas, com interação guiada e registro de respostas por seção.',
+                'impacts' => [
+                    'As respostas retornam em formato estruturado para leitura terapêutica posterior.',
+                    'O envio pode disparar comunicação por e-mail para avisar o paciente da nova atividade.',
+                ],
+                'keywords' => ['árvore da vida', 'preview', 'respostas', 'atividade interativa', 'json'],
+                'routes' => ['Terapeuta: dashboard.php?action=virtual-tasks', 'Paciente: patient.php?action=tasks'],
+            ],
+            [
+                'id' => 'manual-messages',
+                'group' => 'Conteúdos entregues ao paciente',
+                'title' => 'Mensagens diárias',
+                'icon' => 'fa-solid fa-envelope-open-text',
+                'summary' => 'Baú de mensagens categorizadas com cadastro unitário ou importação em massa para sorteio no mensageiro do paciente.',
+                'patient_label' => 'Portal do paciente',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Adiciona mensagens por categoria ou importa lotes em JSON para montar o acervo do mensageiro.'],
+                    ['label' => 'Editar', 'text' => 'Permite corrigir categoria e texto das mensagens já cadastradas.'],
+                    ['label' => 'Visualizar', 'text' => 'Lista mensagens por categoria, busca por texto e mostra reflexões compartilhadas pelos pacientes.'],
+                ],
+                'patient_delivery' => 'O paciente sorteia mensagens no Mensageiro, escreve uma reflexão e decide compartilhar com o terapeuta.',
+                'impacts' => [
+                    'As reflexões compartilhadas ficam visíveis ao terapeuta no próprio módulo.',
+                    'O sorteio roda em ciclos para evitar repetição imediata das mesmas mensagens ao paciente.',
+                ],
+                'keywords' => ['mensageiro', 'sorteio', 'json', 'reflexão', 'mensagem diária', 'categoria'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-messages', 'Paciente: patient.php?action=messenger'],
+            ],
+            [
+                'id' => 'manual-devotionals',
+                'group' => 'Conteúdos entregues ao paciente',
+                'title' => 'Devocional',
+                'icon' => 'fa-solid fa-sun',
+                'summary' => 'Planejamento de devocionais por mês, com entradas por data, Palavra de Deus e texto reflexivo para o dia.',
+                'patient_label' => 'Portal do paciente',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Cria o devocional do mês e, dentro dele, registra entradas diárias com data, título, Palavra de Deus e texto.'],
+                    ['label' => 'Editar', 'text' => 'Permite ajustar tanto a estrutura do devocional quanto os registros diários já criados.'],
+                    ['label' => 'Visualizar', 'text' => 'Mostra o calendário de entradas, abre o conteúdo do dia e permite consultar reflexões dos registros salvos.'],
+                ],
+                'patient_delivery' => 'O paciente acessa o devocional disponível para o dia, registra reflexão própria e mantém histórico pessoal.',
+                'impacts' => [
+                    'Cada reflexão salva gera um registro do paciente que pode ser consultado e baixado depois.',
+                    'A consistência das datas é importante porque o portal só permite salvar a reflexão vinculada ao devocional correto do dia.',
+                ],
+                'keywords' => ['registro diário', 'palavra de deus', 'reflexão', 'mês', 'data'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-devotionals', 'Paciente: patient.php?action=devotionals'],
+            ],
+            [
+                'id' => 'manual-faith-words',
+                'group' => 'Conteúdos entregues ao paciente',
+                'title' => 'Pai, fala comigo',
+                'icon' => 'fa-solid fa-cross',
+                'summary' => 'Acervo de palavras/versículos para sorteio no portal, com ciclo de uso e registro das anotações do paciente.',
+                'patient_label' => 'Portal do paciente',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Adiciona palavras de fé individualmente ou em massa, formando o banco de sorteio do paciente.'],
+                    ['label' => 'Editar', 'text' => 'Permite revisar texto e organização do acervo para manter a curadoria espiritual atualizada.'],
+                    ['label' => 'Visualizar', 'text' => 'Lista o conteúdo cadastrado e acompanha os registros feitos pelos pacientes a partir das palavras sorteadas.'],
+                ],
+                'patient_delivery' => 'O paciente sorteia uma palavra no portal, registra sua percepção e guarda histórico próprio dentro do módulo.',
+                'impacts' => [
+                    'O ciclo de sorteio evita repetição imediata até consumir o acervo disponível.',
+                    'As anotações do paciente ajudam o terapeuta a acompanhar engajamento espiritual e simbólico.',
+                ],
+                'keywords' => ['versículo', 'palavra', 'sorteio', 'fé', 'anotação'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-faith-words', 'Paciente: patient.php?action=father-word'],
+            ],
+            [
+                'id' => 'manual-guided-meditations',
+                'group' => 'Conteúdos entregues ao paciente',
+                'title' => 'Meditação guiada',
+                'icon' => 'fa-solid fa-headphones',
+                'summary' => 'Módulo de meditações com áudio, imagem de referência e registro das reflexões do paciente após escuta.',
+                'patient_label' => 'Portal do paciente',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Cria meditações com título, arquivo de áudio e imagem de referência para o portal terapêutico.'],
+                    ['label' => 'Editar', 'text' => 'Atualiza conteúdo, substitui arquivos de áudio/imagem e ajusta os dados da meditação.'],
+                    ['label' => 'Visualizar', 'text' => 'Lista as meditações, abre o detalhe do conteúdo e mostra reflexões compartilhadas pelos pacientes.'],
+                ],
+                'patient_delivery' => 'O paciente acessa a meditação no portal, escuta o áudio, sorteia uma carta de cura e salva sua reflexão final.',
+                'impacts' => [
+                    'Depende do acervo de Cartas de cura para compor o sorteio complementar durante a experiência.',
+                    'Cada escuta com reflexão gera registro do paciente, com possibilidade de compartilhamento ao terapeuta.',
+                ],
+                'keywords' => ['áudio', 'imagem', 'escuta', 'reflexão', 'carta de cura', 'meditação'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-guided-meditations', 'Paciente: patient.php?action=guided-meditations'],
+            ],
+            [
+                'id' => 'manual-prayers',
+                'group' => 'Conteúdos entregues ao paciente',
+                'title' => 'Orações',
+                'icon' => 'fa-solid fa-hands-praying',
+                'summary' => 'Catálogo de orações em áudio com imagem de apoio e espaço para o paciente registrar a experiência.',
+                'patient_label' => 'Portal do paciente',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Cria orações com título, áudio obrigatório e imagem opcional para o portal.'],
+                    ['label' => 'Editar', 'text' => 'Permite trocar áudio, imagem e título do conteúdo já publicado.'],
+                    ['label' => 'Visualizar', 'text' => 'Exibe o acervo de orações e as interações/reflexões compartilhadas pelos pacientes.'],
+                ],
+                'patient_delivery' => 'O paciente abre a oração no portal, ouve o áudio e pode salvar uma resposta/reflexão vinculada a esse item.',
+                'impacts' => [
+                    'Amplia o repertório de conteúdos auditivos com retorno qualitativo do paciente.',
+                    'Os arquivos ficam armazenados no projeto e precisam de gestão cuidadosa ao editar ou excluir.',
+                ],
+                'keywords' => ['áudio de oração', 'imagem', 'escuta', 'reflexão', 'oração guiada'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-prayers', 'Paciente: patient.php?action=prayers'],
+            ],
+            [
+                'id' => 'manual-healing-letters',
+                'group' => 'Conteúdos entregues ao paciente',
+                'title' => 'Cartas de cura',
+                'icon' => 'fa-solid fa-clover',
+                'summary' => 'Banco de cartas terapêuticas categorizadas usado como sorteio complementar dentro da meditação guiada.',
+                'patient_label' => 'Uso indireto no portal',
+                'patient_visible' => true,
+                'operations' => [
+                    ['label' => 'Cadastrar', 'text' => 'Permite criar cartas individualmente ou importar lotes em JSON para formar o acervo de sorteio.'],
+                    ['label' => 'Editar', 'text' => 'Atualiza categoria e texto das cartas já cadastradas.'],
+                    ['label' => 'Visualizar', 'text' => 'Lista as cartas por categoria, busca por texto e consulta reflexões compartilhadas vinculadas às meditações.'],
+                ],
+                'patient_delivery' => 'O paciente não vê um menu próprio de cartas. Elas aparecem quando a meditação guiada sorteia uma carta durante a experiência.',
+                'impacts' => [
+                    'Sem cartas cadastradas, o sorteio complementar da meditação guiada fica indisponível.',
+                    'As cartas reaproveitam categorias semelhantes às mensagens, facilitando organização temática do acervo.',
+                ],
+                'keywords' => ['json', 'categoria', 'sorteio de carta', 'meditação guiada', 'cura'],
+                'routes' => ['Terapeuta: dashboard.php?action=therapist-healing-letters', 'Paciente: patient.php?action=guided-meditation-show'],
+            ],
+        ];
+    }
+
     private function normalizeDailyMessageCategory(string $value): string
     {
         $value = strtolower(trim($value));

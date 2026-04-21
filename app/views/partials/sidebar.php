@@ -61,6 +61,7 @@ $sidebarLogoUrl = $sidebarLogoPath !== '' ? ($appUrl . '/' . ltrim($sidebarLogoP
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'virtual-tasks') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=virtual-tasks"><i class="fa-solid fa-star"></i><span>Tarefas dinâmicas</span></a>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'patients') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=patients"><i class="fa-solid fa-users"></i><span>Pacientes</span></a>
       <a class="sidebar-link <?php echo $currentAction === 'patients-preview-menu' ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=patients-preview-menu"><i class="fa-solid fa-right-to-bracket"></i><span>Acessar como paciente</span></a>
+      <a class="sidebar-link <?php echo str_starts_with($currentAction, 'therapist-system-manual') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/dashboard.php?action=therapist-system-manual"><i class="fa-solid fa-book-atlas"></i><span>Manual do sistema</span></a>
     <?php elseif ($displayRole === 'patient'): ?>
       <?php $patientFreeTier = !$isPatientPreview && !($_SESSION['patient_has_active_plan'] ?? true); ?>
       <a class="sidebar-link <?php echo str_starts_with($currentAction, 'subscription-') ? 'active' : ''; ?>" href="<?php echo $appUrl; ?>/patient.php?action=subscription-plans"><i class="fa-solid fa-crown"></i><span>Minha assinatura</span></a>

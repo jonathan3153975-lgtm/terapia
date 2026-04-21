@@ -65,6 +65,7 @@ match ($action) {
     'therapists-delete' => (new AdminController())->deleteTherapist(),
 
     'therapist-dashboard' => (new TherapistController())->dashboard(),
+    'therapist-system-manual' => (new TherapistController())->systemManual(),
     'therapist-schedule' => (new TherapistController())->schedule(),
     'therapist-schedule-store' => (new TherapistController())->storeScheduleAppointment(),
     'therapist-schedule-show' => (new TherapistController())->showScheduleAppointment(),
