@@ -1,4 +1,5 @@
 <?php if (!empty($withSidebarLayout)): ?>
+	</div>
 	</main>
 </div>
 <?php endif; ?>
@@ -36,8 +37,18 @@ if ($assetBase === '') {
 		sidebarOverlay.addEventListener('click', closeSidebar);
 	}
 
+	document.querySelectorAll('[data-sidebar-close]').forEach(function(button) {
+		button.addEventListener('click', closeSidebar);
+	});
+
 	document.addEventListener('click', function(e) {
 		if (e.target.closest('.sidebar-link')) {
+			closeSidebar();
+		}
+	});
+
+	document.addEventListener('keydown', function(e) {
+		if (e.key === 'Escape') {
 			closeSidebar();
 		}
 	});
