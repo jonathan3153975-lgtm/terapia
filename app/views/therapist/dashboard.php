@@ -8,6 +8,7 @@
     <div class="col-md-6 col-xl-2"><div class="card card-kpi"><div class="card-body"><small><i class="fa-solid fa-calendar-days me-1"></i>Consultas agendadas</small><h2><?php echo (int)$scheduledAppointments; ?></h2></div></div></div>
     <div class="col-md-6 col-xl-2"><div class="card card-kpi"><div class="card-body"><small><i class="fa-solid fa-book me-1"></i>Materiais</small><h2><?php echo (int)$totalMaterials; ?></h2></div></div></div>
     <div class="col-md-6 col-xl-2"><div class="card card-kpi"><div class="card-body"><small><i class="fa-solid fa-list-check me-1"></i>Tarefas</small><h2><?php echo (int)$totalTasks; ?></h2></div></div></div>
+    <div class="col-md-6 col-xl-2"><div class="card card-kpi"><div class="card-body"><small><i class="fa-solid fa-sun me-1"></i>Registros devocionais</small><h2><?php echo (int)($totalDevotionalReflections ?? 0); ?></h2></div></div></div>
   </div>
 
   <?php if (!empty($pendingReviewPatients)): ?>

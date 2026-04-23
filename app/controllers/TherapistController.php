@@ -14,6 +14,7 @@ use App\Models\MaterialDelivery;
 use App\Models\Devotional;
 use App\Models\DevotionalEntry;
 use App\Models\Patient;
+use App\Models\PatientDevotionalReflection;
 use App\Models\PatientFaithEntry;
 use App\Models\PatientGuidedMeditationEntry;
 use App\Models\PatientPrayerEntry;
@@ -65,6 +66,7 @@ class TherapistController extends Controller
     private PredefinedTask $predefinedTaskModel;
     private Devotional $devotionalModel;
     private DevotionalEntry $devotionalEntryModel;
+    private PatientDevotionalReflection $patientDevotionalReflectionModel;
 
     public function __construct()
     {
@@ -95,6 +97,7 @@ class TherapistController extends Controller
         $this->predefinedTaskModel = new PredefinedTask();
         $this->devotionalModel = new Devotional();
         $this->devotionalEntryModel = new DevotionalEntry();
+        $this->patientDevotionalReflectionModel = new PatientDevotionalReflection();
     }
 
     public function dashboard(): void
@@ -127,6 +130,7 @@ class TherapistController extends Controller
             'scheduledAppointments' => $scheduledAppointments,
             'totalMaterials' => $totalMaterials,
             'totalTasks' => $this->taskModel->countByTherapist($therapistId),
+            'totalDevotionalReflections' => $this->patientDevotionalReflectionModel->countByTherapist($therapistId),
             'pendingReviewPatients' => $this->patientModel->countPendingReviewByTherapist($therapistId),
             'chartLabels' => $chartLabels,
             'chartPatients' => $chartPatients,

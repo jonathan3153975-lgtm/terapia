@@ -8,6 +8,22 @@ class PatientDevotionalReflection extends Model
 {
     protected string $table = 'patient_devotional_reflections';
 
+    public function countByTherapist(int $therapistId): int
+    {
+        $stmt = $this->query(
+            'SELECT COUNT(*) AS total
+             FROM patient_devotional_reflections
+             WHERE therapist_id = ?',
+            [$therapistId]
+        );
+
+        if (!$stmt) {
+            return 0;
+        }
+
+        return (int) ($stmt->fetch()['total'] ?? 0);
+    }
+
     public function listByPatient(int $patientId): array
     {
         $stmt = $this->query(
