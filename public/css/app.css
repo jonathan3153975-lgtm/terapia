@@ -336,6 +336,123 @@ body.app-body {
 
 .page-wrap { padding: 4px 0 36px; }
 
+.portal-stack {
+	display: grid;
+	gap: 18px;
+}
+
+.portal-search-card {
+	border-style: dashed;
+	background:
+		radial-gradient(420px 180px at 0% 0%, rgba(19, 99, 223, .12), transparent 62%),
+		linear-gradient(180deg, rgba(255,255,255,.98), rgba(246, 250, 255, .96));
+	box-shadow: 0 14px 30px rgba(15, 23, 42, .08);
+}
+
+.portal-search-card .card-body {
+	padding: 18px 20px;
+}
+
+.portal-search-field {
+	position: relative;
+}
+
+.portal-search-field i {
+	position: absolute;
+	left: 14px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--text-soft);
+	pointer-events: none;
+	font-size: .9rem;
+}
+
+.portal-search-field .form-control {
+	height: 46px;
+	padding-left: 40px;
+	border-radius: 14px;
+	border-color: rgba(19, 99, 223, .14);
+	box-shadow: inset 0 1px 2px rgba(15, 23, 42, .04);
+}
+
+.portal-search-field .form-control:focus {
+	border-color: rgba(19, 99, 223, .42);
+	box-shadow: 0 0 0 4px rgba(19, 99, 223, .10);
+}
+
+.portal-list-card {
+	overflow: hidden;
+	box-shadow: 0 14px 32px rgba(15, 23, 42, .08);
+}
+
+.portal-list-card__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+	padding: 18px 20px 14px;
+	border-bottom: 1px solid rgba(19, 99, 223, .10);
+	background: linear-gradient(180deg, rgba(19, 99, 223, .04), rgba(255,255,255,.96));
+}
+
+.portal-list-card__body {
+	padding: 0 16px 16px;
+}
+
+.portal-list-card__body .table-responsive {
+	border: 1px solid rgba(19, 99, 223, .10);
+	border-radius: 16px;
+	background: #fff;
+	margin-top: 16px;
+	overflow: auto;
+}
+
+.portal-list-card__body .table {
+	margin-bottom: 0;
+	vertical-align: middle;
+}
+
+.portal-list-card__body .table thead th {
+	border-bottom-color: var(--line);
+	background: rgba(19, 99, 223, .05);
+	font-size: .78rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: var(--text-soft);
+	white-space: nowrap;
+	padding-top: 14px;
+	padding-bottom: 14px;
+}
+
+.portal-list-card__body .table tbody tr:hover {
+	background: rgba(19, 99, 223, .03);
+}
+
+.portal-list-card .card-footer {
+	padding: 14px 20px 18px;
+	border-top: 1px solid rgba(19, 99, 223, .08);
+	background: rgba(255,255,255,.96);
+}
+
+.portal-inline-meta {
+	color: var(--text-soft);
+	font-size: .92rem;
+	line-height: 1.6;
+}
+
+.reflection-stack {
+	display: grid;
+	gap: 14px;
+}
+
+.reflection-stack > [class*='col-'] {
+	flex: 0 0 100%;
+	max-width: 100%;
+	width: 100%;
+}
+
 .records-tabulation-controls {
 	display: flex;
 	flex-direction: column;
@@ -978,6 +1095,21 @@ body.app-body {
 	max-width: min(700px, 78%);
 }
 
+.messenger-hero-image--devotional .messenger-hero-overlay {
+	background:
+		linear-gradient(120deg, rgba(8, 26, 45, .74), rgba(8, 26, 45, .30) 54%, rgba(8, 26, 45, .68)),
+		radial-gradient(circle at top left, rgba(255, 255, 255, .15), transparent 36%);
+}
+
+.messenger-hero-content--spotlight {
+	padding: 18px 20px;
+	border-radius: 20px;
+	background: linear-gradient(180deg, rgba(8, 30, 50, .54), rgba(8, 30, 50, .22));
+	border: 1px solid rgba(255, 255, 255, .18);
+	backdrop-filter: blur(12px);
+	box-shadow: 0 18px 34px rgba(3, 12, 24, .18);
+}
+
 .messenger-hero-image-title {
 	margin: 0 0 10px;
 	color: #f8fbff;
@@ -1180,7 +1312,8 @@ body.app-body {
 	max-width: 58ch;
 }
 
-.messenger-draw-text.is-typing::after {
+.messenger-draw-text.is-typing::after,
+.father-word-text.is-typing::after {
 	content: '';
 	display: inline-block;
 	width: 2px;
@@ -1327,6 +1460,10 @@ body.app-body {
 	white-space: pre-wrap;
 }
 
+.father-word-result.messenger-reveal {
+	overflow: hidden;
+}
+
 .father-word-reflection-card {
 	border: 1px solid rgba(20, 184, 166, .16);
 	background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(239, 252, 250, .95));
@@ -1455,6 +1592,23 @@ body.app-body {
 	max-width: min(620px, 84%);
 	color: #f8fbff;
 	text-shadow: 0 2px 12px rgba(0, 0, 0, .26);
+}
+
+.guided-hero-copy--spotlight {
+	padding: 18px 20px;
+	border-radius: 20px;
+	background: linear-gradient(180deg, rgba(7, 25, 40, .58), rgba(7, 25, 40, .26));
+	border: 1px solid rgba(255, 255, 255, .22);
+	backdrop-filter: blur(10px);
+	box-shadow: 0 18px 34px rgba(7, 25, 40, .18);
+}
+
+.guided-hero-copy--spotlight h4,
+.guided-hero-copy--spotlight p {
+	color: #fff;
+	text-shadow:
+		0 0 10px rgba(255, 255, 255, .18),
+		0 4px 18px rgba(0, 0, 0, .32);
 }
 
 .guided-audio-card {
@@ -1742,6 +1896,11 @@ body.app-body {
 
 	.messenger-hero-content {
 		max-width: 100%;
+	}
+
+	.messenger-hero-content--spotlight,
+	.guided-hero-copy--spotlight {
+		padding: 14px 16px;
 	}
 
 	.messenger-hero-image-title {

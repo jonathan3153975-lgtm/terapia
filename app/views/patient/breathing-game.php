@@ -1,15 +1,15 @@
-<?php $title = 'Jogo da respiração'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
+<?php $title = 'Exercício de respiração'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
 <div class="container page-wrap breathing-game-shell">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
   <section class="card border-0 shadow-sm breathing-game-card">
     <div class="card-body p-3 p-md-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 breathing-game-header">
-        <h4 class="mb-0">Jogo da respiração</h4>
+        <h4 class="mb-0">Exercício de respiração</h4>
         <span id="breathing-cycle-counter" class="badge text-bg-primary">Ciclo 0/3</span>
       </div>
 
-      <div class="breathing-stage" role="application" aria-label="Jogo de respiração guiada">
+      <div class="breathing-stage" role="application" aria-label="Exercício de respiração guiada">
         <div class="breathing-phone">
           <div class="breathing-screen breathing-screen--intro is-active" id="breathing-intro-screen">
             <div class="breathing-intro-copy">

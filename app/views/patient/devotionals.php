@@ -1,10 +1,10 @@
 <?php $title = 'Devocional'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
-<div class="container page-wrap">
+<div class="container page-wrap portal-stack">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
-  <section class="messenger-hero-image mb-4" style="background-image: url('<?php echo $appUrl; ?>/app/images/devocional.png');">
+  <section class="messenger-hero-image messenger-hero-image--devotional" style="background-image: url('<?php echo $appUrl; ?>/app/images/devocional.png');">
     <div class="messenger-hero-overlay">
-      <div class="messenger-hero-content">
+      <div class="messenger-hero-content messenger-hero-content--spotlight">
         <h3 class="messenger-hero-image-title">Devocional</h3>
         <p class="messenger-hero-image-copy">Acesse o devocional do dia e registre sua reflexão pessoal com qualidade.</p>
       </div>

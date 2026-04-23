@@ -3,7 +3,7 @@ $title = 'Orações';
 include __DIR__ . '/../partials/header.php';
 include __DIR__ . '/../partials/nav.php';
 ?>
-<div class="container page-wrap guided-page">
+<div class="container page-wrap guided-page portal-stack">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
   <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
@@ -13,7 +13,7 @@ include __DIR__ . '/../partials/nav.php';
 
   <section class="guided-hero-image" style="<?php echo !empty($prayer['reference_image_path']) ? ('background-image: url(' . htmlspecialchars($appUrl . '/' . ltrim((string) $prayer['reference_image_path'], '/')) . ');') : ''; ?>">
     <div class="guided-hero-overlay">
-      <div class="guided-hero-copy">
+      <div class="guided-hero-copy guided-hero-copy--spotlight">
         <h4 class="mb-2">Reserve um momento de silêncio e conexão.</h4>
         <p class="mb-0">Escute a oração completa e escreva sua reflexão ao final.</p>
       </div>
@@ -60,9 +60,9 @@ include __DIR__ . '/../partials/nav.php';
           <p class="mb-0">Você ainda não salvou reflexões desta oração.</p>
         </div>
       <?php else: ?>
-        <div class="row g-3">
+        <div class="row g-3 reflection-stack">
           <?php foreach ($entries as $entry): ?>
-            <div class="col-12 col-xl-6">
+            <div class="col-12">
               <article class="messenger-entry-card h-100">
                 <div class="d-flex justify-content-end align-items-start gap-2 mb-2">
                   <span class="small text-muted"><?php echo !empty($entry['created_at']) ? date('d/m/Y H:i', strtotime((string) $entry['created_at'])) : '-'; ?></span>

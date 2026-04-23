@@ -3,7 +3,7 @@ $title = 'Meditação guiada';
 include __DIR__ . '/../partials/header.php';
 include __DIR__ . '/../partials/nav.php';
 ?>
-<div class="container page-wrap guided-page">
+<div class="container page-wrap guided-page portal-stack">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
   <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
@@ -13,7 +13,7 @@ include __DIR__ . '/../partials/nav.php';
 
   <section class="guided-hero-image" style="<?php echo !empty($meditation['reference_image_path']) ? ('background-image: url(' . htmlspecialchars($appUrl . '/' . ltrim((string) $meditation['reference_image_path'], '/')) . ');') : ''; ?>">
     <div class="guided-hero-overlay">
-      <div class="guided-hero-copy">
+      <div class="guided-hero-copy guided-hero-copy--spotlight">
         <h4 class="mb-2">Feche os olhos por alguns segundos e se permita respirar.</h4>
         <p class="mb-0">Ouça a meditação completa para liberar a sua carta de cura.</p>
       </div>
@@ -92,9 +92,9 @@ include __DIR__ . '/../partials/nav.php';
           <p class="mb-0">Você ainda não salvou reflexões desta meditação.</p>
         </div>
       <?php else: ?>
-        <div class="row g-3">
+        <div class="row g-3 reflection-stack">
           <?php foreach ($entries as $entry): ?>
-            <div class="col-12 col-xl-6">
+            <div class="col-12">
               <article class="messenger-entry-card h-100">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                   <span class="badge text-bg-secondary"><?php echo htmlspecialchars((string) ($entry['letter_category'] ?? 'cura')); ?></span>

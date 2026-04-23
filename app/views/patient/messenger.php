@@ -1,5 +1,5 @@
 <?php $title = 'Mensageiro'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
-<div class="container page-wrap messenger-page">
+<div class="container page-wrap messenger-page portal-stack">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
   <section class="messenger-hero-image mb-4" style="background-image: url('<?php echo $appUrl; ?>/app/images/mensageiro.png');">
@@ -61,9 +61,9 @@
           <p class="mb-0">Você ainda não salvou nenhuma reflexão. Abra sua primeira mensagem para começar.</p>
         </div>
       <?php else: ?>
-        <div class="row g-3">
+        <div class="row g-3 reflection-stack">
           <?php foreach ($entries as $entry): ?>
-            <div class="col-12 col-xl-6">
+            <div class="col-12">
               <article class="messenger-entry-card h-100">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
                   <span class="small text-muted"><?php echo !empty($entry['drawn_at']) ? date('d/m/Y H:i', strtotime((string) $entry['drawn_at'])) : '-'; ?></span>

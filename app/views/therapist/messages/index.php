@@ -156,9 +156,9 @@
       <?php if (empty($sharedEntries)): ?>
         <p class="text-muted mb-0">Nenhuma reflexão compartilhada até o momento.</p>
       <?php else: ?>
-        <div class="row g-3">
+        <div class="row g-3 reflection-stack">
           <?php foreach ($sharedEntries as $entry): ?>
-            <div class="col-12 col-lg-6">
+            <div class="col-12">
               <article class="messenger-shared-card h-100">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                   <strong><?php echo htmlspecialchars((string) ($entry['patient_name'] ?? 'Paciente')); ?></strong>

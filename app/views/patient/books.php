@@ -1,5 +1,5 @@
 <?php $title = 'Livros'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
-<div class="container page-wrap">
+<div class="container page-wrap portal-stack">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -7,19 +7,34 @@
     <a class="btn btn-outline-primary" href="<?php echo $appUrl; ?>/patient.php?action=my-contents"><i class="fa-solid fa-bookmark me-1"></i>Meus conteúdos</a>
   </div>
 
-  <div class="card">
-    <div class="card-body p-3 pb-0">
-      <div class="row g-2 align-items-center mb-3">
-        <div class="col-12 col-lg-6">
-          <label class="form-label mb-1" for="patientBooksSearchInput">Buscar livros</label>
-          <input id="patientBooksSearchInput" class="form-control" type="search" placeholder="Digite o título do livro..." value="<?php echo htmlspecialchars((string) ($search ?? '')); ?>">
+  <section class="card portal-search-card">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-lg-7">
+          <label class="form-label mb-2" for="patientBooksSearchInput">Buscar livros</label>
+          <div class="portal-search-field">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="patientBooksSearchInput" class="form-control" type="search" placeholder="Digite o título do livro..." value="<?php echo htmlspecialchars((string) ($search ?? '')); ?>">
+          </div>
+        </div>
+        <div class="col-12 col-lg-5">
+          <p class="portal-inline-meta mb-0">Encontre mais rápido a leitura que deseja abrir ou salvar.</p>
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="card-body p-0">
+  <section class="card portal-list-card">
+    <div class="portal-list-card__header">
+      <div>
+        <h5 class="card-title mb-1">Biblioteca disponível</h5>
+        <p class="text-muted mb-0">Livros enviados pelo seu terapeuta com acesso rápido aos favoritos.</p>
+      </div>
+      <span class="badge text-bg-light border"><?php echo count($books ?? []); ?> livro(s)</span>
+    </div>
+    <div class="portal-list-card__body">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle">
           <thead>
             <tr>
               <th>Título</th>
@@ -68,7 +83,7 @@
       <small class="text-muted mb-0" id="patientBooksPaginationInfo"></small>
       <div class="btn-group" role="group" id="patientBooksPaginationControls"></div>
     </div>
-  </div>
+  </section>
 </div>
 
 <script>

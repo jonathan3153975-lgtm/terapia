@@ -1,5 +1,5 @@
 <?php $title = 'Pai, fala comigo'; include __DIR__ . '/../partials/header.php'; include __DIR__ . '/../partials/nav.php'; ?>
-<div class="container page-wrap father-word-page">
+<div class="container page-wrap father-word-page portal-stack">
   <?php include __DIR__ . '/../partials/flash-alert.php'; ?>
 
   <section class="father-word-hero-image mb-4" style="background-image: url('<?php echo $appUrl; ?>/app/images/fala-comigo.png');">
@@ -14,7 +14,7 @@
     </div>
   </section>
 
-  <section id="fatherWordResultCard" class="father-word-result card mb-4 d-none" aria-live="polite">
+  <section id="fatherWordResultCard" class="father-word-result messenger-reveal card mb-4 d-none" aria-live="polite">
     <div class="card-body p-4 p-lg-5">
       <div class="small text-muted mb-1" id="fatherWordReference"></div>
       <p id="fatherWordText" class="father-word-text mb-0"></p>
@@ -53,9 +53,9 @@
           <p class="mb-0">Você ainda não salvou nenhuma reflexão deste módulo.</p>
         </div>
       <?php else: ?>
-        <div class="row g-3">
+        <div class="row g-3 reflection-stack">
           <?php foreach ($entries as $entry): ?>
-            <div class="col-12 col-xl-6">
+            <div class="col-12">
               <article class="messenger-entry-card h-100">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                   <strong><?php echo htmlspecialchars((string) ($entry['word_reference'] ?? '')); ?></strong>
@@ -90,6 +90,85 @@ window.addEventListener('load', function () {
   var noteInput = document.getElementById('fatherWordNoteInput');
   var saveForm = document.getElementById('fatherWordSaveForm');
   var saveBtn = document.getElementById('fatherWordSaveBtn');
+  var typingToken = 0;
+
+  var revealTextWithTyping = function (el, text, onDone) {
+    if (!el) {
+      if (typeof onDone === 'function') {
+        onDone();
+      }
+      return;
+    }
+
+    var fullText = String(text || '');
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || fullText.length <= 8) {
+      el.classList.remove('is-typing');
+      el.textContent = fullText;
+      if (typeof onDone === 'function') {
+        onDone();
+      }
+      return;
+    }
+
+    typingToken += 1;
+    var localToken = typingToken;
+    var idx = 0;
+    var chunk = fullText.length > 220 ? 3 : 2;
+    var speed = fullText.length > 220 ? 10 : 14;
+
+    el.textContent = '';
+    el.classList.add('is-typing');
+
+    var tick = function () {
+      if (localToken !== typingToken) {
+        return;
+      }
+
+      idx = Math.min(fullText.length, idx + chunk);
+      el.textContent = fullText.slice(0, idx);
+
+      if (idx >= fullText.length) {
+        el.classList.remove('is-typing');
+        if (typeof onDone === 'function') {
+          onDone();
+        }
+        return;
+      }
+
+      window.setTimeout(tick, speed);
+    };
+
+    window.setTimeout(tick, 40);
+  };
+
+  var scrollResultToTop = function (onDone) {
+    if (!resultCard) {
+      if (typeof onDone === 'function') {
+        onDone();
+      }
+      return;
+    }
+
+    var targetTop = Math.max(resultCard.getBoundingClientRect().top + window.scrollY - 88, 0);
+    window.scrollTo({ top: targetTop, behavior: 'smooth' });
+
+    if (typeof onDone === 'function') {
+      window.setTimeout(onDone, 420);
+    }
+  };
+
+  var focusReflection = function () {
+    if (!noteInput) {
+      return;
+    }
+
+    try {
+      noteInput.focus({ preventScroll: true });
+    } catch (error) {
+      noteInput.focus();
+    }
+  };
 
   if (saveForm && saveBtn) {
     saveForm.addEventListener('submit', function (event) {
@@ -146,7 +225,7 @@ window.addEventListener('load', function () {
           referenceEl.textContent = word.reference || '';
         }
         if (textEl) {
-          textEl.textContent = word.text || '';
+          textEl.textContent = '';
         }
 
         if (wordIdInput) {
@@ -162,21 +241,20 @@ window.addEventListener('load', function () {
         if (resultCard) {
           resultCard.classList.remove('d-none');
           resultCard.classList.add('is-visible');
+          resultCard.classList.add('is-revealed');
         }
         if (reflectionSection) {
           reflectionSection.classList.remove('d-none');
         }
         if (noteInput) {
           noteInput.value = '';
-          noteInput.focus();
         }
 
-        window.setTimeout(function () {
-          if (resultCard) {
-            var y = resultCard.getBoundingClientRect().top + window.scrollY - 16;
-            window.scrollTo({ top: y, behavior: 'smooth' });
-          }
-        }, 120);
+        revealTextWithTyping(textEl, word.text || '', function () {
+          scrollResultToTop(function () {
+            focusReflection();
+          });
+        });
       })
       .catch(function (error) {
         window.alert(error.message || 'Erro ao receber palavra.');
