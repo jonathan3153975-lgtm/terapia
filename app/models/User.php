@@ -10,7 +10,8 @@ class User extends Model
 
     public function findByEmail(string $email): ?array
     {
-        $stmt = $this->query("SELECT * FROM users WHERE email = ? LIMIT 1", [$email]);
+        $normalizedEmail = strtolower(trim($email));
+        $stmt = $this->query("SELECT * FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1", [$normalizedEmail]);
         if (!$stmt) {
             return null;
         }

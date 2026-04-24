@@ -31,12 +31,19 @@ class AuthController extends Controller
     public function processLogin(): void
     {
         $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
-        $email = Utils::sanitize($_POST['email'] ?? '');
+        $email = strtolower(trim((string) ($_POST['email'] ?? '')));
         $password = $_POST['password'] ?? '';
 
         if ($email === '' || $password === '') {
             if ($isAjax) {
                 $this->error('Email e senha sao obrigatorios');
+            }
+            $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&error=1');
+        }
+
+        if (!Utils::isValidEmail($email)) {
+            if ($isAjax) {
+                $this->error('Informe um e-mail válido.');
             }
             $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&error=1');
         }

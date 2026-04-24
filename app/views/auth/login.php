@@ -54,11 +54,11 @@
         <form id="loginForm" method="POST" action="<?php echo $appUrl; ?>/index.php?action=process-login">
           <div class="mb-3 login-input-wrap">
             <label class="form-label">E-mail</label>
-            <input class="form-control" name="email" type="email" required>
+            <input class="form-control" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
           </div>
           <div class="mb-2 login-input-wrap">
             <label class="form-label">Senha</label>
-            <input class="form-control" name="password" type="password" required>
+            <input class="form-control" name="password" type="password" autocomplete="current-password" required>
           </div>
           <div class="d-flex justify-content-end mb-3">
             <button type="button" class="btn btn-link p-0 login-link" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Esqueci minha senha</button>
@@ -98,30 +98,10 @@
 <script>
 window.addEventListener('load', function() {
   $('#loginForm').on('submit', function(e){
-    e.preventDefault();
     const form = this;
     if (!window.FormSubmitGuard.lock(form, 'Entrando...')) {
-      return;
+      e.preventDefault();
     }
-    $.ajax({
-      url: form.action,
-      method: 'POST',
-      data: $(form).serialize(),
-      headers: {'X-Requested-With':'XMLHttpRequest'},
-      success: function(res){
-        if (res.success) {
-          window.location.href = res.redirect;
-          return;
-        }
-        window.FormSubmitGuard.unlock(form);
-        Swal.fire('Erro', res.message || 'Falha no login', 'error');
-      },
-      error: function(xhr){
-        window.FormSubmitGuard.unlock(form);
-        const msg = xhr.responseJSON?.message || 'Falha no login';
-        Swal.fire('Erro', msg, 'error');
-      }
-    });
   });
 
   $('#forgotPasswordForm').on('submit', function(e){
