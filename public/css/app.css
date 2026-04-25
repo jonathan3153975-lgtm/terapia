@@ -3864,7 +3864,7 @@ body.app-body {
 .login-system-info i,
 .login-system-info h6,
 .login-system-info small {
-	color: #ffffff;
+	color: #ffffff !important;
 }
 
 .login-brand-panel h1 {
