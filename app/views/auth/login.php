@@ -5,8 +5,24 @@
   <div class="login-orb login-orb-b"></div>
   <div class="login-card-wrap">
     <div class="login-brand-panel">
+      <span class="login-kicker">Bem-estar com presença</span>
       <h1>Tera-Tech</h1>
-      <p>Seu ambiente de terapia e autoconhecimento diário</p>
+      <p>Uma plataforma mais humana para organizar atendimentos, fortalecer a rotina terapêutica e deixar a jornada do paciente mais acolhedora.</p>
+      <div class="login-mini-stats">
+        <div class="login-mini-stat">
+          <strong>Rotina leve</strong>
+          <span>Agenda, tarefas e materiais em um fluxo simples.</span>
+        </div>
+        <div class="login-mini-stat">
+          <strong>Cuidado contínuo</strong>
+          <span>Experiências guiadas para manter constância entre as sessões.</span>
+        </div>
+      </div>
+      <div class="login-feature-chip-list">
+        <span class="login-feature-chip"><i class="fa-solid fa-sparkles"></i> Mais cor e clareza</span>
+        <span class="login-feature-chip"><i class="fa-solid fa-heart"></i> Ambiente acolhedor</span>
+        <span class="login-feature-chip"><i class="fa-solid fa-mobile-screen-button"></i> Navegação fluida no celular</span>
+      </div>
       <div class="login-system-info">
         <article>
           <i class="fa-solid fa-calendar-check"></i>
@@ -40,9 +56,15 @@
     </div>
     <div class="card shadow-sm login-card login-glass-card">
       <div class="card-body p-4 p-md-5">
-        <div class="mb-4">
-          <h4 class="mb-1">Acessar plataforma</h4>
-          <small class="text-muted">Entre com seu e-mail e senha</small>
+        <div class="login-card-header mb-4">
+          <div>
+            <span class="login-form-badge">Acesso seguro</span>
+            <h4 class="mb-1 mt-2">Entrar na plataforma</h4>
+            <small class="text-muted">Use seu e-mail e sua senha para continuar.</small>
+          </div>
+          <div class="login-card-header-icon">
+            <i class="fa-solid fa-sun"></i>
+          </div>
         </div>
         <?php if (isset($_GET['status']) && isset($_GET['msg'])): ?>
           <div class="alert <?php echo (string) $_GET['status'] === 'success' ? 'alert-success' : 'alert-danger'; ?>">
@@ -65,6 +87,10 @@
           </div>
           <button class="btn btn-primary w-100 login-btn" type="submit">Entrar</button>
         </form>
+        <div class="login-support-note mt-3">
+          <i class="fa-solid fa-shield-heart"></i>
+          <span>Seus dados ficam protegidos para uma experiência terapêutica mais tranquila.</span>
+        </div>
         <?php if (!empty($signupUrl)): ?>
           <div class="login-signup-cta mt-4 pt-3">
             <span class="text-muted small d-block mb-2">Primeiro acesso como paciente?</span>
