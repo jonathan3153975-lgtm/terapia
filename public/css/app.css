@@ -3844,6 +3844,7 @@ body.app-body {
 .login-system-info article {
 	background: linear-gradient(135deg, rgba(249, 132, 74, .90), rgba(246, 189, 96, .78));
 	border: 1px solid rgba(249, 132, 74, .94);
+	color: #ffffff;
 	box-shadow:
 		0 0 0 1px rgba(249, 132, 74, .18),
 		0 14px 28px rgba(249, 132, 74, .22),
@@ -3859,10 +3860,11 @@ body.app-body {
 		inset 0 1px 0 rgba(255, 255, 255, .22);
 }
 
+.login-system-info article *,
 .login-system-info i,
 .login-system-info h6,
 .login-system-info small {
-	color: #fffdf8;
+	color: #ffffff;
 }
 
 .login-brand-panel h1 {
