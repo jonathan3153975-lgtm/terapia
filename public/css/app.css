@@ -3796,6 +3796,18 @@ body.app-body {
 	border: 1px solid rgba(255, 255, 255, .18);
 }
 
+.login-kicker {
+	background: linear-gradient(135deg, rgba(249, 132, 74, .92), rgba(246, 189, 96, .86));
+	border-color: rgba(249, 132, 74, .96);
+	color: #fffdf8;
+	box-shadow:
+		0 0 0 1px rgba(249, 132, 74, .22),
+		0 0 18px rgba(249, 132, 74, .34),
+		0 0 34px rgba(246, 189, 96, .20),
+		0 16px 28px rgba(249, 132, 74, .22);
+	text-shadow: 0 0 10px rgba(255, 255, 255, .22);
+}
+
 .login-mini-stats {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3827,6 +3839,30 @@ body.app-body {
 	font-size: .82rem;
 	line-height: 1.55;
 	color: rgba(255, 247, 237, .86);
+}
+
+.login-system-info article {
+	background: linear-gradient(135deg, rgba(249, 132, 74, .90), rgba(246, 189, 96, .78));
+	border: 1px solid rgba(249, 132, 74, .94);
+	box-shadow:
+		0 0 0 1px rgba(249, 132, 74, .18),
+		0 14px 28px rgba(249, 132, 74, .22),
+		inset 0 1px 0 rgba(255, 255, 255, .20);
+}
+
+.login-system-info article:hover {
+	transform: translateY(-1px);
+	box-shadow:
+		0 0 0 1px rgba(249, 132, 74, .24),
+		0 18px 32px rgba(249, 132, 74, .26),
+		0 0 22px rgba(246, 189, 96, .18),
+		inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+
+.login-system-info i,
+.login-system-info h6,
+.login-system-info small {
+	color: #fffdf8;
 }
 
 .login-brand-panel h1 {
