@@ -3964,6 +3964,11 @@ class TherapistController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Paciente inválido para atribuição de plano.'));
         }
 
+        if ($planId <= 0) {
+            $this->patientSubscriptionModel->deactivateActiveByPatient($patientId);
+            $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=success&msg=' . urlencode('Paciente convertido para sem assinatura.'));
+        }
+
         $plan = $this->planModel->findPatientPlanById($planId);
         if (!$plan || (int) ($plan['is_active'] ?? 0) !== 1) {
             $this->redirect(Config::get('APP_URL', '') . '/dashboard.php?action=patients&status=error&msg=' . urlencode('Plano inválido ou inativo.'));

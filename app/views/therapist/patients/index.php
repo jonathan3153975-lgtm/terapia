@@ -55,25 +55,26 @@
               </td>
               <td>
                 <?php $sub = $patientSubscriptions[(int) ($patient['id'] ?? 0)] ?? null; ?>
+                <?php $hasActiveSubscription = $sub && (string) ($sub['status'] ?? '') === 'active'; ?>
                 <div class="small mb-1">
-                  <?php if ($sub): ?>
+                  <?php if ($hasActiveSubscription): ?>
                     <strong><?php echo htmlspecialchars((string) ($sub['plan_name'] ?? 'Plano')); ?></strong>
                     <span class="badge <?php echo (string) ($sub['status'] ?? '') === 'active' ? 'text-bg-success' : 'text-bg-secondary'; ?>"><?php echo htmlspecialchars((string) ($sub['status'] ?? '')); ?></span>
                   <?php else: ?>
-                    <span class="text-muted">Sem plano</span>
+                    <span class="text-muted">Sem assinatura</span>
                   <?php endif; ?>
                 </div>
                 <form method="POST" action="<?php echo $appUrl; ?>/dashboard.php?action=patients-plan-assign" class="d-flex gap-1">
                   <input type="hidden" name="patient_id" value="<?php echo (int) ($patient['id'] ?? 0); ?>">
-                  <select class="form-select form-select-sm" name="plan_id" required>
-                    <option value="">Plano...</option>
+                  <select class="form-select form-select-sm" name="plan_id">
+                    <option value="">Sem assinatura</option>
                     <?php foreach (($availablePlans ?? []) as $plan): ?>
-                      <option value="<?php echo (int) ($plan['id'] ?? 0); ?>">
+                      <option value="<?php echo (int) ($plan['id'] ?? 0); ?>" <?php echo $hasActiveSubscription && (int) ($sub['plan_id'] ?? 0) === (int) ($plan['id'] ?? 0) ? 'selected' : ''; ?>>
                         <?php echo htmlspecialchars((string) ($plan['name'] ?? 'Plano')); ?>
                       </option>
                     <?php endforeach; ?>
                   </select>
-                  <button class="btn btn-sm btn-outline-primary" type="submit" title="Atribuir plano"><i class="fa-solid fa-check"></i></button>
+                  <button class="btn btn-sm btn-outline-primary" type="submit" title="Salvar plano"><i class="fa-solid fa-check"></i></button>
                 </form>
               </td>
               <td class="align-middle">
