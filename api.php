@@ -50,6 +50,7 @@ $controller = new PatientAppController();
 $action = $_GET['action'] ?? 'patient-me';
 
 match ($action) {
+    'patient-auth-config' => $controller->authConfig(),
     'patient-login' => $controller->login(),
     'patient-logout' => $controller->logout(),
     'patient-me' => $controller->me(),
@@ -57,6 +58,7 @@ match ($action) {
     'patient-tasks' => $controller->tasks(),
     'patient-task-show' => $controller->taskShow(),
     'patient-task-respond' => $controller->respondTask(),
+    'patient-virtual-task-complete' => $controller->completeVirtualTask(),
     'patient-materials' => $controller->materials(),
     'patient-books' => $controller->books(),
     'patient-book-favorite-toggle' => $controller->toggleBookFavorite(),
@@ -70,6 +72,9 @@ match ($action) {
     'patient-messenger-entries' => $controller->messengerEntries(),
     'patient-messenger-draw' => $controller->drawMessenger(),
     'patient-messenger-save' => $controller->saveMessenger(),
+    'patient-father-word-entries' => $controller->fatherWordEntries(),
+    'patient-father-word-draw' => $controller->drawFatherWord(),
+    'patient-father-word-save' => $controller->saveFatherWordEntry(),
     'patient-guided-meditations' => $controller->guidedMeditations(),
     'patient-guided-meditation-show' => $controller->guidedMeditationShow(),
     'patient-guided-meditation-draw-letter' => $controller->drawGuidedMeditationLetter(),
@@ -84,6 +89,8 @@ match ($action) {
     'patient-devotionals' => $controller->devotionals(),
     'patient-devotional-today' => $controller->devotionalToday(),
     'patient-devotional-save' => $controller->saveDevotionalReflection(),
+    'patient-subscription-plans' => $controller->subscriptionPlans(),
+    'patient-subscription-checkout' => $controller->startSubscriptionCheckout(),
     'patient-my-account' => $controller->myAccount(),
     'patient-my-account-update' => $controller->updateMyAccount(),
     'patient-device-register' => $controller->registerDevice(),

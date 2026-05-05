@@ -13,7 +13,7 @@ use Helpers\Utils;
 class AuthController extends Controller
 {
     private User $userModel;
-    private const DEFAULT_PUBLIC_SIGNUP_URL = 'https://jw-adminix.com.br/terapia/index.php?action=patient-signup&token=3bc0590207b22f6bfa4f4e24cdaaca4b2687055be8303c09';
+    public const DEFAULT_PUBLIC_SIGNUP_TOKEN = '3bc0590207b22f6bfa4f4e24cdaaca4b2687055be8303c09';
 
     public function __construct()
     {
@@ -24,8 +24,18 @@ class AuthController extends Controller
     {
         $this->view('auth/login', [
             'appUrl' => Config::get('APP_URL', ''),
-            'signupUrl' => self::DEFAULT_PUBLIC_SIGNUP_URL,
+            'signupUrl' => self::buildPublicSignupUrl(),
         ]);
+    }
+
+    public static function buildPublicSignupUrl(): string
+    {
+        $appUrl = rtrim((string) Config::get('APP_URL', ''), '/');
+        if ($appUrl === '') {
+            return 'https://jw-adminix.com.br/terapia/index.php?action=patient-signup&token=' . self::DEFAULT_PUBLIC_SIGNUP_TOKEN;
+        }
+
+        return $appUrl . '/index.php?action=patient-signup&token=' . urlencode(self::DEFAULT_PUBLIC_SIGNUP_TOKEN);
     }
 
     public function processLogin(): void

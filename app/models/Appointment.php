@@ -132,6 +132,24 @@ class Appointment extends Model
         return $stmt->fetchAll();
     }
 
+    public function listByPatientOnDate(int $patientId, string $date): array
+    {
+        $stmt = $this->query(
+            'SELECT *
+             FROM appointments
+             WHERE patient_id = ?
+               AND DATE(session_date) = ?
+             ORDER BY session_date ASC',
+            [$patientId, $date]
+        );
+
+        if (!$stmt) {
+            return [];
+        }
+
+        return $stmt->fetchAll();
+    }
+
     public function countCompletedByPatient(int $patientId): int
     {
         $stmt = $this->query(

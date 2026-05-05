@@ -2,12 +2,14 @@
 
 namespace App\Controllers\Api;
 
+use App\Controllers\AuthController;
 use App\Models\ApiAccessToken;
 use App\Models\AppAnalyticsEvent;
 use App\Models\Appointment;
 use App\Models\Book;
 use App\Models\DailyMessage;
 use App\Models\DevotionalEntry;
+use App\Models\FaithWord;
 use App\Models\FileStorage;
 use App\Models\GuidedMeditation;
 use App\Models\HealingLetter;
@@ -18,6 +20,7 @@ use App\Models\PatientAppCycle;
 use App\Models\PatientBookFavorite;
 use App\Models\PatientDevotionalReflection;
 use App\Models\PatientDevice;
+use App\Models\PatientFaithEntry;
 use App\Models\PatientGratitudeEntry;
 use App\Models\PatientGuidedMeditationEntry;
 use App\Models\PatientMessageEntry;
@@ -26,13 +29,17 @@ use App\Models\PatientSubscription;
 use App\Models\PatientVideoComment;
 use App\Models\PatientVideoFavorite;
 use App\Models\PatientVideoRating;
+use App\Models\Payment;
+use App\Models\Plan;
 use App\Models\Prayer;
 use App\Models\Task;
 use App\Models\TeraTubeVideo;
 use App\Models\User;
+use App\Models\VirtualTask;
 use Classes\Controller;
 use Config\Config;
 use Helpers\ApiPatientAuth;
+use Helpers\MercadoPagoGateway;
 use Helpers\Utils;
 
 class PatientAppController extends Controller
@@ -42,6 +49,7 @@ class PatientAppController extends Controller
     private ApiAccessToken $tokenModel;
     private Appointment $appointmentModel;
     private Task $taskModel;
+    private VirtualTask $virtualTaskModel;
     private FileStorage $fileModel;
     private Material $materialModel;
     private MaterialDelivery $materialDeliveryModel;
@@ -53,6 +61,8 @@ class PatientAppController extends Controller
     private PatientVideoComment $patientVideoCommentModel;
     private DailyMessage $dailyMessageModel;
     private PatientMessageEntry $patientMessageEntryModel;
+    private FaithWord $faithWordModel;
+    private PatientFaithEntry $patientFaithEntryModel;
     private GuidedMeditation $guidedMeditationModel;
     private HealingLetter $healingLetterModel;
     private PatientGuidedMeditationEntry $patientGuidedMeditationEntryModel;
@@ -62,9 +72,12 @@ class PatientAppController extends Controller
     private DevotionalEntry $devotionalEntryModel;
     private PatientDevotionalReflection $patientDevotionalReflectionModel;
     private PatientSubscription $patientSubscriptionModel;
+    private Plan $planModel;
+    private Payment $paymentModel;
     private PatientDevice $patientDeviceModel;
     private AppAnalyticsEvent $analyticsEventModel;
     private PatientAppCycle $patientAppCycleModel;
+    private MercadoPagoGateway $mercadoPagoGateway;
 
     public function __construct()
     {
@@ -73,6 +86,7 @@ class PatientAppController extends Controller
         $this->tokenModel = new ApiAccessToken();
         $this->appointmentModel = new Appointment();
         $this->taskModel = new Task();
+        $this->virtualTaskModel = new VirtualTask();
         $this->fileModel = new FileStorage();
         $this->materialModel = new Material();
         $this->materialDeliveryModel = new MaterialDelivery();
@@ -84,6 +98,8 @@ class PatientAppController extends Controller
         $this->patientVideoCommentModel = new PatientVideoComment();
         $this->dailyMessageModel = new DailyMessage();
         $this->patientMessageEntryModel = new PatientMessageEntry();
+        $this->faithWordModel = new FaithWord();
+        $this->patientFaithEntryModel = new PatientFaithEntry();
         $this->guidedMeditationModel = new GuidedMeditation();
         $this->healingLetterModel = new HealingLetter();
         $this->patientGuidedMeditationEntryModel = new PatientGuidedMeditationEntry();
@@ -93,9 +109,12 @@ class PatientAppController extends Controller
         $this->devotionalEntryModel = new DevotionalEntry();
         $this->patientDevotionalReflectionModel = new PatientDevotionalReflection();
         $this->patientSubscriptionModel = new PatientSubscription();
+        $this->planModel = new Plan();
+        $this->paymentModel = new Payment();
         $this->patientDeviceModel = new PatientDevice();
         $this->analyticsEventModel = new AppAnalyticsEvent();
         $this->patientAppCycleModel = new PatientAppCycle();
+        $this->mercadoPagoGateway = new MercadoPagoGateway();
     }
 
     public function login(): void
@@ -152,6 +171,54 @@ class PatientAppController extends Controller
         ], 'Login realizado com sucesso.');
     }
 
+    public function authConfig(): void
+    {
+        $this->ok([
+            'platform_name' => 'Tera-Tech',
+            'platform_subtitle' => 'Bem-estar com presença',
+            'platform_description' => 'Uma plataforma mais humana para organizar atendimentos, fortalecer a rotina terapêutica e deixar a jornada do paciente mais acolhedora.',
+            'login_title' => 'Entrar na plataforma',
+            'login_copy' => 'Use seu e-mail e sua senha para continuar.',
+            'signup_url' => AuthController::buildPublicSignupUrl(),
+            'signup_enabled' => true,
+            'signup_label' => 'Fazer cadastro básico',
+            'support_note' => 'Seus dados ficam protegidos para uma experiência terapêutica mais tranquila.',
+            'features' => [
+                'Mais cor e clareza',
+                'Ambiente acolhedor',
+                'Navegação fluida no celular',
+            ],
+            'highlights' => [
+                [
+                    'title' => 'Rotina leve',
+                    'description' => 'Agenda, tarefas e materiais em um fluxo simples.',
+                ],
+                [
+                    'title' => 'Cuidado contínuo',
+                    'description' => 'Experiências guiadas para manter constância entre as sessões.',
+                ],
+            ],
+            'system_info' => [
+                [
+                    'title' => 'Agenda organizada',
+                    'description' => 'Visualize suas sessões e acompanhe seus próximos atendimentos.',
+                ],
+                [
+                    'title' => 'Tarefas terapêuticas',
+                    'description' => 'Receba atividades práticas e marque seu progresso de forma simples.',
+                ],
+                [
+                    'title' => 'Materiais de apoio',
+                    'description' => 'Acesse conteúdos enviados pelo terapeuta para fortalecer sua jornada.',
+                ],
+                [
+                    'title' => 'Ambiente seguro',
+                    'description' => 'Seus dados ficam protegidos para um acompanhamento com confiança.',
+                ],
+            ],
+        ]);
+    }
+
     public function logout(): void
     {
         $auth = $this->requirePatient(false);
@@ -183,6 +250,7 @@ class PatientAppController extends Controller
         $patient = $this->patientOrFail($patientId);
         $subscription = $this->getActiveSubscription($patientId);
         $nextAppointment = $this->appointmentModel->findNextByPatient($patientId, date('Y-m-d H:i:s'));
+        $todayAppointments = $this->appointmentModel->listByPatientOnDate($patientId, date('Y-m-d'));
 
         $chartLabels = [];
         $chartSessions = [];
@@ -213,6 +281,8 @@ class PatientAppController extends Controller
                 'has_active_subscription' => $subscription !== null,
             ],
             'next_appointment' => $nextAppointment,
+            'today_appointments' => array_map(fn (array $appointment): array => $this->serializeAppointment($appointment), $todayAppointments),
+            'active_subscription' => $subscription,
             'charts' => [
                 'labels' => $chartLabels,
                 'sessions' => $chartSessions,
@@ -289,6 +359,118 @@ class PatientAppController extends Controller
             'task_id' => $taskId,
             'status' => 'done',
         ], 'Resposta enviada com sucesso.');
+    }
+
+    public function completeVirtualTask(): void
+    {
+        $this->requireMethod('POST');
+        $auth = $this->requirePatient(false);
+        $patientId = (int) ($auth['patient_id'] ?? 0);
+        $data = $this->requestData();
+
+        $taskId = (int) ($data['task_id'] ?? 0);
+        $reflectionHtml = $this->sanitizeRichText((string) ($data['reflection'] ?? ''));
+        $answers = $data['answers'] ?? [];
+        $finalReflectionsInput = $data['final_reflections'] ?? [];
+
+        if ($taskId <= 0) {
+            $this->fail('Tarefa inválida.', 422);
+        }
+
+        $task = $this->taskModel->findInboxTaskByPatientAndId($patientId, $taskId, 'task');
+        if (!$task) {
+            $this->fail('Tarefa não encontrada.', 404);
+        }
+
+        if ((string) ($task['task_type'] ?? 'regular') !== 'virtual_tree_of_life') {
+            $this->fail('Tipo de tarefa inválido.', 422);
+        }
+
+        $contentJson = (string) ($task['content_json'] ?? '');
+        $structure = $contentJson !== '' ? json_decode($contentJson, true) : [];
+        if (!is_array($structure) || $structure === []) {
+            $structure = VirtualTask::getTreeOfLifeStructure();
+        }
+
+        $finalBlocks = is_array($structure['final_section']['blocks'] ?? null)
+            ? $structure['final_section']['blocks']
+            : [];
+
+        $finalReflections = [];
+        if (is_array($finalReflectionsInput)) {
+            foreach ($finalReflectionsInput as $blockKey => $blockValue) {
+                if (!is_string($blockKey) || trim($blockKey) === '' || !is_scalar($blockValue)) {
+                    continue;
+                }
+
+                $finalReflections[trim($blockKey)] = $this->sanitizeRichText((string) $blockValue);
+            }
+        }
+
+        foreach ($finalBlocks as $block) {
+            $blockKey = (string) ($block['key'] ?? '');
+            if ($blockKey === '') {
+                continue;
+            }
+
+            $plainAnswer = trim(strip_tags((string) ($finalReflections[$blockKey] ?? '')));
+            if (mb_strlen($plainAnswer) < 10) {
+                $this->fail('Preencha as reflexões de passado, presente e futuro para concluir.', 422);
+            }
+        }
+
+        $answersBySection = [];
+        if (is_array($answers)) {
+            $therapistId = (int) ($task['therapist_id'] ?? 0);
+            foreach ($answers as $sectionName => $sectionAnswers) {
+                if (!is_string($sectionName) || trim($sectionName) === '') {
+                    continue;
+                }
+
+                $normalizedAnswers = [];
+                if (is_array($sectionAnswers)) {
+                    foreach ($sectionAnswers as $answer) {
+                        if (is_scalar($answer)) {
+                            $normalizedAnswers[] = trim((string) $answer);
+                        }
+                    }
+                }
+
+                $sectionKey = trim($sectionName);
+                $this->virtualTaskModel->saveResponse(
+                    $therapistId,
+                    $patientId,
+                    $taskId,
+                    $sectionKey,
+                    json_encode($normalizedAnswers, JSON_UNESCAPED_UNICODE)
+                );
+                $answersBySection[$sectionKey] = $normalizedAnswers;
+            }
+        }
+
+        $formattedResponseHtml = $this->virtualTaskModel->formatResponseHtml(
+            $structure,
+            $answersBySection,
+            $reflectionHtml,
+            $finalReflections
+        );
+
+        $updated = $this->taskModel->updateById($taskId, [
+            'status' => 'done',
+            'is_active' => 0,
+            'patient_response_html' => $formattedResponseHtml,
+            'responded_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$updated) {
+            $this->fail('Falha ao completar tarefa.', 500);
+        }
+
+        $this->ok([
+            'task_id' => $taskId,
+            'status' => 'done',
+        ], 'Árvore da Vida enviada com sucesso.');
     }
 
     public function materials(): void
@@ -581,6 +763,84 @@ class PatientAppController extends Controller
         }
 
         $this->ok(['entry_id' => $saved], 'Reflexão salva com sucesso.');
+    }
+
+    public function fatherWordEntries(): void
+    {
+        $auth = $this->requirePatient();
+        $patientId = (int) ($auth['patient_id'] ?? 0);
+
+        $this->ok([
+            'hero_image_url' => $this->buildAppUrl('app/images/fala-comigo.png'),
+            'items' => $this->patientFaithEntryModel->listByPatient($patientId),
+        ]);
+    }
+
+    public function drawFatherWord(): void
+    {
+        $auth = $this->requirePatient();
+        $patientId = (int) ($auth['patient_id'] ?? 0);
+        $patient = $this->patientOrFail($patientId);
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        if ($therapistId <= 0) {
+            $this->fail('Terapeuta não encontrado.', 404);
+        }
+
+        $allIds = $this->faithWordModel->listIdsByTherapist($therapistId);
+        if ($allIds === []) {
+            $this->fail('Nenhuma palavra disponível para sorteio.', 404);
+        }
+
+        $cycle = $this->drawCycledItem($patientId, 'father_word', 'default', $allIds, function (array $excludedIds) use ($therapistId): ?array {
+            return $this->faithWordModel->randomByTherapistExcludingIds($therapistId, $excludedIds);
+        });
+
+        $word = $cycle['item'];
+        if (!$word) {
+            $this->fail('Nenhuma palavra disponível para sorteio.', 404);
+        }
+
+        $this->ok([
+            'word' => [
+                'id' => (int) ($word['id'] ?? 0),
+                'reference' => (string) ($word['reference_text'] ?? ''),
+                'text' => (string) ($word['verse_text'] ?? ''),
+            ],
+            'cycle' => $cycle['meta'],
+        ], 'Palavra sorteada.');
+    }
+
+    public function saveFatherWordEntry(): void
+    {
+        $this->requireMethod('POST');
+        $auth = $this->requirePatient();
+        $patient = $this->patientOrFail((int) ($auth['patient_id'] ?? 0));
+        $data = $this->requestData();
+        $wordReference = trim((string) ($data['word_reference'] ?? ''));
+        $wordText = trim((string) ($data['word_text'] ?? ''));
+        $patientNote = trim((string) ($data['patient_note'] ?? ''));
+
+        if ($wordReference === '' || $wordText === '' || $patientNote === '') {
+            $this->fail('Palavra e reflexão são obrigatórias.', 422);
+        }
+
+        $saved = $this->patientFaithEntryModel->insert([
+            'therapist_id' => (int) ($patient['therapist_id'] ?? 0),
+            'patient_id' => (int) ($patient['id'] ?? 0),
+            'word_id' => (int) ($data['word_id'] ?? 0) ?: null,
+            'word_reference' => $wordReference,
+            'word_text' => $wordText,
+            'patient_note' => $patientNote,
+            'share_with_therapist' => !empty($data['share_with_therapist']) ? 1 : 0,
+            'drawn_at' => date('Y-m-d H:i:s'),
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if ($saved === false) {
+            $this->fail('Falha ao salvar reflexão.', 500);
+        }
+
+        $this->ok(['entry_id' => $saved], 'Palavra e reflexão salvas com sucesso.');
     }
 
     public function guidedMeditations(): void
@@ -971,6 +1231,153 @@ class PatientAppController extends Controller
         $this->ok([], 'Dados atualizados com sucesso.');
     }
 
+    public function subscriptionPlans(): void
+    {
+        $auth = $this->requirePatient(false);
+        $patient = $this->patientOrFail((int) ($auth['patient_id'] ?? 0));
+        $patientId = (int) ($patient['id'] ?? 0);
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $plans = $therapistId > 0 ? $this->planModel->listPatientPlansByTherapist($therapistId) : [];
+
+        $this->ok([
+            'active_subscription' => $this->getActiveSubscription($patientId),
+            'latest_subscription' => $this->patientSubscriptionModel->findLatestByPatient($patientId),
+            'mercado_pago_configured' => $this->mercadoPagoGateway->isConfigured(),
+            'plans' => array_map(fn (array $plan): array => $this->serializePlan($plan), $plans),
+        ]);
+    }
+
+    public function startSubscriptionCheckout(): void
+    {
+        $this->requireMethod('POST');
+        $auth = $this->requirePatient(false);
+        $patient = $this->patientOrFail((int) ($auth['patient_id'] ?? 0));
+        $patientId = (int) ($patient['id'] ?? 0);
+        $therapistId = (int) ($patient['therapist_id'] ?? 0);
+        $planId = (int) ($this->requestData()['plan_id'] ?? 0);
+        $plan = $this->planModel->findPatientPlanById($planId);
+
+        if (!$plan || (int) ($plan['is_active'] ?? 0) !== 1 || (int) ($plan['therapist_id'] ?? 0) !== $therapistId) {
+            $this->fail('Plano inválido para este paciente.', 422);
+        }
+
+        if (!$this->mercadoPagoGateway->isConfigured()) {
+            $this->fail('Pagamento indisponível no momento. Contate o suporte.', 503);
+        }
+
+        $providerReference = 'PATSUB-' . $patientId . '-' . time() . '-' . strtoupper(bin2hex(random_bytes(3)));
+        $amount = (float) ($plan['price'] ?? 0);
+        $paymentId = $this->paymentModel->createPatientPlanPayment(
+            $therapistId,
+            $patientId,
+            (int) $plan['id'],
+            $amount,
+            $providerReference
+        );
+
+        if (!$paymentId) {
+            $this->fail('Não foi possível iniciar o pagamento.', 500);
+        }
+
+        $subscriptionId = $this->patientSubscriptionModel->insert([
+            'patient_id' => $patientId,
+            'therapist_id' => $therapistId,
+            'plan_id' => (int) $plan['id'],
+            'payment_id' => (int) $paymentId,
+            'status' => 'pending',
+            'billing_cycle' => (string) $plan['billing_cycle'],
+            'amount' => number_format($amount, 2, '.', ''),
+            'provider' => 'mercado_pago',
+            'provider_reference' => $providerReference,
+            'checkout_url' => null,
+            'starts_at' => null,
+            'ends_at' => null,
+            'paid_at' => null,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!$subscriptionId) {
+            $this->paymentModel->markStatusById((int) $paymentId, 'failed');
+            $this->fail('Falha ao criar assinatura pendente.', 500);
+        }
+
+        $appUrl = (string) Config::get('APP_URL', '');
+        $notificationUrl = (string) Config::get('MP_WEBHOOK_URL', $appUrl . '/webhook.php?action=mercado-pago');
+        $webhookSecret = trim((string) Config::get('MP_WEBHOOK_SECRET', ''));
+        if ($webhookSecret !== '' && !str_contains($notificationUrl, 'token=')) {
+            $notificationUrl .= (str_contains($notificationUrl, '?') ? '&' : '?') . 'token=' . urlencode($webhookSecret);
+        }
+
+        $payerEmail = (string) ($patient['email'] ?? '');
+        if (!filter_var($payerEmail, FILTER_VALIDATE_EMAIL)) {
+            $user = $this->userModel->findById((int) ($auth['user_id'] ?? 0));
+            $payerEmail = (string) ($user['email'] ?? '');
+        }
+
+        $payload = [
+            'items' => [[
+                'id' => (string) $plan['id'],
+                'title' => (string) $plan['name'],
+                'description' => (string) ($plan['description_text'] ?? 'Assinatura de acesso ao conteúdo terapêutico'),
+                'quantity' => 1,
+                'currency_id' => (string) Config::get('MP_CURRENCY_ID', 'BRL'),
+                'unit_price' => (float) $amount,
+            ]],
+            'external_reference' => $providerReference,
+            'notification_url' => $notificationUrl,
+            'back_urls' => [
+                'success' => $appUrl . '/patient.php?action=subscription-return',
+                'failure' => $appUrl . '/patient.php?action=subscription-return',
+                'pending' => $appUrl . '/patient.php?action=subscription-return',
+            ],
+            'auto_return' => 'approved',
+            'statement_descriptor' => substr((string) Config::get('MP_STATEMENT_DESCRIPTOR', 'TERAPIA'), 0, 13),
+            'metadata' => [
+                'patient_id' => $patientId,
+                'therapist_id' => $therapistId,
+                'plan_id' => (int) $plan['id'],
+                'subscription_id' => (int) $subscriptionId,
+            ],
+        ];
+
+        if (filter_var($payerEmail, FILTER_VALIDATE_EMAIL)) {
+            $payload['payer'] = ['email' => $payerEmail];
+        }
+
+        $preferenceResult = $this->mercadoPagoGateway->createPreference($payload);
+        if (($preferenceResult['ok'] ?? false) !== true) {
+            $this->paymentModel->markStatusById((int) $paymentId, 'failed');
+            $this->patientSubscriptionModel->markStatusById((int) $subscriptionId, 'failed');
+            $this->fail((string) ($preferenceResult['message'] ?? 'Erro ao criar checkout no Mercado Pago.'), 502);
+        }
+
+        $responseData = (array) ($preferenceResult['data'] ?? []);
+        $checkoutUrl = (string) ($responseData['init_point'] ?? '');
+        $preferSandbox = filter_var((string) Config::get('MP_USE_SANDBOX', 'true'), FILTER_VALIDATE_BOOLEAN);
+        if ($preferSandbox && !empty($responseData['sandbox_init_point'])) {
+            $checkoutUrl = (string) $responseData['sandbox_init_point'];
+        }
+
+        if ($checkoutUrl === '') {
+            $this->paymentModel->markStatusById((int) $paymentId, 'failed');
+            $this->patientSubscriptionModel->markStatusById((int) $subscriptionId, 'failed');
+            $this->fail('Checkout do Mercado Pago indisponível.', 502);
+        }
+
+        $this->patientSubscriptionModel->updateById((int) $subscriptionId, [
+            'checkout_url' => $checkoutUrl,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->ok([
+            'subscription_id' => (int) $subscriptionId,
+            'payment_id' => (int) $paymentId,
+            'checkout_url' => $checkoutUrl,
+            'plan' => $this->serializePlan($plan),
+        ], 'Checkout iniciado com sucesso.');
+    }
+
     public function registerDevice(): void
     {
         $this->requireMethod('POST');
@@ -1165,7 +1572,6 @@ class PatientAppController extends Controller
     {
         $alwaysAllowed = [
             'patient-me',
-            'patient-dashboard',
             'patient-tasks',
             'patient-task-show',
             'patient-task-respond',
@@ -1244,11 +1650,42 @@ class PatientAppController extends Controller
         ];
     }
 
+    private function serializeAppointment(array $appointment): array
+    {
+        return [
+            'id' => (int) ($appointment['id'] ?? 0),
+            'session_date' => (string) ($appointment['session_date'] ?? ''),
+            'status' => (string) ($appointment['status'] ?? 'scheduled'),
+            'notes' => (string) ($appointment['notes'] ?? ''),
+            'created_at' => (string) ($appointment['created_at'] ?? ''),
+        ];
+    }
+
+    private function serializePlan(array $plan): array
+    {
+        return [
+            'id' => (int) ($plan['id'] ?? 0),
+            'name' => (string) ($plan['name'] ?? ''),
+            'description_text' => (string) ($plan['description_text'] ?? ''),
+            'billing_cycle' => (string) ($plan['billing_cycle'] ?? 'mensal'),
+            'price' => (float) ($plan['price'] ?? 0),
+            'is_active' => (int) ($plan['is_active'] ?? 0) === 1,
+            'therapist_id' => (int) ($plan['therapist_id'] ?? 0),
+            'therapist_name' => (string) ($plan['therapist_name'] ?? ''),
+        ];
+    }
+
     private function buildApiUrl(string $action, array $query = []): string
     {
         $base = rtrim((string) Config::get('APP_URL', ''), '/');
         $params = array_merge(['action' => $action], $query);
         return $base . '/api.php?' . http_build_query($params);
+    }
+
+    private function buildAppUrl(string $path): string
+    {
+        $base = rtrim((string) Config::get('APP_URL', ''), '/');
+        return $base . '/' . ltrim($path, '/');
     }
 
     private function decorateMaterialAssetsForPatient(array $assets): array
