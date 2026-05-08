@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_config.dart';
@@ -151,14 +152,10 @@ class _TasksPageState extends State<TasksPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (_stringValue(taskDetails, ['cover_image_path']).isNotEmpty) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: Image.network(
-                            _resolveAppUrl(_stringValue(taskDetails, ['cover_image_path'])),
-                            height: 180,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
+                        _MediaPreview(
+                          imageUrl: _resolveMediaUrl(_stringValue(taskDetails, ['cover_image_path'])),
+                          height: 180,
+                          borderRadius: 18,
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -1406,13 +1403,24 @@ class BooksPage extends StatefulWidget {
 
 class _BooksPageState extends State<BooksPage> {
   List<Map<String, dynamic>> _items = <Map<String, dynamic>>[];
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
   String? _error;
+  String _searchTerm = '';
+  bool _showFavoritesOnly = false;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -1422,7 +1430,7 @@ class _BooksPageState extends State<BooksPage> {
     });
 
     try {
-      final response = await widget.apiClient.fetchBooks();
+      final response = await widget.apiClient.fetchBooks(search: _searchTerm);
       await widget.analyticsService.track('books_view', context: 'books');
       if (!mounted) {
         return;
@@ -1470,10 +1478,32 @@ class _BooksPageState extends State<BooksPage> {
     }
   }
 
+  void _handleSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) {
+        return;
+      }
+      final normalized = value.trim();
+      if (normalized == _searchTerm) {
+        return;
+      }
+      setState(() {
+        _searchTerm = normalized;
+      });
+      _load();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final visibleBooks = _items.where((book) => _stringValue(book, ['pdf_url']).trim().isNotEmpty).toList();
+    final visibleBooks = _items.where((book) {
+      final hasPdf = _stringValue(book, ['pdf_url']).trim().isNotEmpty;
+      final favoriteMatch = !_showFavoritesOnly || book['is_favorite'] == true;
+      return hasPdf && favoriteMatch;
+    }).toList();
     final hiddenBooksCount = _items.length - visibleBooks.length;
+    final favoriteCount = _items.where((book) => book['is_favorite'] == true).length;
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -1483,6 +1513,53 @@ class _BooksPageState extends State<BooksPage> {
           const _ModuleHeaderCard(
             title: 'Livros',
             description: 'Abra sua biblioteca terapêutica e salve conteúdos em Meus conteúdos.',
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    onChanged: _handleSearchChanged,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search),
+                      labelText: 'Buscar livros',
+                      hintText: 'Digite o título do livro...',
+                      suffixIcon: _searchTerm.isEmpty
+                          ? null
+                          : IconButton(
+                              onPressed: () {
+                                _searchController.clear();
+                                _handleSearchChanged('');
+                              },
+                              icon: const Icon(Icons.close),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _InfoChip(label: 'Biblioteca', value: '${_items.length}'),
+                      _InfoChip(label: 'Favoritos', value: '$favoriteCount'),
+                      FilterChip(
+                        label: const Text('Somente salvos'),
+                        selected: _showFavoritesOnly,
+                        onSelected: (value) {
+                          setState(() {
+                            _showFavoritesOnly = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           if (_loading)
@@ -1499,11 +1576,15 @@ class _BooksPageState extends State<BooksPage> {
           else if (visibleBooks.isEmpty)
             _EmptyCard(
               icon: Icons.picture_as_pdf_outlined,
-              title: 'Nenhum livro com PDF disponível',
-              message: hiddenBooksCount == 1
-                  ? 'Há 1 livro cadastrado para o seu perfil, mas ele ainda não tem um PDF utilizável para abertura no app.'
-                  : 'Há $hiddenBooksCount livros cadastrados para o seu perfil, mas nenhum deles tem um PDF utilizável para abertura no app.',
-              hint: 'Quando o arquivo for publicado corretamente pelo terapeuta, ele passará a aparecer aqui.',
+              title: _showFavoritesOnly ? 'Nenhum livro salvo agora' : 'Nenhum livro com PDF disponível',
+              message: _showFavoritesOnly
+                  ? 'Você ainda não salvou nenhum livro em Meus conteúdos.'
+                  : hiddenBooksCount == 1
+                      ? 'Há 1 livro cadastrado para o seu perfil, mas ele ainda não tem um PDF utilizável para abertura no app.'
+                      : 'Há $hiddenBooksCount livros cadastrados para o seu perfil, mas nenhum deles tem um PDF utilizável para abertura no app.',
+              hint: _showFavoritesOnly
+                  ? 'Toque no marcador de um livro disponível para salvá-lo e encontrá-lo depois com mais facilidade.'
+                  : 'Quando o arquivo for publicado corretamente pelo terapeuta, ele passará a aparecer aqui.',
             )
           else
             ...visibleBooks.map((book) {
@@ -1521,16 +1602,41 @@ class _BooksPageState extends State<BooksPage> {
                             Expanded(child: Text(_stringValue(book, ['title'], fallback: 'Livro'), style: Theme.of(context).textTheme.titleLarge)),
                             IconButton(
                               onPressed: () => _toggleFavorite(book),
-                              icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
+                              tooltip: isFavorite ? 'Remover de Meus conteúdos' : 'Salvar em Meus conteúdos',
+                              icon: Icon(isFavorite ? Icons.bookmark : Icons.bookmark_border),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(_plainText(_stringValue(book, ['description_text', 'description_html'], fallback: 'Sem descrição.'))),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _InfoChip(label: 'Salvo', value: isFavorite ? 'Sim' : 'Não'),
+                            if (_stringValue(book, ['updated_at']).isNotEmpty)
+                              _InfoChip(label: 'Disponibilizado em', value: _formatDateLabel(_stringValue(book, ['updated_at']))),
+                          ],
+                        ),
                         const SizedBox(height: 16),
-                        FilledButton.tonal(
-                          onPressed: () => _launchUrl(context, _stringValue(book, ['pdf_url'])),
-                          child: const Text('Abrir livro'),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.tonal(
+                                onPressed: () => _launchUrl(context, _stringValue(book, ['pdf_url'])),
+                                child: const Text('Visualizar'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _toggleFavorite(book),
+                                icon: Icon(isFavorite ? Icons.bookmark_remove_outlined : Icons.bookmark_add_outlined),
+                                label: Text(isFavorite ? 'Remover' : 'Salvar'),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -2426,6 +2532,7 @@ class _MeditationsPageState extends State<MeditationsPage> {
 
     final noteController = TextEditingController();
     Map<String, dynamic>? drawnLetter;
+    bool audioCompleted = _stringValue(meditation, ['audio_url']).isEmpty;
     bool saving = false;
     bool shareWithTherapist = true;
 
@@ -2508,19 +2615,40 @@ class _MeditationsPageState extends State<MeditationsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (_stringValue(details, ['reference_image_path']).isNotEmpty) ...[
+                        _MediaPreview(
+                          imageUrl: _resolveMediaUrl(_stringValue(details, ['reference_image_path'])),
+                          height: 180,
+                          borderRadius: 18,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       Text(_stringValue(details, ['title'], fallback: 'Meditação'), style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),
                       Text(_plainText(_stringValue(details, ['description', 'description_text'], fallback: 'Sem descrição.'))),
                       const SizedBox(height: 16),
-                      FilledButton.tonal(
-                        onPressed: () => _launchUrl(context, _stringValue(details, ['audio_url'])),
-                        child: const Text('Ouvir áudio'),
+                      _InlineAudioPlayerCard(
+                        title: 'Áudio da meditação',
+                        audioUrl: _stringValue(details, ['audio_url']),
+                        onCompleted: () {
+                          setModalState(() {
+                            audioCompleted = true;
+                          });
+                        },
                       ),
                       const SizedBox(height: 12),
                       OutlinedButton(
-                        onPressed: drawLetter,
-                        child: const Text('Sortear carta de cura'),
+                        onPressed: audioCompleted ? drawLetter : null,
+                        child: const Text('Sortear palavra de cura'),
                       ),
+                      if (!audioCompleted)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Ouça o áudio até o fim para liberar o sorteio da palavra de cura.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
                       if (drawnLetter != null) ...[
                         const SizedBox(height: 16),
                         Text(_stringValue(drawnLetter!, ['category']).toUpperCase(), style: Theme.of(context).textTheme.labelLarge),
@@ -2752,13 +2880,21 @@ class _PrayersPageState extends State<PrayersPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (_stringValue(details, ['reference_image_path']).isNotEmpty) ...[
+                        _MediaPreview(
+                          imageUrl: _resolveMediaUrl(_stringValue(details, ['reference_image_path'])),
+                          height: 180,
+                          borderRadius: 18,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       Text(_stringValue(details, ['title'], fallback: 'Oração'), style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),
                       Text(_plainText(_stringValue(details, ['description', 'description_text'], fallback: 'Sem descrição.'))),
                       const SizedBox(height: 16),
-                      FilledButton.tonal(
-                        onPressed: () => _launchUrl(context, _stringValue(details, ['audio_url'])),
-                        child: const Text('Ouvir áudio'),
+                      _InlineAudioPlayerCard(
+                        title: 'Áudio da oração',
+                        audioUrl: _stringValue(details, ['audio_url']),
                       ),
                       const SizedBox(height: 16),
                       TextField(
@@ -2973,7 +3109,7 @@ class _GratitudePageState extends State<GratitudePage> {
         padding: const EdgeInsets.all(24),
         children: [
           _ModuleHeaderCard(
-            title: 'Gratidão',
+            title: 'Diário da gratidão',
             description: 'Registre sua gratidão diária e acompanhe a evolução do ciclo de 30 dias.',
             imageUrl: _resolveAppUrl('app/images/gratidao.png'),
             imageTitle: 'Diário da gratidão',
@@ -3225,10 +3361,10 @@ class _DevotionalsPageState extends State<DevotionalsPage> {
         padding: const EdgeInsets.all(24),
         children: [
           _ModuleHeaderCard(
-            title: 'Devocionais',
+            title: 'Devocional diário',
             description: 'Acesse o devocional do dia e mantenha um histórico das reflexões já registradas.',
             imageUrl: _resolveAppUrl('app/images/devocional.png'),
-            imageTitle: 'Devocional',
+            imageTitle: 'Devocional diário',
             imageCopy: 'Acesse o devocional do dia e registre sua reflexão pessoal com qualidade.',
           ),
           const SizedBox(height: 16),
@@ -3653,4 +3789,246 @@ String _resolveAppUrl(String path) {
   final trimmedBase = AppConfig.baseUrl.replaceFirst(RegExp(r'/+$'), '');
   final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
   return '$trimmedBase/$normalizedPath';
+}
+
+class _MediaPreview extends StatelessWidget {
+  const _MediaPreview({
+    required this.imageUrl,
+    required this.height,
+    this.borderRadius = 20,
+  });
+
+  final String imageUrl;
+  final double height;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: Image.network(
+        imageUrl,
+        height: height,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: height,
+            width: double.infinity,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.image_not_supported_outlined, size: 36),
+                const SizedBox(height: 12),
+                Text(
+                  'A imagem de referência não pôde ser carregada neste momento.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _InlineAudioPlayerCard extends StatefulWidget {
+  const _InlineAudioPlayerCard({
+    required this.title,
+    required this.audioUrl,
+    this.onCompleted,
+  });
+
+  final String title;
+  final String audioUrl;
+  final VoidCallback? onCompleted;
+
+  @override
+  State<_InlineAudioPlayerCard> createState() => _InlineAudioPlayerCardState();
+}
+
+class _InlineAudioPlayerCardState extends State<_InlineAudioPlayerCard> {
+  late final AudioPlayer _player;
+  String? _error;
+  bool _completedNotified = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = AudioPlayer();
+    _player.playerStateStream.listen((state) {
+      if (!mounted) {
+        return;
+      }
+      if (state.processingState == ProcessingState.completed && !_completedNotified) {
+        _completedNotified = true;
+        widget.onCompleted?.call();
+      }
+      if (state.processingState != ProcessingState.loading && state.processingState != ProcessingState.buffering && _loading) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }, onError: (Object error, StackTrace stackTrace) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        _error = _normalizeError(error);
+      });
+    });
+    _prepare();
+  }
+
+  Future<void> _prepare() async {
+    final url = widget.audioUrl.trim();
+    if (url.isEmpty) {
+      setState(() {
+        _loading = false;
+        _error = 'Áudio indisponível no momento.';
+      });
+      return;
+    }
+
+    try {
+      await _player.setUrl(url);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        _error = _normalizeError(error);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            if (_loading)
+              const LinearProgressIndicator()
+            else if (_error != null)
+              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))
+            else ...[
+              StreamBuilder<PlayerState>(
+                stream: _player.playerStateStream,
+                builder: (context, snapshot) {
+                  final playerState = snapshot.data;
+                  final isPlaying = playerState?.playing == true;
+                  final processingState = playerState?.processingState;
+                  final busy = processingState == ProcessingState.loading || processingState == ProcessingState.buffering;
+
+                  return Row(
+                    children: [
+                      FilledButton.icon(
+                        onPressed: busy
+                            ? null
+                            : () async {
+                                if (processingState == ProcessingState.completed) {
+                                  await _player.seek(Duration.zero);
+                                }
+                                if (isPlaying) {
+                                  await _player.pause();
+                                } else {
+                                  await _player.play();
+                                }
+                              },
+                        icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
+                        label: Text(isPlaying ? 'Pausar' : 'Ouvir áudio'),
+                      ),
+                      const SizedBox(width: 12),
+                      if (processingState == ProcessingState.completed)
+                        const Text('Áudio concluído')
+                      else if (busy)
+                        const Text('Carregando...'),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              StreamBuilder<Duration>(
+                stream: _player.positionStream,
+                builder: (context, positionSnapshot) {
+                  return StreamBuilder<Duration?>(
+                    stream: _player.durationStream,
+                    builder: (context, durationSnapshot) {
+                      final duration = durationSnapshot.data ?? Duration.zero;
+                      final position = positionSnapshot.data ?? Duration.zero;
+                      final max = duration.inMilliseconds <= 0 ? 1.0 : duration.inMilliseconds.toDouble();
+                      final value = position.inMilliseconds.clamp(0, max.toInt()).toDouble();
+
+                      return Column(
+                        children: [
+                          Slider(
+                            min: 0,
+                            max: max,
+                            value: value,
+                            onChanged: duration.inMilliseconds <= 0
+                                ? null
+                                : (nextValue) => _player.seek(Duration(milliseconds: nextValue.round())),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(_formatAudioDuration(position)),
+                              Text(_formatAudioDuration(duration)),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _resolveMediaUrl(String path) {
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+  final baseUrl = normalizedPath.startsWith('uploads/') ? AppConfig.mediaBaseUrl : AppConfig.baseUrl;
+  final trimmedBase = baseUrl.replaceFirst(RegExp(r'/+$'), '');
+  return '$trimmedBase/$normalizedPath';
+}
+
+String _formatAudioDuration(Duration duration) {
+  final totalSeconds = duration.inSeconds;
+  final minutes = totalSeconds ~/ 60;
+  final seconds = totalSeconds % 60;
+  return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 }

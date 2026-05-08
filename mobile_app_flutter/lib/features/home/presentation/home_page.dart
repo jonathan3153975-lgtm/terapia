@@ -148,14 +148,14 @@ class _HomePageState extends State<HomePage> {
       ),
       _PatientModuleItem(
         id: _PatientModuleId.gratitude,
-        label: 'Gratidão',
+        label: 'Diário da gratidão',
         icon: Icons.favorite_border,
         description: 'Diário da gratidão e ciclos do paciente.',
         available: true,
       ),
       _PatientModuleItem(
         id: _PatientModuleId.devotionals,
-        label: 'Devocionais',
+        label: 'Devocional diário',
         icon: Icons.auto_stories_outlined,
         description: 'Devocional diário e histórico de reflexões.',
         available: true,
@@ -233,6 +233,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final user = _profile?['user'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final patientDisplayName = _firstAndLastName('${user['name'] ?? 'Paciente'}');
     final pages = <_PatientModuleId, Widget>{
       _PatientModuleId.dashboard: _DashboardTab(
         apiClient: widget.apiClient,
@@ -329,7 +330,7 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Text('Menu do paciente', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
-                    Text('${user['name'] ?? 'Paciente'}', style: Theme.of(context).textTheme.bodyLarge),
+                    Text(patientDisplayName, style: Theme.of(context).textTheme.bodyLarge),
                     const SizedBox(height: 4),
                     Text('${user['email'] ?? ''}', style: Theme.of(context).textTheme.bodyMedium),
                   ],
@@ -361,6 +362,20 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                child: ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text('Sair da conta'),
+                  subtitle: const Text('Encerrar a sessão neste dispositivo'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await widget.onLogout();
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -371,6 +386,21 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
+
+String _firstAndLastName(String fullName) {
+  final parts = fullName
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) {
+    return 'Paciente';
+  }
+  if (parts.length == 1) {
+    return parts.first;
+  }
+  return '${parts.first} ${parts.last}';
 }
 
 class _DashboardTab extends StatefulWidget {
