@@ -928,12 +928,25 @@ class PatientAppController extends Controller
             $this->fail('Carta e reflexão são obrigatórias.', 422);
         }
 
+        $letterId = (int) ($data['letter_id'] ?? 0);
+        $letterCategory = $this->normalizeDailyMessageCategory((string) ($data['letter_category'] ?? 'dores'));
+
+        if ($letterId > 0) {
+            $letter = $this->healingLetterModel->findByTherapistAndId((int) ($patient['therapist_id'] ?? 0), $letterId);
+            if ($letter) {
+                $letterCategory = $this->normalizeDailyMessageCategory((string) ($letter['category'] ?? $letterCategory));
+                $letterText = trim((string) ($letter['message_text'] ?? $letterText));
+            } else {
+                $letterId = 0;
+            }
+        }
+
         $saved = $this->patientGuidedMeditationEntryModel->insert([
             'therapist_id' => (int) ($patient['therapist_id'] ?? 0),
             'patient_id' => (int) ($patient['id'] ?? 0),
             'meditation_id' => $meditationId,
-            'letter_id' => (int) ($data['letter_id'] ?? 0) ?: null,
-            'letter_category' => $this->normalizeDailyMessageCategory((string) ($data['letter_category'] ?? 'dores')),
+            'letter_id' => $letterId > 0 ? $letterId : null,
+            'letter_category' => $letterCategory,
             'letter_text' => $letterText,
             'patient_note' => $patientNote,
             'share_with_therapist' => !empty($data['share_with_therapist']) ? 1 : 0,
