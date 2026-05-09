@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -3902,13 +3904,15 @@ class _InlineAudioPlayerCardState extends State<_InlineAudioPlayerCard> {
     }
 
     try {
-      await _player.setUrl(url, headers: widget.audioHeaders);
+      final audioFile = await _resolveAudioFile(url);
+      await _player.setFilePath(audioFile.path);
       if (mounted) {
         setState(() {
           _loading = false;
         });
       }
     } catch (error) {
+      debugPrint('Falha ao preparar áudio $url: $error');
       if (!mounted) {
         return;
       }
@@ -3917,6 +3921,25 @@ class _InlineAudioPlayerCardState extends State<_InlineAudioPlayerCard> {
         _error = _normalizeError(error);
       });
     }
+  }
+
+  Future<File> _resolveAudioFile(String url) async {
+    final uri = Uri.parse(url);
+    final extensionMatch = RegExp(r'(\.[A-Za-z0-9]+)$').firstMatch(uri.path);
+    final extension = extensionMatch?.group(1) ?? '.bin';
+    final cachedFile = File('${Directory.systemTemp.path}/terapia_audio_${url.hashCode}$extension');
+
+    if (await cachedFile.exists() && await cachedFile.length() > 0) {
+      return cachedFile;
+    }
+
+    final response = await http.get(uri, headers: widget.audioHeaders);
+    if (response.statusCode >= 400 || response.bodyBytes.isEmpty) {
+      throw Exception('Falha ao baixar o áudio (${response.statusCode}).');
+    }
+
+    await cachedFile.writeAsBytes(response.bodyBytes, flush: true);
+    return cachedFile;
   }
 
   @override
