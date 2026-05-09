@@ -2548,7 +2548,7 @@ class _MeditationsPageState extends State<MeditationsPage> {
         return;
       }
 
-      await showModalBottomSheet<void>(
+      final savedEntry = await showModalBottomSheet<bool>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
@@ -2591,12 +2591,7 @@ class _MeditationsPageState extends State<MeditationsPage> {
                   if (!mounted || !context.mounted) {
                     return;
                   }
-                  Navigator.of(context).pop();
-                  await _load();
-                  if (!mounted) {
-                    return;
-                  }
-                  ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Reflexão salva com sucesso.')));
+                  Navigator.of(context).pop(true);
                 } catch (error) {
                   if (mounted) {
                     ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(content: Text(_normalizeError(error))));
@@ -2699,6 +2694,14 @@ class _MeditationsPageState extends State<MeditationsPage> {
           );
         },
       );
+
+      if (savedEntry == true) {
+        await _load();
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reflexão salva com sucesso.')));
+      }
     } catch (error) {
       if (!mounted) {
         return;
