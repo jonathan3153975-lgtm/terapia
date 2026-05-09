@@ -1774,7 +1774,7 @@ class _VideosPageState extends State<VideosPage> {
                     ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(content: Text(_normalizeError(error))));
                   }
                 } finally {
-                  if (mounted) {
+                  if (mounted && context.mounted) {
                     setModalState(() {
                       saving = false;
                     });
@@ -1809,7 +1809,7 @@ class _VideosPageState extends State<VideosPage> {
                     ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(content: Text(_normalizeError(error))));
                   }
                 } finally {
-                  if (mounted) {
+                  if (mounted && context.mounted) {
                     setModalState(() {
                       saving = false;
                     });
@@ -2602,7 +2602,7 @@ class _MeditationsPageState extends State<MeditationsPage> {
                     ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(content: Text(_normalizeError(error))));
                   }
                 } finally {
-                  if (mounted) {
+                  if (mounted && context.mounted) {
                     setModalState(() {
                       saving = false;
                     });
@@ -2868,7 +2868,7 @@ class _PrayersPageState extends State<PrayersPage> {
                     ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(content: Text(_normalizeError(error))));
                   }
                 } finally {
-                  if (mounted) {
+                  if (mounted && context.mounted) {
                     setModalState(() {
                       saving = false;
                     });
