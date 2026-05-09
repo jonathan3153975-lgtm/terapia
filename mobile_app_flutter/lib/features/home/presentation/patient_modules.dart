@@ -2629,7 +2629,7 @@ class _MeditationsPageState extends State<MeditationsPage> {
                       const SizedBox(height: 16),
                       _InlineAudioPlayerCard(
                         title: 'Áudio da meditação',
-                        audioUrl: _stringValue(details, ['audio_url']),
+                        audioUrl: _resolveAudioUrl(details),
                         audioHeaders: widget.apiClient.mediaHeaders,
                         onCompleted: () {
                           setModalState(() {
@@ -2895,7 +2895,7 @@ class _PrayersPageState extends State<PrayersPage> {
                       const SizedBox(height: 16),
                       _InlineAudioPlayerCard(
                         title: 'Áudio da oração',
-                        audioUrl: _stringValue(details, ['audio_url']),
+                        audioUrl: _resolveAudioUrl(details),
                         audioHeaders: widget.apiClient.mediaHeaders,
                       ),
                       const SizedBox(height: 16),
@@ -4028,6 +4028,15 @@ String _resolveMediaUrl(String path) {
   final baseUrl = normalizedPath.startsWith('uploads/') ? AppConfig.mediaBaseUrl : AppConfig.baseUrl;
   final trimmedBase = baseUrl.replaceFirst(RegExp(r'/+$'), '');
   return '$trimmedBase/$normalizedPath';
+}
+
+String _resolveAudioUrl(Map<String, dynamic> item) {
+  final directPath = _stringValue(item, ['audio_path']);
+  if (directPath.isNotEmpty) {
+    return _resolveMediaUrl(directPath);
+  }
+
+  return _stringValue(item, ['audio_url']);
 }
 
 String _formatAudioDuration(Duration duration) {
