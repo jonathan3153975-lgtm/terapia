@@ -2630,6 +2630,7 @@ class _MeditationsPageState extends State<MeditationsPage> {
                       _InlineAudioPlayerCard(
                         title: 'Áudio da meditação',
                         audioUrl: _stringValue(details, ['audio_url']),
+                        audioHeaders: widget.apiClient.mediaHeaders,
                         onCompleted: () {
                           setModalState(() {
                             audioCompleted = true;
@@ -2895,6 +2896,7 @@ class _PrayersPageState extends State<PrayersPage> {
                       _InlineAudioPlayerCard(
                         title: 'Áudio da oração',
                         audioUrl: _stringValue(details, ['audio_url']),
+                        audioHeaders: widget.apiClient.mediaHeaders,
                       ),
                       const SizedBox(height: 16),
                       TextField(
@@ -3841,11 +3843,13 @@ class _InlineAudioPlayerCard extends StatefulWidget {
   const _InlineAudioPlayerCard({
     required this.title,
     required this.audioUrl,
+    this.audioHeaders = const <String, String>{},
     this.onCompleted,
   });
 
   final String title;
   final String audioUrl;
+  final Map<String, String> audioHeaders;
   final VoidCallback? onCompleted;
 
   @override
@@ -3898,7 +3902,7 @@ class _InlineAudioPlayerCardState extends State<_InlineAudioPlayerCard> {
     }
 
     try {
-      await _player.setUrl(url);
+      await _player.setUrl(url, headers: widget.audioHeaders);
       if (mounted) {
         setState(() {
           _loading = false;

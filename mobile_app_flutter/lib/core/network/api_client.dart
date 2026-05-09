@@ -19,6 +19,16 @@ class ApiClient {
   final String baseUrl;
   String? _bearerToken;
 
+  Map<String, String> get mediaHeaders {
+    if (_bearerToken == null || _bearerToken!.isEmpty) {
+      return const <String, String>{};
+    }
+
+    return <String, String>{
+      'Authorization': 'Bearer $_bearerToken',
+    };
+  }
+
   void setBearerToken(String? token) {
     _bearerToken = token;
   }
