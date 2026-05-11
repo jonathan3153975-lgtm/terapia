@@ -10,8 +10,9 @@ class PatientPrayerEntry extends Model
 
     public function listByPatient(int $patientId, int $prayerId = 0): array
     {
-        $sql = 'SELECT ppe.*
-                FROM patient_prayer_entries ppe
+        $sql = 'SELECT ppe.*, pr.title AS prayer_title
+            FROM patient_prayer_entries ppe
+            LEFT JOIN prayers pr ON pr.id = ppe.prayer_id
                 WHERE ppe.patient_id = ?';
         $params = [$patientId];
 

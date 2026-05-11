@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_theme.dart';
 
 class LoginPage extends StatefulWidget {
@@ -39,10 +38,7 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _rememberSession = widget.initialRememberSession;
-    if (AppConfig.hasDevLogin) {
-      _emailController.text = AppConfig.devLoginEmail;
-      _passwordController.text = AppConfig.devLoginPassword;
-    } else if (widget.initialEmail.trim().isNotEmpty) {
+    if (widget.initialEmail.trim().isNotEmpty) {
       _emailController.text = widget.initialEmail.trim();
     }
 
@@ -437,18 +433,6 @@ class _LoginPageState extends State<LoginPage> {
                                     style: Theme.of(context).textTheme.bodyMedium,
                                   ),
                                 ),
-                                if (AppConfig.hasDevLogin) ...[
-                                  const SizedBox(height: 14),
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(color: AppTheme.lineStrong),
-                                    ),
-                                    child: Text('Acesso de teste carregado para desenvolvimento: ${AppConfig.devLoginEmail}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSoft)),
-                                  ),
-                                ],
                               ],
                             ),
                           ),

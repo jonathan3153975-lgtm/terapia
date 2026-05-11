@@ -847,6 +847,7 @@ class PatientAppController extends Controller
     {
         $auth = $this->requirePatient();
         $patient = $this->patientOrFail((int) ($auth['patient_id'] ?? 0));
+        $patientId = (int) ($patient['id'] ?? 0);
         $meditations = (int) ($patient['therapist_id'] ?? 0) > 0
             ? $this->guidedMeditationModel->listByTherapist((int) ($patient['therapist_id'] ?? 0))
             : [];
@@ -855,7 +856,10 @@ class PatientAppController extends Controller
             $meditation['audio_url'] = $this->buildApiUrl('patient-guided-meditation-audio', ['id' => (int) ($meditation['id'] ?? 0)]);
         }
 
-        $this->ok(['items' => $meditations]);
+        $this->ok([
+            'items' => $meditations,
+            'entries' => $this->patientGuidedMeditationEntryModel->listByPatient($patientId),
+        ]);
     }
 
     public function guidedMeditationShow(): void
@@ -965,6 +969,7 @@ class PatientAppController extends Controller
     {
         $auth = $this->requirePatient();
         $patient = $this->patientOrFail((int) ($auth['patient_id'] ?? 0));
+        $patientId = (int) ($patient['id'] ?? 0);
         $prayers = (int) ($patient['therapist_id'] ?? 0) > 0
             ? $this->prayerModel->listByTherapist((int) ($patient['therapist_id'] ?? 0))
             : [];
@@ -973,7 +978,10 @@ class PatientAppController extends Controller
             $prayer['audio_url'] = $this->buildApiUrl('patient-prayer-audio', ['id' => (int) ($prayer['id'] ?? 0)]);
         }
 
-        $this->ok(['items' => $prayers]);
+        $this->ok([
+            'items' => $prayers,
+            'entries' => $this->patientPrayerEntryModel->listByPatient($patientId),
+        ]);
     }
 
     public function prayerShow(): void

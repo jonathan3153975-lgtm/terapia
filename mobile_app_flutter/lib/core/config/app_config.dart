@@ -30,10 +30,5 @@ class AppConfig {
     return usesLocalApi ? _sanitize(_releaseBaseUrl) : baseUrl;
   }
 
-  static const String devLoginEmail = String.fromEnvironment('DEV_LOGIN_EMAIL', defaultValue: '');
-  static const String devLoginPassword = String.fromEnvironment('DEV_LOGIN_PASSWORD', defaultValue: '');
-
-  static bool get hasDevLogin => !kReleaseMode && devLoginEmail.isNotEmpty && devLoginPassword.isNotEmpty;
-
   static String _sanitize(String value) => value.trim().replaceFirst(RegExp(r'/+$'), '');
 }

@@ -1,28 +1,45 @@
-# Base do App Flutter do Paciente
+# App Flutter do Paciente
 
-Esta pasta contém a base Dart do app Flutter do paciente.
+Aplicativo Flutter do paciente da plataforma Tera-Tech.
 
-## Situação atual
+## Estado atual
 
-O ambiente em que esta base foi criada não possui o SDK Flutter instalado. Por isso:
+O projeto já possui estrutura Flutter completa, incluindo:
 
-1. A camada `lib/` já foi criada.
-2. `pubspec.yaml` e configurações principais já existem.
-3. As pastas nativas `android/` e `ios/` ainda precisam ser geradas localmente.
+1. camadas Dart em `lib/`
+2. plataformas `android/` e `ios/`
+3. ícones atualizados para Android e iOS
+4. configuração de ambiente com URL release apontando para `https://jw-adminix.com.br/terapia`
+5. limpeza dos atalhos e credenciais de teste para publicação
 
-## Gerar Android e iOS depois
+## Comandos úteis
 
 Dentro desta pasta, execute:
 
 ```powershell
-flutter create . --platforms=android,ios
 flutter pub get
+flutter analyze
 ```
 
-## Rodar no emulador Android depois
+Para rodar no emulador Android:
 
 ```powershell
 flutter run
 ```
 
-Antes disso, ajuste a URL base em `lib/core/config/app_config.dart`.
+Para gerar build release Android:
+
+```powershell
+flutter build appbundle --release --dart-define=API_BASE_URL_RELEASE=https://jw-adminix.com.br/terapia
+```
+
+## Pendência para Play Store
+
+A publicação Android ainda depende da configuração da assinatura release.
+
+Arquivos pendentes:
+
+1. `android/key.properties`
+2. keystore de produção referenciado por esse arquivo
+
+Sem esses arquivos, a build release falha intencionalmente para evitar publicação com assinatura incorreta.

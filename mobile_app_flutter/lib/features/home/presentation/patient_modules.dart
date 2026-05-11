@@ -2486,6 +2486,7 @@ class MeditationsPage extends StatefulWidget {
 
 class _MeditationsPageState extends State<MeditationsPage> {
   List<Map<String, dynamic>> _items = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _entries = <Map<String, dynamic>>[];
   String? _error;
   bool _loading = true;
 
@@ -2509,6 +2510,7 @@ class _MeditationsPageState extends State<MeditationsPage> {
       }
       setState(() {
         _items = _mapList(response['data'], 'items');
+        _entries = _mapList(response['data'], 'entries');
       });
     } catch (error) {
       if (!mounted) {
@@ -2524,6 +2526,65 @@ class _MeditationsPageState extends State<MeditationsPage> {
         });
       }
     }
+  }
+
+  Future<void> _openMeditationSelector() async {
+    if (_items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nenhuma meditação disponível no momento.')));
+      return;
+    }
+
+    final selectedMeditation = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Nova meditação', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(
+                'Escolha a meditação que deseja realizar agora.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final meditation = _items[index];
+                    return Card(
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        title: Text(_stringValue(meditation, ['title'], fallback: 'Meditação')),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(_plainText(_stringValue(meditation, ['description', 'description_text'], fallback: 'Sem descrição.'))),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(context).pop(meditation),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selectedMeditation == null) {
+      return;
+    }
+
+    await _openMeditation(selectedMeditation);
   }
 
   Future<void> _openMeditation(Map<String, dynamic> meditation) async {
@@ -2542,7 +2603,6 @@ class _MeditationsPageState extends State<MeditationsPage> {
       final response = await widget.apiClient.fetchGuidedMeditationDetails(meditationId: meditationId);
       final data = _mapValue(response, 'data');
       final details = _mapValue(data, 'meditation');
-      final entries = _mapList(data, 'entries');
 
       if (!mounted) {
         return;
@@ -2676,16 +2736,6 @@ class _MeditationsPageState extends State<MeditationsPage> {
                               : const Text('Salvar reflexão'),
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      Text('Histórico', style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      if (entries.isEmpty)
-                        const Text('Nenhuma reflexão salva para esta meditação.')
-                      else
-                        ...entries.map((entry) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(_stringValue(entry, ['patient_note'], fallback: 'Reflexão registrada.')),
-                            )),
                     ],
                   ),
                 ),
@@ -2721,17 +2771,46 @@ class _MeditationsPageState extends State<MeditationsPage> {
         children: [
           const _ModuleHeaderCard(
             title: 'Meditações',
-            description: 'Ouça as meditações guiadas, sorteie cartas de cura e registre suas reflexões.',
+            description: 'Acompanhe suas palavras de cura e reflexões já registradas. Quando quiser, inicie uma nova meditação pelo botão abaixo.',
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FilledButton.tonal(
+                    onPressed: _loading ? null : _openMeditationSelector,
+                    child: const Text('Nova meditação'),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _items.isEmpty
+                        ? 'Nenhuma meditação disponível no momento.'
+                        : 'Escolha uma meditação no modal e, após salvar sua reflexão, você volta automaticamente para esta tela.',
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           if (_loading)
             const _LoadingCard()
           else if (_error != null)
             _ErrorCard(message: _error!)
-          else if (_items.isEmpty)
-            const _EmptyCard(message: 'Nenhuma meditação disponível no momento.')
-          else
-            ..._items.map((meditation) => Padding(
+          else ...[
+            _SectionTitle(title: 'Palavras e reflexões registradas', count: _entries.length),
+            if (_entries.isEmpty)
+              const _EmptyCard(
+                icon: Icons.self_improvement_outlined,
+                title: 'Nenhuma meditação registrada ainda',
+                message: 'Depois de concluir uma meditação e salvar sua reflexão, o histórico ficará disponível aqui.',
+                hint: 'Use o botão Nova meditação para iniciar seu primeiro registro.',
+              )
+            else
+              ..._entries.map(
+                (entry) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Card(
                     child: Padding(
@@ -2739,19 +2818,29 @@ class _MeditationsPageState extends State<MeditationsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_stringValue(meditation, ['title'], fallback: 'Meditação'), style: Theme.of(context).textTheme.titleLarge),
+                          Text(
+                            _stringValue(entry, ['meditation_title'], fallback: 'Meditação'),
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
                           const SizedBox(height: 8),
-                          Text(_plainText(_stringValue(meditation, ['description', 'description_text'], fallback: 'Sem descrição.'))),
-                          const SizedBox(height: 16),
-                          OutlinedButton(
-                            onPressed: () => _openMeditation(meditation),
-                            child: const Text('Abrir meditação'),
+                          Text(
+                            _stringValue(entry, ['letter_text'], fallback: 'Palavra de cura não informada.'),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(_stringValue(entry, ['patient_note'], fallback: 'Reflexão registrada.')),
+                          const SizedBox(height: 12),
+                          Text(
+                            _formatDateLabel(_stringValue(entry, ['created_at'], fallback: '')),
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
                       ),
                     ),
                   ),
-                )),
+                ),
+              ),
+          ],
         ],
       ),
     );
@@ -2774,6 +2863,7 @@ class PrayersPage extends StatefulWidget {
 
 class _PrayersPageState extends State<PrayersPage> {
   List<Map<String, dynamic>> _items = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _entries = <Map<String, dynamic>>[];
   String? _error;
   bool _loading = true;
 
@@ -2797,6 +2887,7 @@ class _PrayersPageState extends State<PrayersPage> {
       }
       setState(() {
         _items = _mapList(response['data'], 'items');
+        _entries = _mapList(response['data'], 'entries');
       });
     } catch (error) {
       if (!mounted) {
@@ -2814,6 +2905,65 @@ class _PrayersPageState extends State<PrayersPage> {
     }
   }
 
+  Future<void> _openPrayerSelector() async {
+    if (_items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nenhuma oração disponível no momento.')));
+      return;
+    }
+
+    final selectedPrayer = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Acessar orações', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(
+                'Escolha a oração que deseja ouvir agora.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final prayer = _items[index];
+                    return Card(
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        title: Text(_stringValue(prayer, ['title'], fallback: 'Oração')),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(_plainText(_stringValue(prayer, ['description', 'description_text'], fallback: 'Sem descrição.'))),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(context).pop(prayer),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selectedPrayer == null) {
+      return;
+    }
+
+    await _openPrayer(selectedPrayer);
+  }
+
   Future<void> _openPrayer(Map<String, dynamic> prayer) async {
     final prayerId = _intValue(prayer['id']);
     if (prayerId <= 0) {
@@ -2828,13 +2978,12 @@ class _PrayersPageState extends State<PrayersPage> {
       final response = await widget.apiClient.fetchPrayerDetails(prayerId: prayerId);
       final data = _mapValue(response, 'data');
       final details = _mapValue(data, 'prayer');
-      final entries = _mapList(data, 'entries');
 
       if (!mounted) {
         return;
       }
 
-      await showModalBottomSheet<void>(
+      final savedEntry = await showModalBottomSheet<bool>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
@@ -2860,12 +3009,7 @@ class _PrayersPageState extends State<PrayersPage> {
                   if (!mounted || !context.mounted) {
                     return;
                   }
-                  Navigator.of(context).pop();
-                  await _load();
-                  if (!mounted) {
-                    return;
-                  }
-                  ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Reflexão salva com sucesso.')));
+                  Navigator.of(context).pop(true);
                 } catch (error) {
                   if (mounted) {
                     ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(content: Text(_normalizeError(error))));
@@ -2926,16 +3070,6 @@ class _PrayersPageState extends State<PrayersPage> {
                             ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
                             : const Text('Salvar reflexão'),
                       ),
-                      const SizedBox(height: 16),
-                      Text('Histórico', style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      if (entries.isEmpty)
-                        const Text('Nenhuma reflexão salva para esta oração.')
-                      else
-                        ...entries.map((entry) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(_stringValue(entry, ['patient_note'], fallback: 'Reflexão registrada.')),
-                            )),
                     ],
                   ),
                 ),
@@ -2944,6 +3078,14 @@ class _PrayersPageState extends State<PrayersPage> {
           );
         },
       );
+
+      if (savedEntry == true) {
+        await _load();
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reflexão salva com sucesso.')));
+      }
     } catch (error) {
       if (!mounted) {
         return;
@@ -2963,17 +3105,46 @@ class _PrayersPageState extends State<PrayersPage> {
         children: [
           const _ModuleHeaderCard(
             title: 'Orações',
-            description: 'Ouça os áudios enviados pelo terapeuta e registre suas reflexões espirituais.',
+            description: 'Acompanhe suas reflexões já registradas e acesse uma nova oração quando desejar.',
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FilledButton.tonal(
+                    onPressed: _loading ? null : _openPrayerSelector,
+                    child: const Text('Acessar orações'),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _items.isEmpty
+                        ? 'Nenhuma oração disponível no momento.'
+                        : 'Escolha uma oração no modal e, após salvar sua reflexão, você volta automaticamente para esta tela.',
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           if (_loading)
             const _LoadingCard()
           else if (_error != null)
             _ErrorCard(message: _error!)
-          else if (_items.isEmpty)
-            const _EmptyCard(message: 'Nenhuma oração disponível no momento.')
-          else
-            ..._items.map((prayer) => Padding(
+          else ...[
+            _SectionTitle(title: 'Reflexões registradas', count: _entries.length),
+            if (_entries.isEmpty)
+              const _EmptyCard(
+                icon: Icons.menu_book_outlined,
+                title: 'Nenhuma oração registrada ainda',
+                message: 'Depois de ouvir uma oração e salvar sua reflexão, o histórico ficará disponível aqui.',
+                hint: 'Use o botão Acessar orações para iniciar seu primeiro registro.',
+              )
+            else
+              ..._entries.map(
+                (entry) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Card(
                     child: Padding(
@@ -2981,19 +3152,24 @@ class _PrayersPageState extends State<PrayersPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_stringValue(prayer, ['title'], fallback: 'Oração'), style: Theme.of(context).textTheme.titleLarge),
+                          Text(
+                            _stringValue(entry, ['prayer_title'], fallback: 'Oração'),
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
                           const SizedBox(height: 8),
-                          Text(_plainText(_stringValue(prayer, ['description', 'description_text'], fallback: 'Sem descrição.'))),
-                          const SizedBox(height: 16),
-                          OutlinedButton(
-                            onPressed: () => _openPrayer(prayer),
-                            child: const Text('Abrir oração'),
+                          Text(_stringValue(entry, ['patient_note'], fallback: 'Reflexão registrada.'), style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 12),
+                          Text(
+                            _formatDateLabel(_stringValue(entry, ['created_at'], fallback: '')),
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
                       ),
                     ),
                   ),
-                )),
+                ),
+              ),
+          ],
         ],
       ),
     );

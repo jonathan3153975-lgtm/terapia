@@ -10,8 +10,9 @@ class PatientGuidedMeditationEntry extends Model
 
     public function listByPatient(int $patientId, int $meditationId = 0): array
     {
-        $sql = 'SELECT pgme.*
-                FROM patient_guided_meditation_entries pgme
+        $sql = 'SELECT pgme.*, gm.title AS meditation_title
+            FROM patient_guided_meditation_entries pgme
+            LEFT JOIN guided_meditations gm ON gm.id = pgme.meditation_id
                 WHERE pgme.patient_id = ?';
         $params = [$patientId];
 

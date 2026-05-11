@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.gradle.api.GradleException
 
 plugins {
     id("com.android.application")
@@ -55,11 +56,10 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            if (!keystorePropertiesFile.exists()) {
+                throw GradleException("Arquivo android/key.properties não encontrado. Configure a assinatura release antes de publicar na Play Store.")
             }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

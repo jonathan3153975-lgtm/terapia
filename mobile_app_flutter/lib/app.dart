@@ -6,6 +6,7 @@ import 'core/network/api_client.dart';
 import 'core/services/analytics_service.dart';
 import 'core/services/appointment_notification_service.dart';
 import 'core/services/auth_session_service.dart';
+import 'core/services/device_registration_service.dart';
 import 'core/services/push_token_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/login_page.dart';
@@ -23,6 +24,7 @@ class _TerapiaPatientAppState extends State<TerapiaPatientApp> {
   late final AnalyticsService _analyticsService;
   late final AppointmentNotificationService _appointmentNotificationService;
   late final AuthSessionService _authSessionService;
+  late final DeviceRegistrationService _deviceRegistrationService;
   late final PushTokenService _pushTokenService;
 
   String? _token;
@@ -40,6 +42,7 @@ class _TerapiaPatientAppState extends State<TerapiaPatientApp> {
     _analyticsService = AnalyticsService(apiClient: _apiClient);
     _appointmentNotificationService = AppointmentNotificationService();
     _authSessionService = const AuthSessionService();
+    _deviceRegistrationService = const DeviceRegistrationService();
     _pushTokenService = const PushTokenService();
     _bootstrap();
   }
@@ -51,7 +54,7 @@ class _TerapiaPatientAppState extends State<TerapiaPatientApp> {
       _bootstrapWarning = null;
     } catch (_) {
       _bootstrapWarning = AppConfig.isReleaseBuild
-          ? 'Não foi possível conectar ao servidor do aplicativo. Verifique se a API mobile está publicada em ${AppConfig.baseUrl}/api.php.'
+          ? 'Não foi possível conectar ao servidor do aplicativo. Tente novamente mais tarde ou contate o suporte da clínica.'
           : 'Não foi possível carregar a configuração inicial da API em ${AppConfig.baseUrl}/api.php.';
     }
 
@@ -105,14 +108,17 @@ class _TerapiaPatientAppState extends State<TerapiaPatientApp> {
     await _analyticsService.track('login_success', context: 'auth');
 
     final pushToken = await _pushTokenService.getPushToken();
-    await _apiClient.registerDevice(
-      platform: platform == TargetPlatform.iOS ? 'ios' : 'android',
-      deviceIdentifier: 'manual-device-placeholder',
-      deviceName: 'Flutter Patient App',
-      pushToken: pushToken,
-      appVersion: '1.0.0+2',
-      locale: 'pt-BR',
-    );
+    try {
+      final registrationData = await _deviceRegistrationService.load();
+      await _apiClient.registerDevice(
+        platform: platform == TargetPlatform.iOS ? 'ios' : 'android',
+        deviceIdentifier: registrationData.deviceIdentifier,
+        deviceName: registrationData.appName.isNotEmpty ? registrationData.appName : 'Tera-Tech',
+        pushToken: pushToken,
+        appVersion: registrationData.appVersion.isNotEmpty ? registrationData.appVersion : null,
+        locale: 'pt-BR',
+      );
+    } catch (_) {}
 
     if (mounted) {
       setState(() {});
