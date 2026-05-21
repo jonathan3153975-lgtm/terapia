@@ -136,6 +136,8 @@ class PatientPortalController extends Controller
             'task-material',
             'task-respond',
             'task-respond-submit',
+            'virtual-tree-of-life',
+            'virtual-task-complete',
             'my-account',
             'my-account-save',
         ];
