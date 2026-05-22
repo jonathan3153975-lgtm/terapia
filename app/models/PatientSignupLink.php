@@ -50,4 +50,29 @@ class PatientSignupLink extends Model
             [$id]
         );
     }
+
+    public function ensureDefaultToken(string $token): void
+    {
+        $stmt = $this->query(
+            'SELECT id FROM patient_signup_links WHERE token = ? LIMIT 1',
+            [$token]
+        );
+
+        if ($stmt && $stmt->fetch()) {
+            $this->query(
+                "UPDATE patient_signup_links
+                 SET status = 'active', expires_at = DATE_ADD(NOW(), INTERVAL 10 YEAR),
+                     used_count = 0, max_uses = 999999, updated_at = NOW()
+                 WHERE token = ?",
+                [$token]
+            );
+        } else {
+            $this->query(
+                "INSERT INTO patient_signup_links
+                     (therapist_id, token, recipient_email, expires_at, used_count, max_uses, status, created_at, updated_at)
+                 VALUES (0, ?, NULL, DATE_ADD(NOW(), INTERVAL 10 YEAR), 0, 999999, 'active', NOW(), NOW())",
+                [$token]
+            );
+        }
+    }
 }

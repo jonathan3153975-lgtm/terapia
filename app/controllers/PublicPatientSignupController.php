@@ -29,6 +29,12 @@ class PublicPatientSignupController extends Controller
     {
         $token = trim((string) ($_GET['token'] ?? ''));
         $link = $this->signupLinkModel->findActiveByToken($token);
+
+        if (!$link && $token === AuthController::DEFAULT_PUBLIC_SIGNUP_TOKEN) {
+            $this->signupLinkModel->ensureDefaultToken($token);
+            $link = $this->signupLinkModel->findActiveByToken($token);
+        }
+
         $appUrl = Config::get('APP_URL', '');
         $faviconUrl = '';
 
@@ -88,6 +94,12 @@ class PublicPatientSignupController extends Controller
     {
         $token = trim((string) ($_POST['token'] ?? ''));
         $link = $this->signupLinkModel->findActiveByToken($token);
+
+        if (!$link && $token === AuthController::DEFAULT_PUBLIC_SIGNUP_TOKEN) {
+            $this->signupLinkModel->ensureDefaultToken($token);
+            $link = $this->signupLinkModel->findActiveByToken($token);
+        }
+
         if (!$link) {
             $this->redirect(Config::get('APP_URL', '') . '/index.php?action=patient-signup&token=' . urlencode($token) . '&status=error&msg=' . urlencode('Link inválido ou expirado.'));
         }
