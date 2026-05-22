@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 
 class ApiException implements Exception {
   const ApiException(this.message, {this.statusCode, this.code});
@@ -18,6 +20,13 @@ class ApiClient {
 
   final String baseUrl;
   String? _bearerToken;
+
+  // Necessário pois o servidor jw-adminix.com.br envia cadeia de certificados incompleta
+  static http.Client _buildHttpClient() {
+    final httpClient = HttpClient()
+      ..badCertificateCallback = (cert, host, port) => host == 'jw-adminix.com.br';
+    return IOClient(httpClient);
+  }
 
   Map<String, String> get mediaHeaders {
     if (_bearerToken == null || _bearerToken!.isEmpty) {
@@ -436,11 +445,16 @@ class ApiClient {
       headers['Authorization'] = 'Bearer $_bearerToken';
     }
 
+    final client = _buildHttpClient();
     late final http.Response response;
-    if (method.toUpperCase() == 'POST') {
-      response = await http.post(uri, headers: headers, body: jsonEncode(body ?? <String, dynamic>{}));
-    } else {
-      response = await http.get(uri, headers: headers);
+    try {
+      if (method.toUpperCase() == 'POST') {
+        response = await client.post(uri, headers: headers, body: jsonEncode(body ?? <String, dynamic>{}));
+      } else {
+        response = await client.get(uri, headers: headers);
+      }
+    } finally {
+      client.close();
     }
 
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
