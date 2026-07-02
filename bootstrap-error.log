@@ -1,0 +1,1 @@
+[2026-07-02 15:11:02] [mail] send error: SMTP Error: Could not authenticate. | host=smtp.gmail.com port=587 username=seu@email.com to=jonathan3153975@gmail.com subject=Teste log bootstrap

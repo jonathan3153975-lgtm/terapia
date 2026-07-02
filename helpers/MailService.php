@@ -10,11 +10,22 @@ class MailService
 {
     private PHPMailer $mailer;
     private bool $smtpConfigured = false;
+    private string $bootstrapLogFile;
 
     public function __construct()
     {
         $this->mailer = new PHPMailer(true);
+        $this->bootstrapLogFile = dirname(__DIR__) . '/bootstrap-error.log';
         $this->configureSmtp();
+    }
+
+    private function logBootstrapError(string $message): void
+    {
+        @file_put_contents(
+            $this->bootstrapLogFile,
+            '[' . date('Y-m-d H:i:s') . '] [mail] ' . $message . PHP_EOL,
+            FILE_APPEND
+        );
     }
 
     private function configureSmtp(): void
@@ -32,7 +43,9 @@ class MailService
             $encryption = Config::get('MAIL_ENCRYPTION', 'tls');
 
             if ($username === '' || $password === '') {
-                error_log('MailService: MAIL_USERNAME or MAIL_PASSWORD not configured');
+                $msg = 'MAIL_USERNAME or MAIL_PASSWORD not configured';
+                error_log('MailService: ' . $msg);
+                $this->logBootstrapError($msg);
                 return;
             }
 
@@ -51,7 +64,9 @@ class MailService
 
             $this->smtpConfigured = true;
         } catch (Exception $e) {
-            error_log('MailService configuration error: ' . $e->getMessage());
+            $msg = 'configuration error: ' . $e->getMessage();
+            error_log('MailService ' . $msg);
+            $this->logBootstrapError($msg);
         }
     }
 
@@ -59,7 +74,9 @@ class MailService
     {
         try {
             if (!$this->smtpConfigured) {
-                error_log('MailService: SMTP not configured. Falling back to mail() function.');
+                $msg = 'SMTP not configured. Falling back to mail() function.';
+                error_log('MailService: ' . $msg);
+                $this->logBootstrapError($msg);
                 return $this->sendViaPhpMail($toEmail, $subject, $bodyHtml);
             }
 
@@ -78,9 +95,30 @@ class MailService
             $this->mailer->CharSet = 'UTF-8';
             $this->mailer->Encoding = 'base64';
 
-            return $this->mailer->send();
+            $sent = $this->mailer->send();
+            if (!$sent) {
+                $msg = 'send returned false. ErrorInfo: ' . (string) $this->mailer->ErrorInfo;
+                error_log('MailService: ' . $msg);
+                $this->logBootstrapError($msg);
+            }
+
+            return $sent;
         } catch (Exception $e) {
-            error_log('MailService send error: ' . $e->getMessage());
+            $host = (string) Config::get('MAIL_HOST', '');
+            $port = (string) Config::get('MAIL_PORT', '');
+            $username = (string) Config::get('MAIL_USERNAME', '');
+            $msg = sprintf(
+                'send error: %s | host=%s port=%s username=%s to=%s subject=%s',
+                $e->getMessage(),
+                $host,
+                $port,
+                $username,
+                $toEmail,
+                $subject
+            );
+
+            error_log('MailService ' . $msg);
+            $this->logBootstrapError($msg);
             return false;
         }
     }
@@ -117,7 +155,14 @@ class MailService
             'From: ' . $fromName . ' <' . $fromEmail . '>',
         ];
 
-        return @mail($email, $encodedSubject, $html, implode("\r\n", $headers));
+        $sent = @mail($email, $encodedSubject, $html, implode("\r\n", $headers));
+        if (!$sent) {
+            $msg = 'fallback mail() failed | to=' . $email . ' subject=' . $subject;
+            error_log('MailService: ' . $msg);
+            $this->logBootstrapError($msg);
+        }
+
+        return $sent;
     }
 
     public static function getLastError(): string
