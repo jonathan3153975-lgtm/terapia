@@ -1,22 +1,67 @@
-name: Deploy para Locaweb
+
+# name: Deploy para Locaweb
+
+# on:
+#   push:
+#     branches:
+#       - main  # ou master
+
+# jobs:
+#   ftp-deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Baixar código
+#         uses: actions/checkout@v3
+
+#       - name: Enviar via FTP
+#         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+#         with:
+#           server: 62.72.62.30
+#           username: ${{ secrets.FTP_USER }}
+#           password: ${{ secrets.FTP_PASS }}
+#           server-dir: domains/teratech-terapia.com/public_html/teratech/
+
+
+
+name: Deploy to Hostinger
 
 on:
   push:
     branches:
-      - main  # ou master
+      - main
 
 jobs:
-  ftp-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar código
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Enviar via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: 62.72.62.30
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
-          server-dir: domains/teratech-terapia.com/public_html/teratech/
+      # Se seu projeto precisar de build, descomente:
+      # - name: Setup Node
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 20
+      #
+      # - name: Install and build
+      #   run: |
+      #     npm ci
+      #     npm run build
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy files
+        run: |
+          rsync -az --delete \
+            -e "ssh -p ${{ secrets.SSH_PORT }}" \
+            --exclude=".git/" \
+            --exclude=".github/" \
+            ./ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.REMOTE_PATH }}
