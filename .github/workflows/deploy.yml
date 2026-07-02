@@ -19,4 +19,4 @@ jobs:
           server: 62.72.62.30
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASS }}
-          server-dir: /domains/teratech-terapia.com/public_html/teratech/
+          server-dir: domains/teratech-terapia.com/public_html/teratech/
