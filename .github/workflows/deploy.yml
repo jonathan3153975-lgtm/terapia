@@ -1,29 +1,4 @@
 
-# name: Deploy para Locaweb
-
-# on:
-#   push:
-#     branches:
-#       - main  # ou master
-
-# jobs:
-#   ftp-deploy:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Baixar código
-#         uses: actions/checkout@v3
-
-#       - name: Enviar via FTP
-#         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-#         with:
-#           server: 62.72.62.30
-#           username: ${{ secrets.FTP_USER }}
-#           password: ${{ secrets.FTP_PASS }}
-#           server-dir: domains/teratech-terapia.com/public_html/teratech/
-
-
-
 name: Deploy to Hostinger
 
 on:
