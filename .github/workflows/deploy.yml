@@ -1,4 +1,3 @@
-
 name: Deploy to Hostinger
 
 on:
@@ -14,28 +13,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Se seu projeto precisar de build, descomente:
-      # - name: Setup Node
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: 20
-      #
-      # - name: Install and build
-      #   run: |
-      #     npm ci
-      #     npm run build
-
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "echo 'SSH conectado com sucesso' && pwd && ls -la"
+
+      - name: Check remote path
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "ls -la ${{ secrets.REMOTE_PATH }}"
 
       - name: Deploy files
         run: |
-          rsync -az --delete \
-            -e "ssh -p ${{ secrets.SSH_PORT }}" \
+          rsync -avz --delete --progress \
+            -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }}" \
             --exclude=".git/" \
             --exclude=".github/" \
             ./ \
