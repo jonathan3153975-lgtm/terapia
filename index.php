@@ -1,5 +1,6 @@
 <?php
 
+
 $bootstrapLogFile = __DIR__ . '/bootstrap-error.log';
 
 $bootstrapLog = static function (string $message) use ($bootstrapLogFile): void {
