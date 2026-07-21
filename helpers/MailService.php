@@ -83,7 +83,10 @@ class MailService
             $this->mailer->clearAddresses();
             $this->mailer->clearAttachments();
 
-            $fromEmail = Config::get('MAIL_FROM_ADDRESS', Config::get('MAIL_USERNAME', ''));
+            $fromEmail = Config::get(
+                'MAIL_FROM_ADDRESS',
+                Config::get('MAIL_FROM', Config::get('MAIL_USERNAME', ''))
+            );
             $fromName = Config::get('MAIL_FROM_NAME', 'Tera-Tech');
 
             $this->mailer->setFrom($fromEmail, $fromName);
@@ -143,7 +146,10 @@ class MailService
         }
 
         $fromName = Config::get('MAIL_FROM_NAME', 'Tera-Tech');
-        $fromEmail = Config::get('MAIL_FROM_ADDRESS', Config::get('MAIL_USERNAME', 'noreply@teratech.local'));
+        $fromEmail = Config::get(
+            'MAIL_FROM_ADDRESS',
+            Config::get('MAIL_FROM', Config::get('MAIL_USERNAME', 'noreply@teratech.local'))
+        );
         $encodedSubject = function_exists('mb_encode_mimeheader')
             ? mb_encode_mimeheader($subject, 'UTF-8', 'B', "\r\n")
             : $subject;
