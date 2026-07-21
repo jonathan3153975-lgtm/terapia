@@ -66,17 +66,39 @@ class AuthController extends Controller
             $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&error=1');
         }
 
-        if (($user['role'] ?? '') !== 'patient' && (string) ($user['status'] ?? 'active') !== 'active') {
+        $rawRole = strtolower(trim((string) ($user['role'] ?? '')));
+        $role = match ($rawRole) {
+            'super_admin', 'therapist', 'patient' => $rawRole,
+            'admin', 'administrator' => 'super_admin',
+            'terapeuta' => 'therapist',
+            'paciente' => 'patient',
+            default => '',
+        };
+
+        if ($role === '') {
+            if ($isAjax) {
+                $this->error('Seu usuário está com perfil inválido. Contate o suporte.');
+            }
+            $this->redirect(
+                Config::get('APP_URL', '')
+                . '/index.php?action=login&status=error&msg='
+                . urlencode('Seu usuário está com perfil inválido. Contate o suporte.')
+            );
+        }
+
+        if ($role !== 'patient' && (string) ($user['status'] ?? 'active') !== 'active') {
             if ($isAjax) {
                 $this->error('Seu acesso está pendente de liberação pelo terapeuta.');
             }
             $this->redirect(Config::get('APP_URL', '') . '/index.php?action=login&error=1');
         }
 
+        // Preserve compatibility for legacy role values stored in the database.
+        $user['role'] = $role;
+
         Auth::login($user);
 
         $appUrl = Config::get('APP_URL', '');
-        $role = $user['role'];
 
         $redirect = $appUrl . '/index.php?action=login';
         if ($role === 'super_admin') {
